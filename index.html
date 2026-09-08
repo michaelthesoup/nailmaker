@@ -211,6 +211,7 @@
           <span class="value" id="valMarketing">0</span>
           <button id="btnBuyMarketing">buy marketing</button>
         </div>
+        <div class="hint">each level multiplies public demand &times;1.1 -- combine with a lower price for the real payoff</div>
 
         <div class="row">
           <span class="label">iron:</span>
@@ -225,7 +226,7 @@
 
     <button id="btnMakeNail" style="width:320px;">make nail</button>
 
-    <div class="panel" style="margin-top:14px;">
+    <div class="panel" id="machinerySection" style="margin-top:14px; display:none;">
       <div class="panel-header">machinery</div>
       <div class="panel-body">
 
@@ -244,15 +245,8 @@
         <div class="machinery-block">
           <div class="row"><span class="label">maker factories:</span><span class="value" id="valFactories">0</span></div>
           <div class="hint">build cost: <span id="valFactoryBuildCost">$0.00</span> &middot; built by walking to an empty tile on the map</div>
-
-          <div class="stepper">
-            <span class="label" style="margin-right:auto;">throughput:</span>
-            <button id="btnFactoryThroughputMinus">-</button>
-            <span class="value" id="valFactoryThroughput">100%</span>
-            <button id="btnFactoryThroughputPlus">+</button>
-          </div>
-
           <div class="hint">
+            throughput: <span id="valFactoryThroughputReadout">100%</span> &middot;
             consuming: <span id="valFactoryIronRate">0 g</span> iron/s, <span id="valFactoryCopperRate">0 g</span> copper/s &middot;
             producing: <span id="valFactoryOutputRate">0.0</span> nail makers/min
           </div>
@@ -261,15 +255,8 @@
         <div class="machinery-block">
           <div class="row"><span class="label">diggers:</span><span class="value" id="valDiggers">0</span><button id="btnBuyDigger">buy digger</button></div>
           <div class="hint">build cost: <span id="valDiggerBuildCost">$0.00</span> &middot; built by walking to an empty tile on the map</div>
-
-          <div class="stepper">
-            <span class="label" style="margin-right:auto;">intake:</span>
-            <button id="btnDiggerIntakeMinus">-</button>
-            <span class="value" id="valDiggerIntake">1.00/s</span>
-            <button id="btnDiggerIntakePlus">+</button>
-          </div>
-
           <div class="hint">
+            intake: <span id="valDiggerIntakeReadout">1.00/s</span> &middot;
             consuming: <span id="valDiggerNailsRate">0.0</span> nails/s &middot;
             producing: <span id="valDiggerIronRate">0 g</span> iron/s, <span id="valDiggerCopperRate">0 g</span> copper/s
           </div>
@@ -277,9 +264,69 @@
 
       </div>
     </div>
+
+    <div class="panel" id="upgradesSection" style="display:none;">
+      <div class="panel-header">upgrades</div>
+      <div class="panel-body">
+        <div class="row"><span class="label">blueprints:</span><span class="value" id="valBlueprints">0</span></div>
+        <div class="hint">earned by reaching a new map &middot; spent below</div>
+
+        <div class="machinery-block">
+          <div class="row">
+            <span class="label" id="valUpgradeProductionLabel">Overdrive Tooling (lvl 0)</span>
+            <button id="btnBuyUpgradeProduction">buy</button>
+          </div>
+          <div class="hint">+100% nail maker output per level</div>
+        </div>
+
+        <div class="machinery-block">
+          <div class="row">
+            <span class="label" id="valUpgradeMineralsLabel">Refined Extraction (lvl 0)</span>
+            <button id="btnBuyUpgradeMinerals">buy</button>
+          </div>
+          <div class="hint">+50% minerals per mining action per level</div>
+        </div>
+
+        <div class="machinery-block">
+          <div class="row">
+            <span class="label" id="valUpgradeProspectingLabel">Prospecting (lvl 0)</span>
+            <button id="btnBuyUpgradeProspecting">buy</button>
+          </div>
+          <div class="hint">+5 blueprints per new map, per level</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" id="tuningSection" style="display:none;">
+      <div class="panel-header">tuning</div>
+      <div class="panel-body">
+        <div class="hint">adjusts speed/output for machines you own -- doesn't change what they cost.</div>
+
+        <div class="stepper">
+          <span class="label" style="margin-right:auto;">nail maker output:</span>
+          <button id="btnNailMakerThroughputMinus">-</button>
+          <span class="value" id="valNailMakerThroughput">100%</span>
+          <button id="btnNailMakerThroughputPlus">+</button>
+        </div>
+
+        <div class="stepper">
+          <span class="label" style="margin-right:auto;">factory throughput:</span>
+          <button id="btnFactoryThroughputMinus">-</button>
+          <span class="value" id="valFactoryThroughput">100%</span>
+          <button id="btnFactoryThroughputPlus">+</button>
+        </div>
+
+        <div class="stepper">
+          <span class="label" style="margin-right:auto;">digger intake:</span>
+          <button id="btnDiggerIntakeMinus">-</button>
+          <span class="value" id="valDiggerIntake">1.00/s</span>
+          <button id="btnDiggerIntakePlus">+</button>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <div>
+  <div id="mapSection" style="display:none;">
     <div class="panel-header" style="width:fit-content; border:1px solid #000; border-bottom:none;">extraction &mdash; map <span id="mapIndexLabel">1</span></div>
     <div id="mapDisplay"></div>
     <div class="map-controls">
@@ -288,6 +335,16 @@
     </div>
     <button id="btnNextMap">go to next map</button>
     <div class="hint">move: arrow keys / WASD &nbsp;&middot;&nbsp; i/c = iron/copper &nbsp; I/C = worked by digger &nbsp; F = factory &nbsp; @ = you &nbsp; . = drained/empty</div>
+  </div>
+</div>
+
+<div class="panel" id="prestigeSection" style="width:320px; margin-top:14px; display:none;">
+  <div class="panel-header">prestige</div>
+  <div class="panel-body">
+    <div class="row"><span class="label">prestige count:</span><span class="value" id="valPrestigeCount">0</span></div>
+    <div class="row"><span class="label">current price floor:</span><span class="value" id="valPriceFloor">$0.01</span></div>
+    <div class="hint" id="prestigeHint">reach $5,000 in funds to prestige</div>
+    <button id="btnPrestige" style="width:100%; margin-top:6px;" disabled>prestige</button>
   </div>
 </div>
 
@@ -301,13 +358,18 @@
   // Tunables
   // ----------------------------------------------------------------
 
-  var PRICE_MIN = 0.01;
+  var PRICE_MIN_BASE = 0.01; // prestige raises this floor by $0.01 per prestige
   var PRICE_STEP = 0.01;
-  var PRICE_MAX = 0.08;
+  var PRICE_MAX = 0.08; // now only used for the stepper's rough feel, not the demand math
 
+  // Marketing, Universal-Paperclips style. Their formula is:
+  //   PD = (1 + 0.1*U) * (1.1^M) * Bonuses * (0.8/P)
+  //   avg sold/sec = min(1, PD/100) * 7 * PD^1.15
+  // We have no universes or projects, so U=0 and Bonuses=1 both drop out,
+  // leaving PD = 1.1^M * (0.8/P), M = marketingLevel.
   var MARKETING_BASE_COST = 10;
-  var MARKETING_GROWTH = 1.6;
-  var MARKETING_BONUS_PER_LEVEL = 1;
+  var MARKETING_GROWTH = 2.0;
+  var MARKETING_LEVEL_MULT = 1.1; // PD x1.1 per level, same base Paperclips uses
 
   var IRON_BUY_COST = 1;
   var IRON_BUY_AMOUNT = 100; // grams
@@ -325,11 +387,11 @@
   var DIGGER_BUILD_COST_FUNDS = 25; // was 300 -- cheaper to get into
   var DIGGER_BUILD_COST_IRON = 0;  // was 500
   var DIGGER_BUILD_COST_COPPER = 0; // was 250
-  var DIGGER_COOLDOWN_MS = 1000; // pacing between buys, like nail makers
+  var DIGGER_COOLDOWN_MS = 0; // pacing between buys, like nail makers
 
-  // Digger intake and factory throughput are now player-adjustable --
-  // these are just the starting defaults and the step/bounds for the
-  // +/- controls in the Machinery panel.
+  // Digger intake, factory throughput, and nail maker throughput are all
+  // player-adjustable from the Tuning menu -- these are just the starting
+  // defaults and the step/bounds for the +/- controls there.
   var DIGGER_INTAKE_DEFAULT = 1;   // nails/sec consumed per digger
   var DIGGER_INTAKE_STEP = 0.25;
   var DIGGER_INTAKE_MIN = 0.25;
@@ -337,31 +399,68 @@
 
   var FACTORY_THROUGHPUT_DEFAULT = 1;   // 100% = FACTORY_PERIOD_SEC as tuned above
   var FACTORY_THROUGHPUT_STEP = 0.25;
-  var FACTORY_THROUGHPUT_MIN = 0.25;
+  var FACTORY_THROUGHPUT_MIN = 0;   // 0% fully halts new nail-maker production
   var FACTORY_THROUGHPUT_MAX = 3;
 
-  // Selling happens in irregular chunks rather than a smooth trickle --
-  // both how often a sale fires and how big it is scale with demand.
-  var SALE_EVENT_RATE = 4;   // sale events/sec at 100% demand
-  var SALE_CHUNK_BASE = 4;     // baseline nails per sale event
+  var NAILMAKER_THROUGHPUT_DEFAULT = 1; // 100% = NAILMAKER_RATE as tuned above
+  var NAILMAKER_THROUGHPUT_STEP = 0.25;
+  var NAILMAKER_THROUGHPUT_MIN = 0;     // 0% pauses nail production entirely
+  var NAILMAKER_THROUGHPUT_MAX = 3;
 
   var COPPER_SELL_PRICE = 0.05; // $ per gram
 
-  var MINE_IRON_AMOUNT = 10; // grams per mine action (manual or digger)
-  var MINE_COPPER_AMOUNT = 10; // grams per mine action (manual or digger)
+  var MINE_IRON_AMOUNT = 10; // grams per mine action (manual or digger), before upgrades
+  var MINE_COPPER_AMOUNT = 10; // grams per mine action (manual or digger), before upgrades
   var MINE_COOLDOWN_MS = 400;
-  var DEPOSIT_CAPACITY = 2000; // grams -- every deposit tile holds 2kg before it's drained
+  var DEPOSIT_CAPACITY_BASE = 2000; // grams -- map 1's deposits hold 2kg
+  var DEPOSIT_CAPACITY_GROWTH_PER_MAP = 1000; // +1kg per map index beyond the first
 
   // How many seconds of history the "avg/s" and machinery-analytics
   // readouts are averaged over. Bigger = steadier, more readable
   // numbers; smaller = more responsive to what's happening right now.
   var STATS_WINDOW_SEC = 5;
 
-  var TICK_MS = 100;
+  var TICK_MS = 250;
 
   var MAP_ROWS = 10;
   var MAP_COLS = 21;
   var DEPOSITS_PER_MAP = 15;
+
+  // Blueprints: earned by reaching a new map, spent on permanent upgrades.
+  var BLUEPRINTS_BASE_PER_MAP = 10;
+  var BLUEPRINT_PROSPECT_BONUS = 5; // extra blueprints per map, per Prospecting level
+
+  var UPGRADES = {
+    production: {
+      name: "Overdrive Tooling",
+      desc: "+100% nail maker output per level",
+      baseCost: 20,
+      costGrowth: 2.2,
+    },
+    minerals: {
+      name: "Refined Extraction",
+      desc: "+50% minerals per mining action per level",
+      baseCost: 20,
+      costGrowth: 2.2,
+    },
+    prospecting: {
+      name: "Prospecting",
+      desc: "+5 blueprints per new map, per level",
+      baseCost: 15,
+      costGrowth: 2.0,
+    },
+  };
+
+  // Prestige: once you've banked enough funds, you can reset your run in
+  // exchange for a permanently higher price floor -- $0.01 more per prestige.
+  var PRESTIGE_THRESHOLD_FUNDS = 5000;
+  var PRESTIGE_PRICE_STEP = 0.01;
+
+  // Progressive UI reveal, gated on lifetime nails made -- keeps the game
+  // approachable for new players instead of dumping every system at once.
+  var MAP_UNLOCK_NAILS = 100;
+  var MACHINERY_UNLOCK_NAILS = 250; // also reveals the Upgrades panel
+  var TUNING_UNLOCK_NAILS = 500;
 
   // ----------------------------------------------------------------
   // Map generation
@@ -376,8 +475,13 @@
     };
   }
 
+  function depositCapacityForMap(mapIndex) {
+    return DEPOSIT_CAPACITY_BASE + (mapIndex - 1) * DEPOSIT_CAPACITY_GROWTH_PER_MAP;
+  }
+
   function generateMapTiles(mapIndex) {
     var rand = mulberry32(mapIndex * 7919 + 13);
+    var capacity = depositCapacityForMap(mapIndex);
     var tiles = [];
     for (var r = 0; r < MAP_ROWS; r++) {
       var row = [];
@@ -396,7 +500,7 @@
       if (r === 0 && c === 0) continue;
       if (tiles[r][c].type !== ".") continue;
       var type = rand() < 0.5 ? "i" : "c";
-      tiles[r][c] = { type: type, remaining: DEPOSIT_CAPACITY };
+      tiles[r][c] = { type: type, remaining: capacity };
       placed++;
     }
     return tiles;
@@ -415,11 +519,16 @@
   // State
   // ----------------------------------------------------------------
 
-  function defaultState() {
+  // carry = { prestigeCount, unlockedMap, unlockedMachinery, unlockedTuning }
+  // These four survive a prestige reset; everything else goes back to zero.
+  function defaultState(carry) {
+    carry = carry || {};
+    var prestigeCount = carry.prestigeCount || 0;
+    var startPrice = round2(PRICE_MIN_BASE + prestigeCount * PRESTIGE_PRICE_STEP);
     return {
       funds: 25.00,
       unsold: 0,
-      price: 0.02,
+      price: startPrice,
       ironAmt: 100,
       copperAmt: 0,
       marketingLevel: 0,
@@ -434,10 +543,19 @@
       factories: [], // { row, col, mapIndex, timer }
       diggers: 0,   // simple owned count -- diggers are portable, not built at a specific tile
       diggerCooldownUntil: 0,
-      saleAccum: 0,
 
       factoryThroughput: FACTORY_THROUGHPUT_DEFAULT,
       diggerIntake: DIGGER_INTAKE_DEFAULT,
+      nailMakerThroughput: NAILMAKER_THROUGHPUT_DEFAULT,
+
+      blueprints: 0,
+      upgrades: { production: 0, minerals: 0, prospecting: 0 },
+
+      prestigeCount: prestigeCount,
+      unlockedMap: carry.unlockedMap || false,
+      unlockedMachinery: carry.unlockedMachinery || false,
+      unlockedTuning: carry.unlockedTuning || false,
+      unlockedPrestige: carry.unlockedPrestige || false,
 
       simTime: 0, // seconds of game time elapsed, used to window the stats below
 
@@ -482,17 +600,53 @@
   // Formulas
   // ----------------------------------------------------------------
 
-  function marketingBonus() {
-    return MARKETING_BONUS_PER_LEVEL * state.marketingLevel;
+  function marketingMultiplier() {
+    return Math.pow(MARKETING_LEVEL_MULT, state.marketingLevel);
   }
 
-  function demandFraction() {
-    var base = 1 - (state.price / PRICE_MAX);
-    return Math.max(0, base + marketingBonus());
+  // Universal Paperclips' demand math, with the universe/project terms
+  // (which we don't have) dropped since they're both just 1 for us:
+  //   PD = (1.1^M) * (0.8 / price)
+  //   avg sold/sec = min(1, PD/100) * 7 * PD^1.15
+  function publicDemandPD() {
+    if (state.price <= 0) return 0;
+    return marketingMultiplier() * (0.8 / state.price);
+  }
+
+  function avgNailsSoldPerSec() {
+    var pd = publicDemandPD();
+    if (pd <= 0) return 0;
+    return Math.min(1, pd / 100) * 7 * Math.pow(pd, 1.15);
   }
 
   function priceForMarketing() {
     return MARKETING_BASE_COST * Math.pow(MARKETING_GROWTH, state.marketingLevel);
+  }
+
+  function priceMin() {
+    return round2(PRICE_MIN_BASE + state.prestigeCount * PRESTIGE_PRICE_STEP);
+  }
+
+  // Upgrades, paid for with blueprints. Each level of "production" adds
+  // +100% nail maker output; each level of "minerals" adds +50% yield per
+  // mining action (manual or digger); each level of "prospecting" adds
+  // +5 blueprints per new map reached.
+  function upgradeCost(key) {
+    var def = UPGRADES[key];
+    var level = state.upgrades[key];
+    return Math.ceil(def.baseCost * Math.pow(def.costGrowth, level));
+  }
+
+  function productionMultiplier() {
+    return 1 + state.upgrades.production * 1.0;
+  }
+
+  function mineralYieldMultiplier() {
+    return 1 + state.upgrades.minerals * 0.5;
+  }
+
+  function blueprintsPerMap() {
+    return BLUEPRINTS_BASE_PER_MAP + state.upgrades.prospecting * BLUEPRINT_PROSPECT_BONUS;
   }
 
   // Only factories occupy tiles now, and only ones on the map you're
@@ -566,6 +720,32 @@
     diggerCopperRate: document.getElementById("valDiggerCopperRate"),
     btnDiggerIntakeMinus: document.getElementById("btnDiggerIntakeMinus"),
     btnDiggerIntakePlus: document.getElementById("btnDiggerIntakePlus"),
+
+    factoryThroughputReadout: document.getElementById("valFactoryThroughputReadout"),
+    diggerIntakeReadout: document.getElementById("valDiggerIntakeReadout"),
+
+    nailMakerThroughput: document.getElementById("valNailMakerThroughput"),
+    btnNailMakerThroughputMinus: document.getElementById("btnNailMakerThroughputMinus"),
+    btnNailMakerThroughputPlus: document.getElementById("btnNailMakerThroughputPlus"),
+
+    blueprints: document.getElementById("valBlueprints"),
+    upgradeProductionLabel: document.getElementById("valUpgradeProductionLabel"),
+    upgradeMineralsLabel: document.getElementById("valUpgradeMineralsLabel"),
+    upgradeProspectingLabel: document.getElementById("valUpgradeProspectingLabel"),
+    btnBuyUpgradeProduction: document.getElementById("btnBuyUpgradeProduction"),
+    btnBuyUpgradeMinerals: document.getElementById("btnBuyUpgradeMinerals"),
+    btnBuyUpgradeProspecting: document.getElementById("btnBuyUpgradeProspecting"),
+
+    prestigeCount: document.getElementById("valPrestigeCount"),
+    priceFloor: document.getElementById("valPriceFloor"),
+    prestigeHint: document.getElementById("prestigeHint"),
+    btnPrestige: document.getElementById("btnPrestige"),
+
+    machinerySection: document.getElementById("machinerySection"),
+    upgradesSection: document.getElementById("upgradesSection"),
+    tuningSection: document.getElementById("tuningSection"),
+    prestigeSection: document.getElementById("prestigeSection"),
+    mapSection: document.getElementById("mapSection"),
   };
 
   // ----------------------------------------------------------------
@@ -603,7 +783,7 @@
     el.funds.textContent = fmtMoney(state.funds);
     el.unsold.textContent = fmtInt(state.unsold);
     el.price.textContent = fmtMoney(state.price);
-    el.demand.textContent = Math.round(demandFraction() * 100) + "%";
+    el.demand.textContent = Math.round(publicDemandPD()) + "%";
     el.marketing.textContent = state.marketingLevel;
     el.iron.textContent = fmtWeight(state.ironAmt);
     el.copper.textContent = fmtWeight(state.copperAmt);
@@ -614,20 +794,16 @@
     el.avgNails.textContent = fmtDecimal(histRatePerSec(state.histNailsMade));
     el.mapIndexLabel.textContent = state.mapIndex;
 
-    // ---- machinery: factories ----
+    // ---- machinery: factories (readouts only -- the slider lives in Tuning) ----
     el.factoryBuildCost.textContent = fmtMoney(FACTORY_BUILD_COST_FUNDS);
-    el.factoryThroughput.textContent = Math.round(state.factoryThroughput * 100) + "%";
-    el.btnFactoryThroughputMinus.disabled = state.factoryThroughput <= FACTORY_THROUGHPUT_MIN;
-    el.btnFactoryThroughputPlus.disabled = state.factoryThroughput >= FACTORY_THROUGHPUT_MAX;
+    el.factoryThroughputReadout.textContent = Math.round(state.factoryThroughput * 100) + "%";
     el.factoryIronRate.textContent = fmtWeight(histRatePerSec(state.histFactoryIron));
     el.factoryCopperRate.textContent = fmtWeight(histRatePerSec(state.histFactoryCopper));
     el.factoryOutputRate.textContent = fmtDecimal(histRatePerSec(state.histFactoryOutput) * 60);
 
-    // ---- machinery: diggers ----
+    // ---- machinery: diggers (readouts only -- the slider lives in Tuning) ----
     el.diggerBuildCost.textContent = fmtMoney(DIGGER_BUILD_COST_FUNDS);
-    el.diggerIntake.textContent = state.diggerIntake.toFixed(2) + "/s";
-    el.btnDiggerIntakeMinus.disabled = state.diggerIntake <= DIGGER_INTAKE_MIN;
-    el.btnDiggerIntakePlus.disabled = state.diggerIntake >= DIGGER_INTAKE_MAX;
+    el.diggerIntakeReadout.textContent = state.diggerIntake.toFixed(2) + "/s";
     el.diggerNailsRate.textContent = fmtDecimal(histRatePerSec(state.histDiggerNails));
     el.diggerIronRate.textContent = fmtWeight(histRatePerSec(state.histDiggerIron));
     el.diggerCopperRate.textContent = fmtWeight(histRatePerSec(state.histDiggerCopper));
@@ -660,7 +836,56 @@
     el.btnBuyNailMaker.disabled = !nailMakerReady || state.funds < NAILMAKER_COST;
 
     el.btnMakeNail.disabled = state.ironAmt < IRON_PER_NAIL;
-    el.btnPriceMinus.disabled = state.price <= PRICE_MIN;
+    el.btnPriceMinus.disabled = state.price <= priceMin();
+
+    // ---- tuning ----
+    el.nailMakerThroughput.textContent = Math.round(state.nailMakerThroughput * 100) + "%";
+    el.btnNailMakerThroughputMinus.disabled = state.nailMakerThroughput <= NAILMAKER_THROUGHPUT_MIN;
+    el.btnNailMakerThroughputPlus.disabled = state.nailMakerThroughput >= NAILMAKER_THROUGHPUT_MAX;
+
+    el.factoryThroughput.textContent = Math.round(state.factoryThroughput * 100) + "%";
+    el.btnFactoryThroughputMinus.disabled = state.factoryThroughput <= FACTORY_THROUGHPUT_MIN;
+    el.btnFactoryThroughputPlus.disabled = state.factoryThroughput >= FACTORY_THROUGHPUT_MAX;
+
+    el.diggerIntake.textContent = state.diggerIntake.toFixed(2) + "/s";
+    el.btnDiggerIntakeMinus.disabled = state.diggerIntake <= DIGGER_INTAKE_MIN;
+    el.btnDiggerIntakePlus.disabled = state.diggerIntake >= DIGGER_INTAKE_MAX;
+
+    // ---- upgrades ----
+    el.blueprints.textContent = fmtInt(state.blueprints);
+
+    el.upgradeProductionLabel.textContent = UPGRADES.production.name + " (lvl " + state.upgrades.production + ")";
+    el.btnBuyUpgradeProduction.textContent = "buy (" + upgradeCost("production") + ")";
+    el.btnBuyUpgradeProduction.disabled = state.blueprints < upgradeCost("production");
+
+    el.upgradeMineralsLabel.textContent = UPGRADES.minerals.name + " (lvl " + state.upgrades.minerals + ")";
+    el.btnBuyUpgradeMinerals.textContent = "buy (" + upgradeCost("minerals") + ")";
+    el.btnBuyUpgradeMinerals.disabled = state.blueprints < upgradeCost("minerals");
+
+    el.upgradeProspectingLabel.textContent = UPGRADES.prospecting.name + " (lvl " + state.upgrades.prospecting + ")";
+    el.btnBuyUpgradeProspecting.textContent = "buy (" + upgradeCost("prospecting") + ")";
+    el.btnBuyUpgradeProspecting.disabled = state.blueprints < upgradeCost("prospecting");
+
+    // ---- prestige ----
+    el.prestigeCount.textContent = state.prestigeCount;
+    el.priceFloor.textContent = fmtMoney(priceMin());
+    var prestigeReady = state.funds >= PRESTIGE_THRESHOLD_FUNDS;
+    el.btnPrestige.disabled = !prestigeReady;
+    el.prestigeHint.textContent = prestigeReady
+      ? "ready -- resets your run, raises your price floor to " + fmtMoney(priceMin() + PRESTIGE_PRICE_STEP)
+      : "reach " + fmtMoney(PRESTIGE_THRESHOLD_FUNDS) + " in funds to prestige";
+
+    // ---- progressive reveal: unlock once, never re-hide ----
+    if (!state.unlockedMap && state.totalNailsMade >= MAP_UNLOCK_NAILS) state.unlockedMap = true;
+    if (!state.unlockedMachinery && state.totalNailsMade >= MACHINERY_UNLOCK_NAILS) state.unlockedMachinery = true;
+    if (!state.unlockedTuning && state.totalNailsMade >= TUNING_UNLOCK_NAILS) state.unlockedTuning = true;
+    if (!state.unlockedPrestige && state.funds >= PRESTIGE_THRESHOLD_FUNDS) state.unlockedPrestige = true;
+
+    el.mapSection.style.display = state.unlockedMap ? "" : "none";
+    el.machinerySection.style.display = state.unlockedMachinery ? "" : "none";
+    el.upgradesSection.style.display = state.unlockedMachinery ? "" : "none";
+    el.tuningSection.style.display = state.unlockedTuning ? "" : "none";
+    el.prestigeSection.style.display = state.unlockedPrestige ? "" : "none";
 
     renderMap();
   }
@@ -708,7 +933,7 @@
   // ----------------------------------------------------------------
 
   el.btnPriceMinus.addEventListener("click", function () {
-    state.price = Math.max(PRICE_MIN, round2(state.price - PRICE_STEP));
+    state.price = Math.max(priceMin(), round2(state.price - PRICE_STEP));
     render();
   });
 
@@ -761,6 +986,15 @@
     }
   });
 
+  el.btnNailMakerThroughputMinus.addEventListener("click", function () {
+    state.nailMakerThroughput = Math.max(NAILMAKER_THROUGHPUT_MIN, round2(state.nailMakerThroughput - NAILMAKER_THROUGHPUT_STEP));
+    render();
+  });
+  el.btnNailMakerThroughputPlus.addEventListener("click", function () {
+    state.nailMakerThroughput = Math.min(NAILMAKER_THROUGHPUT_MAX, round2(state.nailMakerThroughput + NAILMAKER_THROUGHPUT_STEP));
+    render();
+  });
+
   el.btnFactoryThroughputMinus.addEventListener("click", function () {
     state.factoryThroughput = Math.max(FACTORY_THROUGHPUT_MIN, round2(state.factoryThroughput - FACTORY_THROUGHPUT_STEP));
     render();
@@ -792,13 +1026,43 @@
   });
   el.btnNextMap.addEventListener("click", goToNextMap);
 
+  function buyUpgrade(key) {
+    var cost = upgradeCost(key);
+    if (state.blueprints < cost) return;
+    state.blueprints -= cost;
+    state.upgrades[key] += 1;
+    render();
+  }
+  el.btnBuyUpgradeProduction.addEventListener("click", function () { buyUpgrade("production"); });
+  el.btnBuyUpgradeMinerals.addEventListener("click", function () { buyUpgrade("minerals"); });
+  el.btnBuyUpgradeProspecting.addEventListener("click", function () { buyUpgrade("prospecting"); });
+
+  el.btnPrestige.addEventListener("click", function () {
+    if (state.funds < PRESTIGE_THRESHOLD_FUNDS) return;
+    var ok = window.confirm(
+      "Prestige? This resets your funds, production, map progress, and upgrades.\n" +
+      "In exchange, your price floor permanently rises by " + fmtMoney(PRESTIGE_PRICE_STEP) + "."
+    );
+    if (!ok) return;
+
+    var carry = {
+      prestigeCount: state.prestigeCount + 1,
+      unlockedMap: state.unlockedMap,
+      unlockedMachinery: state.unlockedMachinery,
+      unlockedTuning: state.unlockedTuning,
+      unlockedPrestige: state.unlockedPrestige,
+    };
+    state = defaultState(carry);
+    render();
+  });
+
   function mineCurrentTile() {
     if (Date.now() < state.mineCooldownUntil) return;
     if (structureAt(state.playerRow, state.playerCol)) return;
     var tile = state.mapTiles[state.playerRow][state.playerCol];
     if (tile.remaining <= 0) return;
 
-    var amount = tile.type === "i" ? MINE_IRON_AMOUNT : MINE_COPPER_AMOUNT;
+    var amount = (tile.type === "i" ? MINE_IRON_AMOUNT : MINE_COPPER_AMOUNT) * mineralYieldMultiplier();
     amount = Math.min(amount, tile.remaining);
     tile.remaining -= amount;
 
@@ -825,6 +1089,7 @@
 
   function goToNextMap() {
     if (mapHasDeposits(state.mapTiles)) return;
+    state.blueprints += blueprintsPerMap();
     state.mapIndex += 1;
     state.mapTiles = generateMapTiles(state.mapIndex);
     state.playerRow = 0;
@@ -886,7 +1151,7 @@
   // ----------------------------------------------------------------
   // Cheat box -- deliberately blends into the corner, no label.
   // Type "<key> <amount>" and hit Enter.
-  // Keys: funds, unsold, iron, copper, nailmakers, factories, diggers, marketing
+  // Keys: funds, unsold, iron, copper, nailmakers, factories, diggers, marketing, blueprints
   // ----------------------------------------------------------------
 
   el.cheatBox.addEventListener("keydown", function (e) {
@@ -911,6 +1176,7 @@
             break;
           case "diggers": state.diggers = Math.max(0, Math.floor(amount)); break;
           case "marketing": state.marketingLevel = Math.max(0, Math.floor(amount)); break;
+          case "blueprints": state.blueprints = Math.max(0, Math.floor(amount)); break;
         }
         render();
       }
@@ -926,8 +1192,10 @@
   function tick(dt) {
     state.simTime += dt;
 
-    // Production: nail makers turn iron into unsold nails.
-    var wantToMake = state.nailMakers * NAILMAKER_RATE * dt;
+    // Production: nail makers turn iron into unsold nails. Throughput
+    // (Tuning menu) can go to 0%, fully pausing production; the
+    // production upgrade multiplies output on top of that.
+    var wantToMake = state.nailMakers * NAILMAKER_RATE * state.nailMakerThroughput * productionMultiplier() * dt;
     var ironAvailableAsNails = state.ironAmt / IRON_PER_NAIL;
     var actuallyMade = Math.min(wantToMake, ironAvailableAsNails);
 
@@ -936,22 +1204,64 @@
     state.totalNailsMade += actuallyMade;
     histPush(state.histNailsMade, actuallyMade);
 
-    // Selling: instead of a smooth trickle, nails sell off in irregular
-    // chunks -- bigger and more frequent the higher demand runs. The
-    // *displayed* avg revenue/s stays smooth because it's a rolling
-    // average over the last few seconds, not this instant.
-    var demand = demandFraction();
-    if (demand > 0 && state.unsold > 0) {
-      state.saleAccum += demand * SALE_EVENT_RATE * dt;
-      while (state.saleAccum >= 1 && state.unsold > 0) {
-        state.saleAccum -= 1;
-        var chunk = Math.max(1, Math.round(SALE_CHUNK_BASE * demand * (0.5 + Math.random())));
-        chunk = Math.min(chunk, state.unsold);
-        state.unsold -= chunk;
-        var revenue = chunk * state.price;
-        state.funds += revenue;
-        histPush(state.histRevenue, revenue);
+    // Diggers: pooled equipment, not tied to any map. They always work
+    // the map you're currently standing on, spreading their total
+    // extraction rate EVENLY across every active deposit at once --
+    // iron and copper tiles both get worked simultaneously, instead of
+    // stripping one material dry before starting on the other. Total
+    // nails burned per second is always diggers * intake, same as
+    // before; only how that gets divided between materials changes,
+    // based on how many iron vs copper tiles happen to still be active.
+    // Moving to a new map "retracts" them for free -- nothing to leave
+    // behind or rebuild.
+    //
+    // This runs BEFORE selling on purpose: diggers get first claim on
+    // freshly-made nails each tick, so a hot sell-off can't starve your
+    // mining throughput just because inventory happened to be low that
+    // instant.
+    if (state.diggers > 0 && mapHasDeposits(state.mapTiles)) {
+      var activeTiles = activeDepositTiles(state.mapTiles);
+      var totalActionRate = state.diggers * state.diggerIntake; // "mine actions"/sec, pooled
+      var perTileActionRate = totalActionRate / activeTiles.length;
+
+      var nailsWanted = totalActionRate * dt;
+      var nailsAvailable = Math.min(nailsWanted, state.unsold);
+      var fillFraction = nailsWanted > 0 ? (nailsAvailable / nailsWanted) : 0;
+
+      state.unsold -= nailsAvailable;
+      if (nailsAvailable > 0) histPush(state.histDiggerNails, nailsAvailable);
+
+      for (var d = 0; d < activeTiles.length; d++) {
+        var tile = activeTiles[d];
+        var actionsForTile = perTileActionRate * dt * fillFraction;
+        var amtPerAction = (tile.type === "i" ? MINE_IRON_AMOUNT : MINE_COPPER_AMOUNT) * mineralYieldMultiplier();
+        var amt = Math.min(actionsForTile * amtPerAction, tile.remaining);
+        if (amt <= 0) continue;
+
+        tile.remaining -= amt;
+        if (tile.type === "i") {
+          state.ironAmt += amt;
+          histPush(state.histDiggerIron, amt);
+        } else {
+          state.copperAmt += amt;
+          histPush(state.histDiggerCopper, amt);
+        }
       }
+    }
+
+    // Selling, Universal-Paperclips style: a deterministic rate derived
+    // from price and marketing (see publicDemandPD/avgNailsSoldPerSec
+    // above), not random bursts. The relationship is steeply
+    // super-linear once demand clears 100, which is what makes pushing
+    // price down and marketing up actually pay off dramatically instead
+    // of just nudging revenue.
+    var soldPerSec = avgNailsSoldPerSec();
+    if (soldPerSec > 0 && state.unsold > 0) {
+      var sold = Math.min(state.unsold, soldPerSec * dt);
+      state.unsold -= sold;
+      var revenue = sold * state.price;
+      state.funds += revenue;
+      histPush(state.histRevenue, revenue);
     }
 
     // Maker factories: cycle length is fixed, but throughput scales how
@@ -974,46 +1284,6 @@
         histPush(state.histFactoryIron, FACTORY_IRON_PER_NAILMAKER);
         histPush(state.histFactoryCopper, FACTORY_COPPER_PER_NAILMAKER);
         histPush(state.histFactoryOutput, 1);
-      }
-    }
-
-    // Diggers: pooled equipment, not tied to any map. They always work
-    // the map you're currently standing on, spreading their total
-    // extraction rate EVENLY across every active deposit at once --
-    // iron and copper tiles both get worked simultaneously, instead of
-    // stripping one material dry before starting on the other. Total
-    // nails burned per second is always diggers * intake, same as
-    // before; only how that gets divided between materials changes,
-    // based on how many iron vs copper tiles happen to still be active.
-    // Moving to a new map "retracts" them for free -- nothing to leave
-    // behind or rebuild.
-    if (state.diggers > 0 && mapHasDeposits(state.mapTiles)) {
-      var activeTiles = activeDepositTiles(state.mapTiles);
-      var totalActionRate = state.diggers * state.diggerIntake; // "mine actions"/sec, pooled
-      var perTileActionRate = totalActionRate / activeTiles.length;
-
-      var nailsWanted = totalActionRate * dt;
-      var nailsAvailable = Math.min(nailsWanted, state.unsold);
-      var fillFraction = nailsWanted > 0 ? (nailsAvailable / nailsWanted) : 0;
-
-      state.unsold -= nailsAvailable;
-      if (nailsAvailable > 0) histPush(state.histDiggerNails, nailsAvailable);
-
-      for (var d = 0; d < activeTiles.length; d++) {
-        var tile = activeTiles[d];
-        var actionsForTile = perTileActionRate * dt * fillFraction;
-        var amtPerAction = tile.type === "i" ? MINE_IRON_AMOUNT : MINE_COPPER_AMOUNT;
-        var amt = Math.min(actionsForTile * amtPerAction, tile.remaining);
-        if (amt <= 0) continue;
-
-        tile.remaining -= amt;
-        if (tile.type === "i") {
-          state.ironAmt += amt;
-          histPush(state.histDiggerIron, amt);
-        } else {
-          state.copperAmt += amt;
-          histPush(state.histDiggerCopper, amt);
-        }
       }
     }
 
