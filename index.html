@@ -2,6 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+
+<link rel="icon" type="image/png" href="nail.png">
+
 <title>Nail Maker</title>
 <style>
   * { box-sizing: border-box; }
@@ -253,7 +256,7 @@
           <span class="value" id="valMarketing">0</span>
           <button id="btnBuyMarketing">buy marketing</button>
         </div>
-        <div class="hint">each level multiplies public demand &times;1.4</div>
+        <div class="hint">each level multiplies public demand &times;1.1 -- combine with a lower price for the real payoff</div>
 
         <div class="row">
           <span class="label">iron:</span>
@@ -378,7 +381,7 @@
   // leaving PD = 1.1^M * (0.8/P), M = marketingLevel.
   var MARKETING_BASE_COST = 25;
   var MARKETING_GROWTH = 2.0;
-  var MARKETING_LEVEL_MULT = 1.4;
+  var MARKETING_LEVEL_MULT = 1.1;
 
   var IRON_BUY_COST = 1;
   var IRON_BUY_AMOUNT = 100; // grams, before upgrades
@@ -404,7 +407,7 @@
 
   var COPPER_SELL_PRICE = 0.05; // $ per gram, before upgrades
 
-  var MINE_IRON_AMOUNT = 10; // grams per mine action (manual or breaker), before upgrades
+  var MINE_IRON_AMOUNT = 50; // grams per mine action (manual or breaker), before upgrades
   var MINE_COPPER_AMOUNT = 10; // grams per mine action (manual or breaker), before upgrades
   var MINE_COOLDOWN_MS = 400;
   var DEPOSIT_CAPACITY_BASE = 2000; // grams -- map 1's deposits hold 2kg
@@ -450,7 +453,7 @@
     },
     scrapRecycling: {
       name: "Nothing Wasted",
-      desc: "Copper sells for double.",
+      desc: "Copper sells for double -- fitting, for a game about not destroying matter.",
       cost: { copper: 2000 },
     },
     steadyHands: {
