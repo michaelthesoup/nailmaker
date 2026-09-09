@@ -209,8 +209,8 @@
      black/white balance bar make it feel like a different kind of
      system than everything else, since it is one. */
   #yinYangSection .panel-header {
-    background: #000;
-    color: #fff;
+    background: #fff;
+    color: #000;
     border-bottom: 1px solid #000;
   }
 
@@ -533,12 +533,12 @@
   // Balance is rewarded, never punished: being close to balanced grants
   // up to this much of a bonus to nail-maker speed and sell rate.
   // Drifting off-balance just forfeits the bonus, it's never a penalty.
-  var HARMONY_MAX_BONUS = 0.5; // up to +50% at perfect balance
+  var HARMONY_MAX_BONUS = 1; // up to +50% at perfect balance
   var YINYANG_STATUS_DEADZONE = 0.9; // harmony ratio above this reads as "BALANCED"
 
   // When both bars fill at once, you level up: a small permanent boost
   // to public demand, and both bars reset to zero to start the next lap.
-  var YINYANG_PD_BONUS_PER_LEVEL = 0.1; // +10% public demand per level, permanent
+  var YINYANG_PD_BONUS_PER_LEVEL = 0.5; // +10% public demand per level, permanent
 
   // ----------------------------------------------------------------
   // Map generation
