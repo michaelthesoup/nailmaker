@@ -288,7 +288,7 @@
           <button id="btnPricePlus">+</button>
         </div>
 
-        <div class="row"><span class="label">public demand (%):</span><span class="value" id="valDemand">0%</span></div>
+        <div class="row"><span class="label">public demand (%):</span><span class="value"><span id="valDemand">0%</span><span id="valDemandYYNote" style="color:#999; font-weight:normal; font-size:11px; margin-left:4px;"></span></span></div>
 
         <div class="row">
           <span class="label">marketing level:</span>
@@ -386,21 +386,6 @@
       </div>
     </div>
 
-    <div class="panel" id="yinYangSection" style="display:none;">
-      <div class="panel-header">yin &amp; yang</div>
-      <div class="panel-body">
-        <div class="row"><span class="label">yin (stillness):</span><span class="value" id="valYin">0.0</span></div>
-        <div class="row"><span class="label">yang (creation):</span><span class="value" id="valYang">0.0</span></div>
-        <div class="row"><span class="label">times balanced:</span><span class="value" id="valYinYangLevel">0</span></div>
-
-        <div class="yy-bar-wrap">
-          <div class="yy-bar-labels"><span>yin</span><span>yang</span></div>
-          <input type="range" id="sliderYinYang" min="0" max="100" step="1" value="50" tabindex="-1">
-        </div>
-        <div class="yy-status" id="valYinYangStatus">BALANCED</div>
-        <div class="hint" id="yinYangHint">stay near center -- crossing paths levels you up</div>
-      </div>
-    </div>
   </div>
 
   <div id="mapSection" style="display:none;">
@@ -413,6 +398,22 @@
     </div>
     <button id="btnNextMap">go to next map</button>
     <div class="hint">move: arrow keys / WASD &nbsp;&middot;&nbsp; i/c = iron/copper &nbsp; I/C = worked by breaker &nbsp; F = factory &nbsp; @ = you &nbsp; . = drained/empty</div>
+
+    <div class="panel" id="yinYangSection" style="margin-top:14px; display:none;">
+      <div class="panel-header">yin &amp; yang</div>
+      <div class="panel-body">
+        <div class="row"><span class="label">yin (stillness):</span><span class="value" id="valYin">0.0</span></div>
+        <div class="row"><span class="label">yang (creation):</span><span class="value" id="valYang">0.0</span></div>
+        <div class="row"><span class="label">harmony level:</span><span class="value" id="valYinYangLevel">0</span></div>
+
+        <div class="yy-bar-wrap">
+          <div class="yy-bar-labels"><span>yin</span><span>yang</span></div>
+          <input type="range" id="sliderYinYang" min="0" max="100" step="1" value="50" tabindex="-1">
+        </div>
+        <div class="yy-status" id="valYinYangStatus">BALANCED</div>
+        <div class="hint" id="yinYangHint">stay balanced for a production/sales bonus</div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -519,33 +520,25 @@
   // problem worth having a system about.
   var YINYANG_UNLOCK_GRAMS = 1000000; // 1 metric ton
 
-  // Yang ticks up in small fixed steps from acts of creation -- never
-  // continuously, so it stays readable no matter how large production
-  // has scaled by the time this unlocks.
-  var YANG_PER_NAILMAKER_BOUGHT = 1;
-  var YANG_PER_FACTORY_BUILT = 3;
-  var YANG_PER_BREAKER_BOUGHT = 1;
-  var YANG_PER_UPGRADE_BOUGHT = 5;
+  // Each real second, we compare how many grams you harvested (mined,
+  // whether by hand or by breaker) against how many grams you profited
+  // (iron turned into nails, copper sold) since the last check. Whichever
+  // side "won" that second ticks up by one -- stillness (yin) if you're
+  // pulling more out of the ground than you're using, creation (yang) if
+  // you're using more than you're pulling. A simple, discrete, always-
+  // readable +1/sec race between two 0-100 bars.
+  var YINYANG_TICK_AMOUNT = 1;
+  var YINYANG_MAX = 100;
 
-  // Yin ticks up continuously but log-scaled against idle material, so
-  // it grows gently even once stockpiles reach millions of grams.
-  var YIN_RATE_SCALE = 0.05; // per second, times log10(idle material)
+  // Balance is rewarded, never punished: being close to balanced grants
+  // up to this much of a bonus to nail-maker speed and sell rate.
+  // Drifting off-balance just forfeits the bonus, it's never a penalty.
+  var HARMONY_MAX_BONUS = 0.5; // up to +50% at perfect balance
+  var YINYANG_STATUS_DEADZONE = 0.9; // harmony ratio above this reads as "BALANCED"
 
-  // How strongly imbalance bites once yin or yang pulls ahead.
-  var YANG_COST_INFLATION_RATE = 0.02; // per point of (yang - yin) when yang leads
-  var YIN_DEMAND_PENALTY_RATE = 0.03;  // per point of (yin - yang) when yin leads
-
-  var YINYANG_STATUS_DEADZONE = 5; // |yang-yin| under this reads as "balanced"
-
-  // Yin & Yang aren't allowed to just sit at an exact calculated number --
-  // both get a smooth, mean-reverting wobble layered on top (an
-  // Ornstein-Uhlenbeck style wander: it reverts toward 0 over time but
-  // never sits perfectly still), plus a little extra kick whenever Yang
-  // gets a discrete bump from building something. Makes the meter feel
-  // alive instead of a spreadsheet number.
-  var YY_WOBBLE_REVERT_RATE = 0.4;  // how fast the wobble settles back toward 0, per second
-  var YY_WOBBLE_NOISE_SCALE = 0.3;  // how hard it gets nudged each second
-  var YY_WOBBLE_KICK_ON_YANG = 0.5; // extra one-off wobble kick when Yang jumps from an action
+  // When both bars fill at once, you level up: a small permanent boost
+  // to public demand, and both bars reset to zero to start the next lap.
+  var YINYANG_PD_BONUS_PER_LEVEL = 0.1; // +10% public demand per level, permanent
 
   // ----------------------------------------------------------------
   // Map generation
@@ -650,20 +643,17 @@
 
       autoNextMap: false,
 
-      // Yin & Yang. "Base" is the clean deterministic value; "wobble" is
-      // a small mean-reverting wander layered on top so the displayed
-      // number never sits at an exact, dead-still calculated value.
-      // state.yin / state.yang are the effective (base + wobble) values,
-      // recomputed every tick -- that's what everything else reads.
+      // Yin & Yang: two 0-100 bars. Each real second, whichever of
+      // "harvested" (mined) or "profited" (used) grams was higher that
+      // second ticks its bar up by one. state.harvestAccum/profitAccum
+      // collect grams as they happen; they're compared and cleared once
+      // per second alongside breaker/selling settlement in tick().
       unlockedYinYang: false,
-      yinBase: 0,
-      yangBase: 0,
-      yinWobble: 0,
-      yangWobble: 0,
       yin: 0,
       yang: 0,
       yinYangLevel: 0,
-      yinYangPrevSign: 0, // -1, 0, or 1 -- sign of (yang - yin) last tick, for crossing detection
+      harvestAccum: 0,
+      profitAccum: 0,
 
       // Production ticks every frame (fast, smooth climb). Selling and
       // breaker nail-consumption only settle once per real second, in a
@@ -725,56 +715,46 @@
   // Universal Paperclips' demand math, with the universe/project terms
   // (which we don't have) dropped since they're both just 1 for us:
   //   PD = (k^M) * (0.8 / price)
-  //   avg sold/sec = min(1, PD/100) * 7 * PD^1.15
-  // Then, if Yin is running ahead of Yang, demand gets throttled --
-  // a stockpile nobody's doing anything with stops mattering to buyers.
+  //   avg sold/sec = min(1, PD/100) * 7 * PD^EXP
+  // Below PD=100 the min() clamp makes this behave like
+  // 0.07 * PD^(1+EXP) -- bumping EXP makes small price/marketing changes
+  // swing sold/sec a lot harder at low demand (matching how snappy the
+  // real Paperclips curve feels), while nails are still sold at whatever
+  // price you set, so it stays every bit as profitable -- more sales at
+  // the same price is strictly more revenue, never less.
+  var DEMAND_CURVE_EXPONENT = 1.6; // was 1.15
+
   function publicDemandPD() {
     if (state.price <= 0) return 0;
-    return marketingMultiplier() * (0.8 / state.price);
+    return marketingMultiplier() * (0.8 / state.price) * yinYangPDMultiplier();
   }
 
   function avgNailsSoldPerSec() {
     var pd = publicDemandPD();
     if (pd <= 0) return 0;
-    var base = Math.min(1, pd / 100) * 7 * Math.pow(pd, 1.15);
-    return base * yinDemandPenaltyMultiplier();
-  }
-
-  // Yin & Yang: too much unchecked creation (Yang) makes everything
-  // pricier to build -- momentum without pause has a cost.
-  function yangCostInflationMultiplier() {
-    var excess = state.yang - state.yin;
-    if (excess <= 0) return 1;
-    return 1 + excess * YANG_COST_INFLATION_RATE;
-  }
-
-  // Too much stillness (Yin) makes the public stop caring how cheap
-  // your nails are -- a stockpile nobody moves eventually stops mattering.
-  function yinDemandPenaltyMultiplier() {
-    var excess = state.yin - state.yang;
-    if (excess <= 0) return 1;
-    return 1 / (1 + excess * YIN_DEMAND_PENALTY_RATE);
+    var base = Math.min(1, pd / 100) * 7 * Math.pow(pd, DEMAND_CURVE_EXPONENT);
+    return base * harmonyBonusMultiplier();
   }
 
   function priceForMarketing() {
-    return MARKETING_BASE_COST * Math.pow(MARKETING_GROWTH, state.marketingLevel) * yangCostInflationMultiplier();
+    return MARKETING_BASE_COST * Math.pow(MARKETING_GROWTH, state.marketingLevel);
   }
 
   function nailMakerCostEffective() {
-    return NAILMAKER_COST * yangCostInflationMultiplier();
+    return NAILMAKER_COST;
   }
 
   function factoryBuildCostEffective() {
-    return FACTORY_BUILD_COST_FUNDS * yangCostInflationMultiplier();
+    return FACTORY_BUILD_COST_FUNDS;
   }
 
   function breakerBuildCostEffective() {
-    return BREAKER_BUILD_COST_FUNDS * yangCostInflationMultiplier();
+    return BREAKER_BUILD_COST_FUNDS;
   }
 
   function nailMakerRateEffective() {
     if (!state.nailMakersOn) return 0;
-    return NAILMAKER_RATE * (owns("assemblyLine") ? 2 : 1);
+    return NAILMAKER_RATE * (owns("assemblyLine") ? 2 : 1) * harmonyBonusMultiplier();
   }
 
   function mineralYieldMultiplier() {
@@ -830,7 +810,6 @@
     if (cost.copper) state.copperAmt -= cost.copper;
     if (cost.iron) state.ironAmt -= cost.iron;
     state.upgradesOwned[key] = true;
-    addYang(YANG_PER_UPGRADE_BOUGHT);
     render();
   }
 
@@ -857,12 +836,6 @@
   // Yin & Yang helpers
   // ----------------------------------------------------------------
 
-  function addYang(amount) {
-    if (!state.unlockedYinYang) return;
-    state.yangBase += amount;
-    state.yangWobble += (Math.random() * 2 - 1) * YY_WOBBLE_KICK_ON_YANG;
-  }
-
   function checkYinYangUnlock() {
     if (state.unlockedYinYang) return;
     if (state.ironAmt >= YINYANG_UNLOCK_GRAMS && state.copperAmt >= YINYANG_UNLOCK_GRAMS) {
@@ -870,38 +843,53 @@
     }
   }
 
-  function updateYinYang(dt) {
-    if (!state.unlockedYinYang) return;
+  // How close yin and yang are, as a ratio (0 = one bar totally idle
+  // while the other has moved, 1 = dead even). Used purely for the
+  // balance bonus -- separate from the win condition, which needs both
+  // bars to actually reach 100, not just be proportionally close.
+  function harmonyRatio() {
+    if (!state.unlockedYinYang) return 0;
+    var lo = Math.min(state.yin, state.yang);
+    var hi = Math.max(state.yin, state.yang);
+    if (hi <= 0) return 0; // nothing has happened yet -- no bonus to give
+    return lo / hi;
+  }
 
-    var idleMaterial = state.ironAmt + state.copperAmt + state.unsold;
-    if (idleMaterial > 0) {
-      state.yinBase += YIN_RATE_SCALE * Math.log10(1 + idleMaterial) * dt;
+  // Balance is rewarded, not enforced -- a pure bonus on top of the
+  // baseline, so drifting out of balance only means missing out on the
+  // bonus, never an active penalty. Fully additive, fully idle-friendly.
+  function harmonyBonusMultiplier() {
+    return 1 + HARMONY_MAX_BONUS * harmonyRatio();
+  }
+
+  // Permanent public-demand multiplier from past yin/yang levels --
+  // this is the one effect of the system that never resets.
+  function yinYangPDMultiplier() {
+    return 1 + YINYANG_PD_BONUS_PER_LEVEL * state.yinYangLevel;
+  }
+
+  // Called once per real second (from the settle loop in tick()).
+  // Compares grams harvested vs. grams profited since the last check:
+  // whichever was ahead ticks its bar up by one, capped at 100. If both
+  // bars are sitting at 100 together, that's a level -- bump public
+  // demand permanently and reset both bars to start the next lap.
+  function settleYinYang() {
+    if (state.unlockedYinYang) {
+      if (state.harvestAccum > state.profitAccum) {
+        state.yin = Math.min(YINYANG_MAX, state.yin + YINYANG_TICK_AMOUNT);
+      } else if (state.profitAccum > state.harvestAccum) {
+        state.yang = Math.min(YINYANG_MAX, state.yang + YINYANG_TICK_AMOUNT);
+      }
+
+      if (state.yin >= YINYANG_MAX && state.yang >= YINYANG_MAX) {
+        state.yinYangLevel += 1;
+        state.yin = 0;
+        state.yang = 0;
+      }
     }
 
-    // Mean-reverting wander on both sides -- never a perfectly flat line.
-    state.yinWobble += (-state.yinWobble * YY_WOBBLE_REVERT_RATE + (Math.random() * 2 - 1) * YY_WOBBLE_NOISE_SCALE) * dt;
-    state.yangWobble += (-state.yangWobble * YY_WOBBLE_REVERT_RATE + (Math.random() * 2 - 1) * YY_WOBBLE_NOISE_SCALE) * dt;
-
-    state.yin = Math.max(0, state.yinBase + state.yinWobble);
-    state.yang = Math.max(0, state.yangBase + state.yangWobble);
-
-    var diff = state.yang - state.yin;
-    var sign = diff > 0.001 ? 1 : (diff < -0.001 ? -1 : 0);
-
-    if (state.yinYangPrevSign !== 0 && sign !== 0 && sign !== state.yinYangPrevSign) {
-      // They crossed paths since the last tick -- level up.
-      state.yinYangLevel += 1;
-      state.blueprints += 25 * state.yinYangLevel;
-      state.yinBase = 0;
-      state.yangBase = 0;
-      state.yinWobble = 0;
-      state.yangWobble = 0;
-      state.yin = 0;
-      state.yang = 0;
-      sign = 0;
-    }
-
-    state.yinYangPrevSign = sign;
+    state.harvestAccum = 0;
+    state.profitAccum = 0;
   }
 
   // ----------------------------------------------------------------
@@ -914,6 +902,7 @@
     unsold: document.getElementById("valUnsold"),
     price: document.getElementById("valPrice"),
     demand: document.getElementById("valDemand"),
+    demandYYNote: document.getElementById("valDemandYYNote"),
     marketing: document.getElementById("valMarketing"),
     iron: document.getElementById("valIron"),
     copper: document.getElementById("valCopper"),
@@ -970,6 +959,7 @@
     yinYangLevel: document.getElementById("valYinYangLevel"),
     sliderYinYang: document.getElementById("sliderYinYang"),
     yinYangStatus: document.getElementById("valYinYangStatus"),
+    yinYangHint: document.getElementById("yinYangHint"),
   };
 
   // ----------------------------------------------------------------
@@ -1045,6 +1035,11 @@
     el.unsold.textContent = fmtInt(state.unsold);
     el.price.textContent = fmtMoney(state.price);
     el.demand.textContent = Math.round(publicDemandPD()) + "%";
+    if (state.unlockedYinYang && state.yinYangLevel > 0) {
+      el.demandYYNote.textContent = "(+" + Math.round(YINYANG_PD_BONUS_PER_LEVEL * state.yinYangLevel * 100) + "% from balance)";
+    } else {
+      el.demandYYNote.textContent = "";
+    }
     el.marketing.textContent = state.marketingLevel;
     el.iron.textContent = fmtWeight(state.ironAmt);
     el.copper.textContent = fmtWeight(state.copperAmt);
@@ -1125,22 +1120,28 @@
     // ---- yin & yang ----
     checkYinYangUnlock();
     if (state.unlockedYinYang) {
-      el.yin.textContent = fmtDecimal(state.yin, 1);
-      el.yang.textContent = fmtDecimal(state.yang, 1);
+      el.yin.textContent = fmtInt(state.yin) + " / " + YINYANG_MAX;
+      el.yang.textContent = fmtInt(state.yang) + " / " + YINYANG_MAX;
       el.yinYangLevel.textContent = state.yinYangLevel;
 
       var diff = state.yang - state.yin;
-      var pos = Math.max(0, Math.min(100, 50 + diff));
+      var pos = Math.max(0, Math.min(100, 50 + diff / 2));
       el.sliderYinYang.value = pos;
       var yyGray = Math.round(255 * (pos / 100));
       el.sliderYinYang.style.accentColor = "rgb(" + yyGray + "," + yyGray + "," + yyGray + ")";
 
-      if (Math.abs(diff) < YINYANG_STATUS_DEADZONE) {
-        el.yinYangStatus.textContent = "BALANCED";
+      var ratio = harmonyRatio();
+      var bonusPct = Math.round(HARMONY_MAX_BONUS * ratio * 100);
+      if (ratio >= YINYANG_STATUS_DEADZONE) {
+        el.yinYangStatus.textContent = "BALANCED \u2014 +" + bonusPct + "% bonus";
       } else if (diff > 0) {
-        el.yinYangStatus.textContent = "YANG-HEAVY \u2014 costs rising";
+        el.yinYangStatus.textContent = "YANG-LEANING \u2014 +" + bonusPct + "% bonus";
       } else {
-        el.yinYangStatus.textContent = "YIN-HEAVY \u2014 demand fading";
+        el.yinYangStatus.textContent = "YIN-LEANING \u2014 +" + bonusPct + "% bonus";
+      }
+
+      if (el.yinYangHint) {
+        el.yinYangHint.textContent = "harvest more than you use to fill yin, use more than you harvest to fill yang \u2014 fill both to level up";
       }
     }
 
@@ -1240,6 +1241,7 @@
   el.btnSellCopper.addEventListener("click", function () {
     if (state.copperAmt > 0) {
       state.funds += state.copperAmt * copperSellPriceEffective();
+      state.profitAccum += state.copperAmt;
       state.copperAmt = 0;
       render();
     }
@@ -1252,7 +1254,6 @@
       state.funds -= cost;
       state.nailMakers += 1;
       state.nailMakerCooldownUntil = Date.now() + NAILMAKER_COOLDOWN_MS;
-      addYang(YANG_PER_NAILMAKER_BOUGHT);
       render();
     }
   });
@@ -1272,7 +1273,6 @@
     state.funds -= cost;
     state.breakers += 1;
     state.breakerCooldownUntil = Date.now() + BREAKER_COOLDOWN_MS;
-    addYang(YANG_PER_BREAKER_BOUGHT);
     render();
   });
   el.btnNextMap.addEventListener("click", goToNextMap);
@@ -1309,6 +1309,7 @@
     } else {
       state.copperAmt += amount;
     }
+    state.harvestAccum += amount;
 
     state.mineCooldownUntil = Date.now() + MINE_COOLDOWN_MS;
     render();
@@ -1323,7 +1324,6 @@
 
     state.funds -= cost;
     state.factories.push({ row: row, col: col, mapIndex: state.mapIndex, timer: 0 });
-    addYang(YANG_PER_FACTORY_BUILT);
     render();
   }
 
@@ -1417,8 +1417,9 @@
           case "breakers": state.breakers = Math.max(0, Math.floor(amount)); break;
           case "marketing": state.marketingLevel = Math.max(0, Math.floor(amount)); break;
           case "blueprints": state.blueprints = Math.max(0, Math.floor(amount)); break;
-          case "yin": state.yinBase = Math.max(0, amount); state.yinWobble = 0; state.yin = state.yinBase; break;
-          case "yang": state.yangBase = Math.max(0, amount); state.yangWobble = 0; state.yang = state.yangBase; break;
+          case "yin": state.yin = Math.max(0, Math.min(YINYANG_MAX, amount)); break;
+          case "yang": state.yang = Math.max(0, Math.min(YINYANG_MAX, amount)); break;
+          case "yylevel": state.yinYangLevel = Math.max(0, Math.floor(amount)); break;
         }
         render();
       }
@@ -1444,6 +1445,7 @@
     state.ironAmt -= actuallyMade * IRON_PER_NAIL;
     state.unsold += actuallyMade;
     state.totalNailsMade += actuallyMade;
+    state.profitAccum += actuallyMade * IRON_PER_NAIL;
     histPush(state.histNailsMade, actuallyMade);
 
     // Breakers and selling both settle once per real second, in a lump --
@@ -1480,6 +1482,7 @@
           if (amt <= 0) continue;
 
           tile.remaining -= amt;
+          state.harvestAccum += amt;
           if (tile.type === "i") {
             state.ironAmt += amt;
             histPush(state.histBreakerIron, amt);
@@ -1495,8 +1498,7 @@
       // like the original game -- not a continuous trickle. Steeply
       // super-linear once demand clears 100, which is what makes a
       // sharp price cut trigger a genuine mass sell-off the very next
-      // second instead of a gentle nudge. Also throttled by Yin, if
-      // your stockpile's run away from your creation.
+      // second instead of a gentle nudge.
       var soldPerSec = avgNailsSoldPerSec();
       if (soldPerSec > 0 && state.unsold > 0) {
         var sold = Math.min(state.unsold, soldPerSec);
@@ -1505,6 +1507,10 @@
         state.funds += revenue;
         histPush(state.histRevenue, revenue);
       }
+
+      // Yin & Yang: once per real second, whichever of harvesting or
+      // profiting won that second ticks its bar up.
+      settleYinYang();
     }
 
     // Factories: the yin-yang engine. Each completed cycle produces
@@ -1553,7 +1559,6 @@
     histPrune(state.histBreakerCopper);
 
     checkYinYangUnlock();
-    updateYinYang(dt);
 
     if (state.autoNextMap && !mapHasDeposits(state.mapTiles)) {
       goToNextMap(); // calls render() itself
