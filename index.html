@@ -401,13 +401,13 @@
   var FACTORY_COPPER_COST = 10;
   var FACTORY_BALANCE_DEFAULT = 50; // 0-100, nail-maker share
 
-  var BREAKER_BUILD_COST_FUNDS = 25;
+  var BREAKER_BUILD_COST_FUNDS = 50;
   var BREAKER_COOLDOWN_MS = 1000; // pacing between buys, like nail makers
   var BREAKER_INTAKE_RATE = 1; // nails/sec consumed per breaker, before upgrades
 
   var COPPER_SELL_PRICE = 0.05; // $ per gram, before upgrades
 
-  var MINE_IRON_AMOUNT = 50; // grams per mine action (manual or breaker), before upgrades
+  var MINE_IRON_AMOUNT = 10; // grams per mine action (manual or breaker), before upgrades
   var MINE_COPPER_AMOUNT = 10; // grams per mine action (manual or breaker), before upgrades
   var MINE_COOLDOWN_MS = 400;
   var DEPOSIT_CAPACITY_BASE = 2000; // grams -- map 1's deposits hold 2kg
@@ -453,7 +453,7 @@
     },
     scrapRecycling: {
       name: "Nothing Wasted",
-      desc: "Copper sells for double -- fitting, for a game about not destroying matter.",
+      desc: "Copper sells for double.",
       cost: { copper: 2000 },
     },
     steadyHands: {
