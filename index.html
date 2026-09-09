@@ -204,6 +204,45 @@
     font-weight: bold;
   }
 
+  /* Yin-Yang: the one place in the game deliberately allowed to break
+     from plain black-on-white -- a stark inverted header and a
+     black/white balance bar make it feel like a different kind of
+     system than everything else, since it is one. */
+  #yinYangSection .panel-header {
+    background: #000;
+    color: #fff;
+    border-bottom: 1px solid #000;
+  }
+
+  .yy-bar-wrap {
+    border: 1px solid #000;
+    padding: 6px 8px;
+    margin: 8px 0 4px 0;
+    background: linear-gradient(to right, #000 0%, #808080 50%, #fff 100%);
+  }
+
+  .yy-bar-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    margin-bottom: 4px;
+  }
+
+  .yy-bar-labels span:first-child { color: #fff; text-shadow: 0 0 2px #000; }
+  .yy-bar-labels span:last-child { color: #000; text-shadow: 0 0 2px #fff; }
+
+  #sliderYinYang {
+    width: 100%;
+    pointer-events: none; /* readout only, not a control */
+  }
+
+  .yy-status {
+    text-align: center;
+    font-weight: bold;
+    letter-spacing: 1px;
+    margin-top: 6px;
+  }
+
   /* Deliberately unlabeled and unobtrusive. */
   #cheatBox {
     position: fixed;
@@ -317,15 +356,6 @@
       </div>
     </div>
 
-    <div class="panel" id="upgradesSection" style="display:none;">
-      <div class="panel-header">upgrades</div>
-      <div class="panel-body">
-        <div class="row"><span class="label">blueprints:</span><span class="value" id="valBlueprints">0</span></div>
-        <div class="hint">earned by reaching a new map &middot; each upgrade below is bought once, permanently</div>
-        <div id="upgradesList"></div>
-      </div>
-    </div>
-
     <div class="panel" id="tuningSection" style="display:none;">
       <div class="panel-header">tuning</div>
       <div class="panel-body">
@@ -343,6 +373,32 @@
           <span class="label">nail breakers</span>
           <button id="btnToggleBreakers">ON</button>
         </div>
+      </div>
+    </div>
+
+    <div class="panel" id="upgradesSection" style="display:none;">
+      <div class="panel-header">upgrades</div>
+      <div class="panel-body">
+        <div class="row"><span class="label">blueprints:</span><span class="value" id="valBlueprints">0</span></div>
+        <div class="hint">earned by reaching a new map &middot; each upgrade below is bought once, permanently</div>
+        <div id="upgradesListTier1"></div>
+        <div id="upgradesListTier2" style="display:none;"></div>
+      </div>
+    </div>
+
+    <div class="panel" id="yinYangSection" style="display:none;">
+      <div class="panel-header">yin &amp; yang</div>
+      <div class="panel-body">
+        <div class="row"><span class="label">yin (stillness):</span><span class="value" id="valYin">0.0</span></div>
+        <div class="row"><span class="label">yang (creation):</span><span class="value" id="valYang">0.0</span></div>
+        <div class="row"><span class="label">times balanced:</span><span class="value" id="valYinYangLevel">0</span></div>
+
+        <div class="yy-bar-wrap">
+          <div class="yy-bar-labels"><span>yin</span><span>yang</span></div>
+          <input type="range" id="sliderYinYang" min="0" max="100" step="1" value="50" tabindex="-1">
+        </div>
+        <div class="yy-status" id="valYinYangStatus">BALANCED</div>
+        <div class="hint" id="yinYangHint">stay near center -- crossing paths levels you up</div>
       </div>
     </div>
   </div>
@@ -378,7 +434,7 @@
   //   PD = (1 + 0.1*U) * (1.1^M) * Bonuses * (0.8/P)
   //   avg sold/sec = min(1, PD/100) * 7 * PD^1.15
   // We have no universes or projects, so U=0 and Bonuses=1 both drop out,
-  // leaving PD = 1.1^M * (0.8/P), M = marketingLevel.
+  // leaving PD = k^M * (0.8/P), M = marketingLevel.
   var MARKETING_BASE_COST = 25;
   var MARKETING_GROWTH = 2.0;
   var MARKETING_LEVEL_MULT = 1.4;
@@ -386,7 +442,7 @@
   var IRON_BUY_COST = 1;
   var IRON_BUY_AMOUNT = 100; // grams, before upgrades
 
-  var NAILMAKER_COST = 5; // flat, forever
+  var NAILMAKER_COST = 5; // flat, forever (before yin-yang cost inflation)
   var NAILMAKER_COOLDOWN_MS = 1000;
   var NAILMAKER_RATE = 1; // nails/sec each maker produces, iron permitting, before upgrades
   var IRON_PER_NAIL = 1; // grams
@@ -427,47 +483,69 @@
   // Blueprints: earned by reaching a new map, spent on one-time upgrades.
   var BLUEPRINTS_BASE_PER_MAP = 10;
 
-  // One-time upgrades, Universal-Paperclips style: each bought exactly
-  // once, for a mix of funds / blueprints / material, with a permanent
-  // effect. `cost` only lists the currencies actually charged.
-  var UPGRADES = {
-    diamondBreakers: {
-      name: "Diamond-Tipped Breakers",
-      desc: "Nail breakers extract 10x more material per action.",
-      cost: { blueprints: 300 },
-    },
-    assemblyLine: {
-      name: "Just-In-Time Assembly",
-      desc: "Nail makers work twice as fast.",
-      cost: { blueprints: 300 },
-    },
-    bulkBuyer: {
-      name: "Wholesale Handshake",
-      desc: "Buying iron gives three times as much per purchase.",
-      cost: { funds: 750 },
-    },
-    prospecting: {
-      name: "Prospector's Sixth Sense",
-      desc: "+10 blueprints every time you reach a new map.",
-      cost: { blueprints: 200 },
-    },
-    scrapRecycling: {
-      name: "Nothing Wasted",
-      desc: "Copper sells for double.",
-      cost: { copper: 2000 },
-    },
-    steadyHands: {
-      name: "Steady Hands",
-      desc: "Factories complete cycles twice as fast.",
-      cost: { funds: 1000, blueprints: 150 },
-    },
+  // One-time upgrades, Universal-Paperclips style: bought exactly once,
+  // no description shown in the UI -- just a witty name and a cost.
+  // Tier 2 stays hidden until every Tier 1 upgrade is owned.
+  var UPGRADES_TIER1 = {
+    diamondBreakers: { name: "Diamond-Tipped Breakers", cost: { blueprints: 300 } },
+    assemblyLine:    { name: "Just-In-Time Assembly",   cost: { blueprints: 300 } },
+    bulkBuyer:       { name: "Wholesale Handshake",     cost: { funds: 750 } },
   };
+  var UPGRADES_TIER2 = {
+    prospecting:     { name: "Prospector's Sixth Sense", cost: { blueprints: 200 } },
+    scrapRecycling:  { name: "Nothing Wasted",            cost: { copper: 2000 } },
+    steadyHands:     { name: "Steady Hands",              cost: { funds: 1000, blueprints: 150 } },
+  };
+  var UPGRADES = Object.assign({}, UPGRADES_TIER1, UPGRADES_TIER2);
+
+  // Effects, kept separate from the display definitions above since
+  // they're referenced by key from the formulas further down:
+  //   diamondBreakers -> 10x mineral yield per action
+  //   assemblyLine    -> 2x nail maker speed
+  //   bulkBuyer       -> 3x iron per purchase
+  //   prospecting     -> +10 blueprints per new map
+  //   scrapRecycling  -> 2x copper sell price
+  //   steadyHands     -> 2x factory cycle speed
 
   // Progressive UI reveal, gated on lifetime nails made -- keeps the game
   // approachable for new players instead of dumping every system at once.
   var MAP_UNLOCK_NAILS = 100;
   var MACHINERY_UNLOCK_NAILS = 250; // also reveals the Upgrades panel
   var TUNING_UNLOCK_NAILS = 500;
+
+  // Yin & Yang: a late-game balance meter. Unlocks once you've ever held
+  // a full metric ton of BOTH iron and copper at the same time -- by
+  // then the economy is big enough that "surplus material" is a real
+  // problem worth having a system about.
+  var YINYANG_UNLOCK_GRAMS = 1000000; // 1 metric ton
+
+  // Yang ticks up in small fixed steps from acts of creation -- never
+  // continuously, so it stays readable no matter how large production
+  // has scaled by the time this unlocks.
+  var YANG_PER_NAILMAKER_BOUGHT = 1;
+  var YANG_PER_FACTORY_BUILT = 3;
+  var YANG_PER_BREAKER_BOUGHT = 1;
+  var YANG_PER_UPGRADE_BOUGHT = 5;
+
+  // Yin ticks up continuously but log-scaled against idle material, so
+  // it grows gently even once stockpiles reach millions of grams.
+  var YIN_RATE_SCALE = 0.05; // per second, times log10(idle material)
+
+  // How strongly imbalance bites once yin or yang pulls ahead.
+  var YANG_COST_INFLATION_RATE = 0.02; // per point of (yang - yin) when yang leads
+  var YIN_DEMAND_PENALTY_RATE = 0.03;  // per point of (yin - yang) when yin leads
+
+  var YINYANG_STATUS_DEADZONE = 5; // |yang-yin| under this reads as "balanced"
+
+  // Yin & Yang aren't allowed to just sit at an exact calculated number --
+  // both get a smooth, mean-reverting wobble layered on top (an
+  // Ornstein-Uhlenbeck style wander: it reverts toward 0 over time but
+  // never sits perfectly still), plus a little extra kick whenever Yang
+  // gets a discrete bump from building something. Makes the meter feel
+  // alive instead of a spreadsheet number.
+  var YY_WOBBLE_REVERT_RATE = 0.4;  // how fast the wobble settles back toward 0, per second
+  var YY_WOBBLE_NOISE_SCALE = 0.3;  // how hard it gets nudged each second
+  var YY_WOBBLE_KICK_ON_YANG = 0.5; // extra one-off wobble kick when Yang jumps from an action
 
   // ----------------------------------------------------------------
   // Map generation
@@ -572,6 +650,21 @@
 
       autoNextMap: false,
 
+      // Yin & Yang. "Base" is the clean deterministic value; "wobble" is
+      // a small mean-reverting wander layered on top so the displayed
+      // number never sits at an exact, dead-still calculated value.
+      // state.yin / state.yang are the effective (base + wobble) values,
+      // recomputed every tick -- that's what everything else reads.
+      unlockedYinYang: false,
+      yinBase: 0,
+      yangBase: 0,
+      yinWobble: 0,
+      yangWobble: 0,
+      yin: 0,
+      yang: 0,
+      yinYangLevel: 0,
+      yinYangPrevSign: 0, // -1, 0, or 1 -- sign of (yang - yin) last tick, for crossing detection
+
       // Production ticks every frame (fast, smooth climb). Selling and
       // breaker nail-consumption only settle once per real second, in a
       // lump -- like Universal Paperclips, so you can actually watch
@@ -631,8 +724,10 @@
 
   // Universal Paperclips' demand math, with the universe/project terms
   // (which we don't have) dropped since they're both just 1 for us:
-  //   PD = (1.1^M) * (0.8 / price)
+  //   PD = (k^M) * (0.8 / price)
   //   avg sold/sec = min(1, PD/100) * 7 * PD^1.15
+  // Then, if Yin is running ahead of Yang, demand gets throttled --
+  // a stockpile nobody's doing anything with stops mattering to buyers.
   function publicDemandPD() {
     if (state.price <= 0) return 0;
     return marketingMultiplier() * (0.8 / state.price);
@@ -641,11 +736,40 @@
   function avgNailsSoldPerSec() {
     var pd = publicDemandPD();
     if (pd <= 0) return 0;
-    return Math.min(1, pd / 100) * 7 * Math.pow(pd, 1.15);
+    var base = Math.min(1, pd / 100) * 7 * Math.pow(pd, 1.15);
+    return base * yinDemandPenaltyMultiplier();
+  }
+
+  // Yin & Yang: too much unchecked creation (Yang) makes everything
+  // pricier to build -- momentum without pause has a cost.
+  function yangCostInflationMultiplier() {
+    var excess = state.yang - state.yin;
+    if (excess <= 0) return 1;
+    return 1 + excess * YANG_COST_INFLATION_RATE;
+  }
+
+  // Too much stillness (Yin) makes the public stop caring how cheap
+  // your nails are -- a stockpile nobody moves eventually stops mattering.
+  function yinDemandPenaltyMultiplier() {
+    var excess = state.yin - state.yang;
+    if (excess <= 0) return 1;
+    return 1 / (1 + excess * YIN_DEMAND_PENALTY_RATE);
   }
 
   function priceForMarketing() {
-    return MARKETING_BASE_COST * Math.pow(MARKETING_GROWTH, state.marketingLevel);
+    return MARKETING_BASE_COST * Math.pow(MARKETING_GROWTH, state.marketingLevel) * yangCostInflationMultiplier();
+  }
+
+  function nailMakerCostEffective() {
+    return NAILMAKER_COST * yangCostInflationMultiplier();
+  }
+
+  function factoryBuildCostEffective() {
+    return FACTORY_BUILD_COST_FUNDS * yangCostInflationMultiplier();
+  }
+
+  function breakerBuildCostEffective() {
+    return BREAKER_BUILD_COST_FUNDS * yangCostInflationMultiplier();
   }
 
   function nailMakerRateEffective() {
@@ -682,9 +806,9 @@
     var cost = UPGRADES[key].cost;
     var parts = [];
     if (cost.funds) parts.push(fmtMoney(cost.funds));
-    if (cost.blueprints) parts.push(cost.blueprints + " blueprints");
-    if (cost.copper) parts.push(fmtWeight(cost.copper) + " copper");
-    if (cost.iron) parts.push(fmtWeight(cost.iron) + " iron");
+    if (cost.blueprints) parts.push(cost.blueprints + " bp");
+    if (cost.copper) parts.push(fmtWeight(cost.copper) + " Cu");
+    if (cost.iron) parts.push(fmtWeight(cost.iron) + " Fe");
     return parts.join(" + ");
   }
 
@@ -706,7 +830,16 @@
     if (cost.copper) state.copperAmt -= cost.copper;
     if (cost.iron) state.ironAmt -= cost.iron;
     state.upgradesOwned[key] = true;
+    addYang(YANG_PER_UPGRADE_BOUGHT);
     render();
+  }
+
+  function tier1FullyOwned() {
+    var keys = Object.keys(UPGRADES_TIER1);
+    for (var i = 0; i < keys.length; i++) {
+      if (!owns(keys[i])) return false;
+    }
+    return true;
   }
 
   // Only factories occupy tiles now, and only ones on the map you're
@@ -718,6 +851,57 @@
       if (f.mapIndex === state.mapIndex && f.row === row && f.col === col) return f;
     }
     return null;
+  }
+
+  // ----------------------------------------------------------------
+  // Yin & Yang helpers
+  // ----------------------------------------------------------------
+
+  function addYang(amount) {
+    if (!state.unlockedYinYang) return;
+    state.yangBase += amount;
+    state.yangWobble += (Math.random() * 2 - 1) * YY_WOBBLE_KICK_ON_YANG;
+  }
+
+  function checkYinYangUnlock() {
+    if (state.unlockedYinYang) return;
+    if (state.ironAmt >= YINYANG_UNLOCK_GRAMS && state.copperAmt >= YINYANG_UNLOCK_GRAMS) {
+      state.unlockedYinYang = true;
+    }
+  }
+
+  function updateYinYang(dt) {
+    if (!state.unlockedYinYang) return;
+
+    var idleMaterial = state.ironAmt + state.copperAmt + state.unsold;
+    if (idleMaterial > 0) {
+      state.yinBase += YIN_RATE_SCALE * Math.log10(1 + idleMaterial) * dt;
+    }
+
+    // Mean-reverting wander on both sides -- never a perfectly flat line.
+    state.yinWobble += (-state.yinWobble * YY_WOBBLE_REVERT_RATE + (Math.random() * 2 - 1) * YY_WOBBLE_NOISE_SCALE) * dt;
+    state.yangWobble += (-state.yangWobble * YY_WOBBLE_REVERT_RATE + (Math.random() * 2 - 1) * YY_WOBBLE_NOISE_SCALE) * dt;
+
+    state.yin = Math.max(0, state.yinBase + state.yinWobble);
+    state.yang = Math.max(0, state.yangBase + state.yangWobble);
+
+    var diff = state.yang - state.yin;
+    var sign = diff > 0.001 ? 1 : (diff < -0.001 ? -1 : 0);
+
+    if (state.yinYangPrevSign !== 0 && sign !== 0 && sign !== state.yinYangPrevSign) {
+      // They crossed paths since the last tick -- level up.
+      state.yinYangLevel += 1;
+      state.blueprints += 25 * state.yinYangLevel;
+      state.yinBase = 0;
+      state.yangBase = 0;
+      state.yinWobble = 0;
+      state.yangWobble = 0;
+      state.yin = 0;
+      state.yang = 0;
+      sign = 0;
+    }
+
+    state.yinYangPrevSign = sign;
   }
 
   // ----------------------------------------------------------------
@@ -768,7 +952,8 @@
     breakerCopperRate: document.getElementById("valBreakerCopperRate"),
 
     blueprints: document.getElementById("valBlueprints"),
-    upgradesList: document.getElementById("upgradesList"),
+    upgradesListTier1: document.getElementById("upgradesListTier1"),
+    upgradesListTier2: document.getElementById("upgradesListTier2"),
 
     btnToggleNailMakers: document.getElementById("btnToggleNailMakers"),
     btnToggleFactories: document.getElementById("btnToggleFactories"),
@@ -778,6 +963,13 @@
     upgradesSection: document.getElementById("upgradesSection"),
     tuningSection: document.getElementById("tuningSection"),
     mapSection: document.getElementById("mapSection"),
+
+    yinYangSection: document.getElementById("yinYangSection"),
+    yin: document.getElementById("valYin"),
+    yang: document.getElementById("valYang"),
+    yinYangLevel: document.getElementById("valYinYangLevel"),
+    sliderYinYang: document.getElementById("sliderYinYang"),
+    yinYangStatus: document.getElementById("valYinYangStatus"),
   };
 
   // ----------------------------------------------------------------
@@ -807,20 +999,18 @@
   }
 
   // ----------------------------------------------------------------
-  // Upgrades list -- built once, since the set of upgrades is static.
-  // Each render() just flips disabled/owned state on the buttons below.
+  // Upgrades lists -- built once per tier container, since the set of
+  // upgrades in each tier is static. Each render() just flips
+  // disabled/owned state on the buttons below.
   // ----------------------------------------------------------------
 
   var upgradeButtons = {}; // key -> button element
 
-  function buildUpgradesList() {
-    var keys = Object.keys(UPGRADES);
+  function buildUpgradesList(defs, container) {
+    var keys = Object.keys(defs);
     for (var i = 0; i < keys.length; i++) {
       var key = keys[i];
-      var def = UPGRADES[key];
-
-      var block = document.createElement("div");
-      block.className = "upgrade-block";
+      var def = defs[key];
 
       var row = document.createElement("div");
       row.className = "row";
@@ -837,19 +1027,13 @@
 
       row.appendChild(nameSpan);
       row.appendChild(btn);
-
-      var descDiv = document.createElement("div");
-      descDiv.className = "hint";
-      descDiv.textContent = def.desc;
-
-      block.appendChild(row);
-      block.appendChild(descDiv);
-      el.upgradesList.appendChild(block);
+      container.appendChild(row);
 
       upgradeButtons[key] = btn;
     }
   }
-  buildUpgradesList();
+  buildUpgradesList(UPGRADES_TIER1, el.upgradesListTier1);
+  buildUpgradesList(UPGRADES_TIER2, el.upgradesListTier2);
 
   // ----------------------------------------------------------------
   // Render
@@ -872,7 +1056,7 @@
     el.mapIndexLabel.textContent = state.mapIndex;
 
     // ---- machinery: factories ----
-    el.factoryBuildCost.textContent = fmtMoney(FACTORY_BUILD_COST_FUNDS);
+    el.factoryBuildCost.textContent = fmtMoney(factoryBuildCostEffective());
     el.factoryIronRate.textContent = fmtWeight(histRatePerSec(state.histFactoryIron));
     el.factoryCopperRate.textContent = fmtWeight(histRatePerSec(state.histFactoryCopper));
     el.factoryOutputRate.textContent = fmtDecimal(histRatePerSec(state.histFactoryOutput) * 60);
@@ -882,7 +1066,7 @@
     el.sliderFactoryBalance.style.accentColor = "rgb(" + gray + "," + gray + "," + gray + ")";
 
     // ---- machinery: nail breakers ----
-    el.breakerBuildCost.textContent = fmtMoney(BREAKER_BUILD_COST_FUNDS);
+    el.breakerBuildCost.textContent = fmtMoney(breakerBuildCostEffective());
     el.breakerNailsRate.textContent = fmtDecimal(histRatePerSec(state.histBreakerNails));
     el.breakerIronRate.textContent = fmtWeight(histRatePerSec(state.histBreakerIron));
     el.breakerCopperRate.textContent = fmtWeight(histRatePerSec(state.histBreakerCopper));
@@ -892,9 +1076,9 @@
       var bkSecs = Math.max(0, (state.breakerCooldownUntil - Date.now()) / 1000);
       el.btnBuyBreaker.textContent = "wait " + bkSecs.toFixed(1) + "s";
     } else {
-      el.btnBuyBreaker.textContent = "buy (" + fmtMoney(BREAKER_BUILD_COST_FUNDS) + ")";
+      el.btnBuyBreaker.textContent = "buy (" + fmtMoney(breakerBuildCostEffective()) + ")";
     }
-    el.btnBuyBreaker.disabled = !breakerReady || state.funds < BREAKER_BUILD_COST_FUNDS;
+    el.btnBuyBreaker.disabled = !breakerReady || state.funds < breakerBuildCostEffective();
 
     el.btnBuyMarketing.textContent = "buy (" + fmtMoney(priceForMarketing()) + ")";
     el.btnBuyMarketing.disabled = state.funds < priceForMarketing();
@@ -910,9 +1094,9 @@
       var secsLeft = Math.max(0, (state.nailMakerCooldownUntil - Date.now()) / 1000);
       el.btnBuyNailMaker.textContent = "wait " + secsLeft.toFixed(1) + "s";
     } else {
-      el.btnBuyNailMaker.textContent = "buy (" + fmtMoney(NAILMAKER_COST) + ")";
+      el.btnBuyNailMaker.textContent = "buy (" + fmtMoney(nailMakerCostEffective()) + ")";
     }
-    el.btnBuyNailMaker.disabled = !nailMakerReady || state.funds < NAILMAKER_COST;
+    el.btnBuyNailMaker.disabled = !nailMakerReady || state.funds < nailMakerCostEffective();
 
     el.btnMakeNail.disabled = state.ironAmt < IRON_PER_NAIL;
     el.btnPriceMinus.disabled = state.price <= PRICE_MIN;
@@ -936,6 +1120,29 @@
         btn.disabled = !canAffordUpgrade(key);
       }
     }
+    el.upgradesListTier2.style.display = tier1FullyOwned() ? "" : "none";
+
+    // ---- yin & yang ----
+    checkYinYangUnlock();
+    if (state.unlockedYinYang) {
+      el.yin.textContent = fmtDecimal(state.yin, 1);
+      el.yang.textContent = fmtDecimal(state.yang, 1);
+      el.yinYangLevel.textContent = state.yinYangLevel;
+
+      var diff = state.yang - state.yin;
+      var pos = Math.max(0, Math.min(100, 50 + diff));
+      el.sliderYinYang.value = pos;
+      var yyGray = Math.round(255 * (pos / 100));
+      el.sliderYinYang.style.accentColor = "rgb(" + yyGray + "," + yyGray + "," + yyGray + ")";
+
+      if (Math.abs(diff) < YINYANG_STATUS_DEADZONE) {
+        el.yinYangStatus.textContent = "BALANCED";
+      } else if (diff > 0) {
+        el.yinYangStatus.textContent = "YANG-HEAVY \u2014 costs rising";
+      } else {
+        el.yinYangStatus.textContent = "YIN-HEAVY \u2014 demand fading";
+      }
+    }
 
     // ---- progressive reveal: unlock once, never re-hide ----
     if (!state.unlockedMap && state.totalNailsMade >= MAP_UNLOCK_NAILS) state.unlockedMap = true;
@@ -946,6 +1153,7 @@
     el.machinerySection.style.display = state.unlockedMachinery ? "" : "none";
     el.upgradesSection.style.display = state.unlockedMachinery ? "" : "none";
     el.tuningSection.style.display = state.unlockedTuning ? "" : "none";
+    el.yinYangSection.style.display = state.unlockedYinYang ? "" : "none";
 
     renderMap();
   }
@@ -983,7 +1191,7 @@
 
     el.btnMine.disabled = onStructure || currentTile.remaining <= 0 || !mineReady;
     el.btnBuildFactory.disabled = onStructure || currentTile.type !== "." ||
-      state.funds < FACTORY_BUILD_COST_FUNDS;
+      state.funds < factoryBuildCostEffective();
 
     el.btnNextMap.style.display = mapHasDeposits(state.mapTiles) ? "none" : "block";
     el.btnAutoNextMap.textContent = "auto-next map: " + (state.autoNextMap ? "ON" : "OFF");
@@ -1039,10 +1247,12 @@
 
   el.btnBuyNailMaker.addEventListener("click", function () {
     if (Date.now() < state.nailMakerCooldownUntil) return;
-    if (state.funds >= NAILMAKER_COST) {
-      state.funds -= NAILMAKER_COST;
+    var cost = nailMakerCostEffective();
+    if (state.funds >= cost) {
+      state.funds -= cost;
       state.nailMakers += 1;
       state.nailMakerCooldownUntil = Date.now() + NAILMAKER_COOLDOWN_MS;
+      addYang(YANG_PER_NAILMAKER_BOUGHT);
       render();
     }
   });
@@ -1056,11 +1266,13 @@
   el.btnBuildFactory.addEventListener("click", buildFactoryHere);
   el.btnBuyBreaker.addEventListener("click", function () {
     if (Date.now() < state.breakerCooldownUntil) return;
-    if (state.funds < BREAKER_BUILD_COST_FUNDS) return;
+    var cost = breakerBuildCostEffective();
+    if (state.funds < cost) return;
 
-    state.funds -= BREAKER_BUILD_COST_FUNDS;
+    state.funds -= cost;
     state.breakers += 1;
     state.breakerCooldownUntil = Date.now() + BREAKER_COOLDOWN_MS;
+    addYang(YANG_PER_BREAKER_BOUGHT);
     render();
   });
   el.btnNextMap.addEventListener("click", goToNextMap);
@@ -1106,10 +1318,12 @@
     var row = state.playerRow, col = state.playerCol;
     var tile = state.mapTiles[row][col];
     if (tile.type !== "." || structureAt(row, col)) return;
-    if (state.funds < FACTORY_BUILD_COST_FUNDS) return;
+    var cost = factoryBuildCostEffective();
+    if (state.funds < cost) return;
 
-    state.funds -= FACTORY_BUILD_COST_FUNDS;
+    state.funds -= cost;
     state.factories.push({ row: row, col: col, mapIndex: state.mapIndex, timer: 0 });
+    addYang(YANG_PER_FACTORY_BUILT);
     render();
   }
 
@@ -1177,7 +1391,7 @@
   // ----------------------------------------------------------------
   // Cheat box -- deliberately blends into the corner, no label.
   // Type "<key> <amount>" and hit Enter.
-  // Keys: funds, unsold, iron, copper, nailmakers, factories, breakers, marketing, blueprints
+  // Keys: funds, unsold, iron, copper, nailmakers, factories, breakers, marketing, blueprints, yin, yang
   // ----------------------------------------------------------------
 
   el.cheatBox.addEventListener("keydown", function (e) {
@@ -1203,6 +1417,8 @@
           case "breakers": state.breakers = Math.max(0, Math.floor(amount)); break;
           case "marketing": state.marketingLevel = Math.max(0, Math.floor(amount)); break;
           case "blueprints": state.blueprints = Math.max(0, Math.floor(amount)); break;
+          case "yin": state.yinBase = Math.max(0, amount); state.yinWobble = 0; state.yin = state.yinBase; break;
+          case "yang": state.yangBase = Math.max(0, amount); state.yangWobble = 0; state.yang = state.yangBase; break;
         }
         render();
       }
@@ -1279,7 +1495,8 @@
       // like the original game -- not a continuous trickle. Steeply
       // super-linear once demand clears 100, which is what makes a
       // sharp price cut trigger a genuine mass sell-off the very next
-      // second instead of a gentle nudge.
+      // second instead of a gentle nudge. Also throttled by Yin, if
+      // your stockpile's run away from your creation.
       var soldPerSec = avgNailsSoldPerSec();
       if (soldPerSec > 0 && state.unsold > 0) {
         var sold = Math.min(state.unsold, soldPerSec);
@@ -1334,6 +1551,9 @@
     histPrune(state.histBreakerNails);
     histPrune(state.histBreakerIron);
     histPrune(state.histBreakerCopper);
+
+    checkYinYangUnlock();
+    updateYinYang(dt);
 
     if (state.autoNextMap && !mapHasDeposits(state.mapTiles)) {
       goToNextMap(); // calls render() itself
