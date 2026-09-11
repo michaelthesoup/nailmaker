@@ -1,0 +1,1448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+
+<link rel="icon" type="image/png" href="./nail.png">
+ 
+<title>Nail Maker</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    background: #ffffff;
+    color: #000000;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 13px;
+    margin: 20px;
+  }
+
+  h1 {
+    font-size: 16px;
+    font-weight: bold;
+    margin: 0 0 12px 0;
+  }
+
+  .columns {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 3px 0;
+  }
+
+  .label { color: #000; }
+  .value { color: #000; font-variant-numeric: tabular-nums; }
+
+  .panel {
+    border: 1px solid #000;
+    background: #fff;
+    margin-bottom: 14px;
+    width: 320px;
+  }
+
+  .panel-header {
+    border-bottom: 1px solid #000;
+    padding: 4px 8px;
+    background: #fff;
+    font-weight: bold;
+  }
+
+  .panel-body {
+    padding: 8px;
+  }
+
+  button {
+    background: #fff;
+    border: 1px solid #000;
+    color: #000;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 12px;
+    padding: 4px 8px;
+    cursor: pointer;
+  }
+
+  button:hover:not(:disabled) {
+    background: #f2f2f2;
+  }
+
+  button:disabled {
+    color: #999;
+    border-color: #999;
+    cursor: default;
+  }
+
+  .row button {
+    width: 140px;
+    flex-shrink: 0;
+    margin-left: 10px;
+  }
+
+  .stepper {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 4px 0;
+  }
+
+  .stepper button {
+    width: 24px;
+    padding: 2px 0;
+    margin: 0;
+  }
+
+  .stepper .value {
+    width: 70px;
+    text-align: center;
+    border: 1px solid #000;
+    padding: 2px 0;
+  }
+
+  .top-buttons {
+    display: flex;
+    gap: 6px;
+    width: 320px;
+    margin-bottom: 14px;
+  }
+
+  .top-buttons button {
+    flex: 1;
+    margin: 0;
+  }
+
+  #mapDisplay {
+    font-family: "Courier New", Courier, monospace;
+    font-size: 15px;
+    line-height: 1.15;
+    letter-spacing: 2px;
+    white-space: pre;
+    border: 1px solid #000;
+    padding: 8px;
+    background: #fff;
+    width: fit-content;
+  }
+
+  .map-controls {
+    display: flex;
+    gap: 6px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+  }
+
+  .map-controls button {
+    flex: 1;
+    min-width: 120px;
+  }
+
+  .hint {
+    color: #555;
+    font-size: 11px;
+    margin-top: 6px;
+  }
+
+  .machinery-block {
+    border-top: 1px solid #ddd;
+    margin-top: 8px;
+    padding-top: 8px;
+  }
+
+  .machinery-block .hint {
+    margin-top: 4px;
+    margin-bottom: 4px;
+  }
+
+  #btnNextMap {
+    width: 100%;
+    margin-top: 8px;
+    display: none;
+  }
+
+  /* Balance slider: white = all nail makers, black = all nail breakers,
+     gray in between. The slider's own accent color shifts to match via
+     JS, so its color literally shows you the current balance. */
+  .balance-slider-wrap {
+    border: 1px solid #000;
+    padding: 6px 8px;
+    margin: 6px 0;
+  }
+
+  .balance-slider-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: #555;
+    margin-bottom: 4px;
+  }
+
+  #sliderFactoryBalance {
+    width: 100%;
+  }
+
+  .toggle-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0;
+  }
+
+  .toggle-row button {
+    width: 70px;
+  }
+
+  .map-health {
+    margin-top: 8px;
+    width: 100%;
+  }
+
+  .map-health-text {
+    font-variant-numeric: tabular-nums;
+    margin-bottom: 4px;
+  }
+
+  .map-readout {
+    width: fit-content;
+  }
+
+  .map-health-track {
+    border: 1px solid #000;
+    height: 12px;
+    background: #fff;
+    overflow: hidden;
+  }
+
+  .map-health-fill {
+    height: 100%;
+    background: #000;
+    width: 0%;
+  }
+
+  /* Yin-Yang: the one place in the game deliberately allowed to break
+     from plain black-on-white -- a stark inverted header and a
+     black/white balance bar make it feel like a different kind of
+     system than everything else, since it is one. */
+  #yinYangSection .panel-header {
+    background: #fff;
+    color: #000;
+    border-bottom: 1px solid #000;
+  }
+
+  .yy-bar-wrap {
+    border: 1px solid #000;
+    padding: 6px 8px;
+    margin: 8px 0 4px 0;
+    background: linear-gradient(to right, #000 0%, #808080 50%, #fff 100%);
+  }
+
+  .yy-bar-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    margin-bottom: 4px;
+  }
+
+  .yy-bar-labels span:first-child { color: #fff; text-shadow: 0 0 2px #000; }
+  .yy-bar-labels span:last-child { color: #000; text-shadow: 0 0 2px #fff; }
+
+  #sliderYinYang {
+    width: 100%;
+    pointer-events: none; /* readout only, not a control */
+  }
+
+  .yy-status {
+    text-align: center;
+    font-weight: bold;
+    letter-spacing: 1px;
+    margin-top: 6px;
+  }
+
+  /* Deliberately unlabeled and unobtrusive. */
+  #cheatBox {
+    position: fixed;
+    bottom: 6px;
+    right: 6px;
+    width: 90px;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 10px;
+    border: 1px solid #ddd;
+    color: #ccc;
+    padding: 2px 4px;
+    background: #fff;
+    opacity: 0.35;
+  }
+
+  #cheatBox:focus {
+    color: #000;
+    border-color: #000;
+    opacity: 1;
+  }
+</style>
+</head>
+<body>
+
+<h1 id="titleCount">nails: 0</h1>
+
+<div class="top-buttons">
+  <button id="btnSave">save</button>
+  <button id="btnLoad">load</button>
+</div>
+
+<div class="columns">
+  <div>
+    <div class="panel">
+      <div class="panel-body">
+        <div class="row"><span class="label">available funds:</span><span class="value" id="valFunds">$0.00</span></div>
+        <div class="row"><span class="label">unsold inventory:</span><span class="value" id="valUnsold">0</span></div>
+
+        <div class="stepper">
+          <span class="label" style="margin-right:auto;">price ($):</span>
+          <button id="btnPriceMinus">-</button>
+          <span class="value" id="valPrice">$0.00</span>
+          <button id="btnPricePlus">+</button>
+        </div>
+
+        <div class="row"><span class="label">public demand (%):</span><span class="value"><span id="valDemand">0%</span><span id="valDemandYYNote" style="color:#999; font-weight:normal; font-size:11px; margin-left:4px;"></span></span></div>
+
+        <div class="row">
+          <span class="label">marketing level:</span>
+          <span class="value" id="valMarketing">0</span>
+          <button id="btnBuyMarketing">buy marketing</button>
+        </div>
+        <div class="hint">each level multiplies public demand &times;1.4</div>
+
+        <div class="row">
+          <span class="label">iron:</span>
+          <span class="value" id="valIron">0 g</span>
+          <button id="btnBuyIron">buy iron</button>
+        </div>
+
+        <div class="row"><span class="label">avg revenue/s:</span><span class="value" id="valAvgRev">$0.00</span></div>
+        <div class="row"><span class="label">avg nails/s:</span><span class="value" id="valAvgNails">0.0</span></div>
+      </div>
+    </div>
+
+    <button id="btnMakeNail" style="width:320px;">make nail</button>
+
+    <div class="panel" id="machinerySection" style="margin-top:14px; display:none;">
+      <div class="panel-header">machinery</div>
+      <div class="panel-body">
+
+        <div class="row">
+          <span class="label">copper:</span>
+          <span class="value" id="valCopper">0 g</span>
+          <button id="btnSellCopper">sell copper</button>
+        </div>
+
+        <div class="machinery-block">
+          <div class="row">
+            <span class="label">nail makers:</span>
+            <span class="value" id="valNailMakers">0</span>
+            <button id="btnBuyNailMaker">buy nail maker</button>
+          </div>
+
+          <div class="row">
+            <span class="label">nail breakers:</span>
+            <span class="value" id="valBreakers">0</span>
+            <button id="btnBuyBreaker">buy breaker</button>
+          </div>
+          <div class="hint">
+            consuming: <span id="valBreakerNailsRate">0.0</span> nails/s &middot;
+            producing: <span id="valBreakerIronRate">0 g</span> iron/s, <span id="valBreakerCopperRate">0 g</span> copper/s
+          </div>
+        </div>
+
+        <div class="machinery-block">
+          <div class="row">
+            <span class="label">factories:</span>
+            <span class="value" id="valFactories">0</span>
+            <button id="btnBuyFactory">buy factory</button>
+          </div>
+
+          <div class="balance-slider-wrap">
+            <div class="balance-slider-labels">
+              <span>&#9679; nail breakers</span>
+              <span>nail makers &#9675;</span>
+            </div>
+            <input type="range" id="sliderFactoryBalance" min="0" max="100" step="5" value="50">
+          </div>
+
+          <div class="hint">
+            consuming: <span id="valFactoryIronRate">0 g</span> iron/s, <span id="valFactoryCopperRate">0 g</span> copper/s &middot;
+            producing: <span id="valFactoryOutputRate">0.0</span> units/min
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="panel" id="tuningSection" style="display:none;">
+      <div class="panel-header">tuning</div>
+      <div class="panel-body">
+        <div class="hint">simple on/off -- turn a system off to stop it consuming or producing entirely.</div>
+
+        <div class="toggle-row">
+          <span class="label">nail makers</span>
+          <button id="btnToggleNailMakers">ON</button>
+        </div>
+        <div class="toggle-row">
+          <span class="label">factories</span>
+          <button id="btnToggleFactories">ON</button>
+        </div>
+        <div class="toggle-row">
+          <span class="label">nail breakers</span>
+          <button id="btnToggleBreakers">ON</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div id="mapSection" style="display:none;">
+    <div class="map-readout">
+    <div class="panel-header" style="width:100%; border:1px solid #000; border-bottom:none;">extraction &mdash; map <span id="mapIndexLabel">1</span></div>
+    <div id="mapDisplay"></div>
+    <div class="map-health">
+      <div class="map-health-text" id="mapHealthText">0 / 0</div>
+      <div class="map-health-track"><div class="map-health-fill" id="mapHealthFill"></div></div>
+    </div>
+    </div>
+    <div class="map-controls">
+      <button id="btnAutoNextMap">auto-next map: OFF</button>
+    </div>
+    <button id="btnNextMap">go to next map</button>
+    <div class="hint">i/c = iron/copper &nbsp; I/C = worked by breaker &nbsp; . = drained/empty</div>
+
+    <div class="panel" id="yinYangSection" style="margin-top:14px; display:none;">
+      <div class="panel-header">yin &amp; yang</div>
+      <div class="panel-body">
+        <div class="row"><span class="label">yin (stillness):</span><span class="value" id="valYin">0.0</span></div>
+        <div class="row"><span class="label">yang (creation):</span><span class="value" id="valYang">0.0</span></div>
+        <div class="row"><span class="label">harmony level:</span><span class="value" id="valYinYangLevel">0</span></div>
+
+        <div class="yy-bar-wrap">
+          <div class="yy-bar-labels"><span>yin</span><span>yang</span></div>
+          <input type="range" id="sliderYinYang" min="0" max="100" step="1" value="50" tabindex="-1">
+        </div>
+        <div class="yy-status" id="valYinYangStatus">BALANCED</div>
+        <div class="hint" id="yinYangHint">stay balanced for a production/sales bonus</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<input type="text" id="cheatBox" spellcheck="false">
+
+<script>
+(function () {
+  "use strict";
+
+  // ----------------------------------------------------------------
+  // Tunables
+  // ----------------------------------------------------------------
+
+  var PRICE_MIN = 0.01;
+  var PRICE_STEP = 0.01;
+  var PRICE_MAX = 0.08; // only used for the price stepper's rough feel, not the demand math
+
+  // Marketing, Universal-Paperclips style. Their formula is:
+  //   PD = (1 + 0.1*U) * (1.1^M) * Bonuses * (0.8/P)
+  //   avg sold/sec = min(1, PD/100) * 7 * PD^1.15
+  // We have no universes or projects, so U=0 and Bonuses=1 both drop out,
+  // leaving PD = k^M * (0.8/P), M = marketingLevel.
+  var MARKETING_BASE_COST = 25;
+  var MARKETING_GROWTH = 2.0;
+  var MARKETING_LEVEL_MULT = 1.4;
+
+  var IRON_BUY_COST = 1;
+  var IRON_BUY_AMOUNT = 100; // grams
+
+  var NAILMAKER_COST = 5; // flat, forever
+  var NAILMAKER_COOLDOWN_MS = 1000;
+  var NAILMAKER_RATE = 1; // nails/sec each maker produces, iron permitting
+  var IRON_PER_NAIL = 1; // grams
+
+  // Factories are the yin-yang engine: each completed cycle produces
+  // either one nail maker or one nail breaker, decided by the balance
+  // slider (0 = all breakers/black, 100 = all makers/white). The cost
+  // per cycle is the same no matter which comes out the other end.
+  var FACTORY_BUILD_COST_FUNDS = 100;
+  var FACTORY_COOLDOWN_MS = 5000;
+  var FACTORY_PERIOD_SEC = 1;
+  var FACTORY_IRON_COST = 100;
+  var FACTORY_COPPER_COST = 10;
+  var FACTORY_BALANCE_DEFAULT = 50; // 0-100, nail-maker share
+
+  var BREAKER_BUILD_COST_FUNDS = 50;
+  var BREAKER_COOLDOWN_MS = 1000; // pacing between buys, like nail makers
+  var BREAKER_INTAKE_RATE = 1; // nails/sec consumed per breaker
+
+  var COPPER_SELL_PRICE = 0.05; // $ per gram
+
+  // One nail hits every remaining deposit once. Yield is 1g per deposit,
+  // so 10 iron + 5 copper deposits returns 10g iron and 5g copper.
+  var MINE_IRON_AMOUNT = 1;
+  var MINE_COPPER_AMOUNT = 1;
+  var DEPOSIT_CAPACITY_BASE = 2000; // grams -- map 1's deposits hold 2kg
+  var DEPOSIT_CAPACITY_GROWTH = 1.2; // each map's capacity is × this the last
+
+  // How many seconds of history the "avg/s" and machinery-analytics
+  // readouts are averaged over. Bigger = steadier, more readable
+  // numbers; smaller = more responsive to what's happening right now.
+  var STATS_WINDOW_SEC = 5;
+
+  var TICK_MS = 100;
+
+  var MAP_ROWS = 10;
+  var MAP_COLS = 21;
+  var DEPOSITS_PER_MAP = 15;
+
+  // Progressive UI reveal. Map stays hidden until the first breaker
+  // is bought -- before that, there's nothing on it for anything to do.
+  var MACHINERY_UNLOCK_NAILS = 250;
+  var TUNING_UNLOCK_NAILS = 250;
+
+  // Yin & Yang: a late-game balance meter. Unlocks once you've ever held
+  // a full metric ton of BOTH iron and copper at the same time -- by
+  // then the economy is big enough that "surplus material" is a real
+  // problem worth having a system about.
+  var YINYANG_UNLOCK_GRAMS = 1000000; // 1 metric ton
+
+  // Each real second, we compare how many grams you harvested (mined,
+  // whether by hand or by breaker) against how many grams you profited
+  // (iron turned into nails, copper sold) since the last check. Whichever
+  // side "won" that second ticks up by one -- stillness (yin) if you're
+  // pulling more out of the ground than you're using, creation (yang) if
+  // you're using more than you're pulling. A simple, discrete, always-
+  // readable +1/sec race between two 0-100 bars.
+  var YINYANG_TICK_AMOUNT = 1;
+  var YINYANG_MAX = 100;
+
+  // Balance is rewarded, never punished: being close to balanced grants
+  // up to this much of a bonus to nail-maker speed and sell rate.
+  // Drifting off-balance just forfeits the bonus, it's never a penalty.
+  var HARMONY_MAX_BONUS = 1; // up to +50% at perfect balance
+  var YINYANG_STATUS_DEADZONE = 0.9; // harmony ratio above this reads as "BALANCED"
+
+  // When both bars fill at once, you level up: a small permanent boost
+  // to public demand, and both bars reset to zero to start the next lap.
+  var YINYANG_PD_BONUS_PER_LEVEL = 0.5; // +10% public demand per level, permanent
+
+  // ----------------------------------------------------------------
+  // Map generation
+  // ----------------------------------------------------------------
+
+  function mulberry32(seed) {
+    return function () {
+      seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+      var t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  function depositCapacityForMap(mapIndex) {
+    return DEPOSIT_CAPACITY_BASE * Math.pow(DEPOSIT_CAPACITY_GROWTH, mapIndex - 1);
+  }
+
+  function generateMapTiles(mapIndex) {
+    var rand = mulberry32(mapIndex * 7919 + 13);
+    var capacity = depositCapacityForMap(mapIndex);
+    var tiles = [];
+    for (var r = 0; r < MAP_ROWS; r++) {
+      var row = [];
+      for (var c = 0; c < MAP_COLS; c++) {
+        row.push({ type: ".", remaining: 0 });
+      }
+      tiles.push(row);
+    }
+
+    var placed = 0;
+    var attempts = 0;
+    while (placed < DEPOSITS_PER_MAP && attempts < 1000) {
+      attempts++;
+      var r = Math.floor(rand() * MAP_ROWS);
+      var c = Math.floor(rand() * MAP_COLS);
+      if (tiles[r][c].type !== ".") continue;
+      var type = rand() < 0.5 ? "i" : "c";
+      tiles[r][c] = { type: type, remaining: capacity };
+      placed++;
+    }
+    return tiles;
+  }
+
+  function mapHasDeposits(tiles) {
+    for (var r = 0; r < MAP_ROWS; r++) {
+      for (var c = 0; c < MAP_COLS; c++) {
+        if (tiles[r][c].remaining > 0) return true;
+      }
+    }
+    return false;
+  }
+
+  function activeDepositTiles(tiles) {
+    var list = [];
+    for (var r = 0; r < MAP_ROWS; r++) {
+      for (var c = 0; c < MAP_COLS; c++) {
+        if (tiles[r][c].remaining > 0) list.push(tiles[r][c]);
+      }
+    }
+    return list;
+  }
+
+  function mapRemainingWeight(tiles) {
+    var sum = 0;
+    for (var r = 0; r < MAP_ROWS; r++) {
+      for (var c = 0; c < MAP_COLS; c++) {
+        sum += tiles[r][c].remaining;
+      }
+    }
+    return sum;
+  }
+
+  // ----------------------------------------------------------------
+  // State
+  // ----------------------------------------------------------------
+
+  function defaultState() {
+    var tiles = generateMapTiles(1);
+    return {
+      funds: 25.00,
+      unsold: 0,
+      price: PRICE_MIN,
+      ironAmt: 100,
+      copperAmt: 0,
+      marketingLevel: 0,
+      nailMakers: 0,
+      totalNailsMade: 0,
+      nailMakerCooldownUntil: 0,
+      mapIndex: 1,
+      mapTiles: tiles,
+      mapTotalWeight: mapRemainingWeight(tiles),
+      factories: 0,
+      factoryTimers: [],
+      factoryCooldownUntil: 0,
+      factoryBalance: FACTORY_BALANCE_DEFAULT, // 0 = all breakers, 100 = all makers
+      factoryAllocAccum: 0, // Bresenham-style accumulator so output matches the slider ratio exactly over time
+
+      breakers: 0,
+      breakerCooldownUntil: 0,
+
+      nailMakersOn: true,
+      factoriesOn: true,
+      breakersOn: true,
+
+      unlockedMap: false,
+      unlockedMachinery: false,
+      unlockedTuning: false,
+
+      autoNextMap: false,
+
+      // Yin & Yang: two 0-100 bars. Each real second, whichever of
+      // "harvested" (mined) or "profited" (used) grams was higher that
+      // second ticks its bar up by one. state.harvestAccum/profitAccum
+      // collect grams as they happen; they're compared and cleared once
+      // per second alongside breaker/selling settlement in tick().
+      unlockedYinYang: false,
+      yin: 0,
+      yang: 0,
+      yinYangLevel: 0,
+      harvestAccum: 0,
+      profitAccum: 0,
+
+      // Production ticks every frame (fast, smooth climb). Selling and
+      // breaker nail-consumption only settle once per real second, in a
+      // lump -- like Universal Paperclips, so you can actually watch
+      // inventory climb, then drop, rather than it draining instantly.
+      settleAccum: 0,
+
+      simTime: 0, // seconds of game time elapsed, used to window the stats below
+
+      // Rolling history for readable "avg/s" style numbers -- each entry
+      // is [simTime, amount]; amounts are summed and divided by
+      // STATS_WINDOW_SEC to get a smooth per-second rate, instead of a
+      // jumpy instant-tick number.
+      histRevenue: [],
+      histNailsMade: [],
+      histFactoryIron: [],
+      histFactoryCopper: [],
+      histFactoryOutput: [],
+      histBreakerNails: [],
+      histBreakerIron: [],
+      histBreakerCopper: [],
+    };
+  }
+
+  var state = defaultState();
+
+  // ----------------------------------------------------------------
+  // Rolling-average helpers
+  // ----------------------------------------------------------------
+
+  function histPush(arr, amount) {
+    arr.push([state.simTime, amount]);
+  }
+
+  function histPrune(arr) {
+    while (arr.length && (state.simTime - arr[0][0]) > STATS_WINDOW_SEC) {
+      arr.shift();
+    }
+  }
+
+  function histRatePerSec(arr) {
+    var sum = 0;
+    for (var i = 0; i < arr.length; i++) sum += arr[i][1];
+    return sum / STATS_WINDOW_SEC;
+  }
+
+  // ----------------------------------------------------------------
+  // Formulas
+  // ----------------------------------------------------------------
+
+  function marketingMultiplier() {
+    return Math.pow(MARKETING_LEVEL_MULT, state.marketingLevel);
+  }
+
+  // Universal Paperclips' demand math, with the universe/project terms
+  // (which we don't have) dropped since they're both just 1 for us:
+  //   PD = (k^M) * (0.8 / price)
+  //   avg sold/sec = min(1, PD/100) * 7 * PD^EXP
+  // Below PD=100 the min() clamp makes this behave like
+  // 0.07 * PD^(1+EXP) -- bumping EXP makes small price/marketing changes
+  // swing sold/sec a lot harder at low demand (matching how snappy the
+  // real Paperclips curve feels), while nails are still sold at whatever
+  // price you set, so it stays every bit as profitable -- more sales at
+  // the same price is strictly more revenue, never less.
+  var DEMAND_CURVE_EXPONENT = 1.6; // was 1.15
+
+  function publicDemandPD() {
+    if (state.price <= 0) return 0;
+    return marketingMultiplier() * (0.8 / state.price) * yinYangPDMultiplier();
+  }
+
+  function avgNailsSoldPerSec() {
+    var pd = publicDemandPD();
+    if (pd <= 0) return 0;
+    var base = Math.min(1, pd / 100) * 7 * Math.pow(pd, DEMAND_CURVE_EXPONENT);
+    return base * harmonyBonusMultiplier();
+  }
+
+  function priceForMarketing() {
+    return MARKETING_BASE_COST * Math.pow(MARKETING_GROWTH, state.marketingLevel);
+  }
+
+  function nailMakerCostEffective() {
+    return NAILMAKER_COST;
+  }
+
+  function factoryBuildCostEffective() {
+    return FACTORY_BUILD_COST_FUNDS;
+  }
+
+  function breakerBuildCostEffective() {
+    return BREAKER_BUILD_COST_FUNDS;
+  }
+
+  function nailMakerRateEffective() {
+    if (!state.nailMakersOn) return 0;
+    return NAILMAKER_RATE * harmonyBonusMultiplier();
+  }
+
+  function breakerIntakeEffective() {
+    if (!state.breakersOn) return 0;
+    return BREAKER_INTAKE_RATE;
+  }
+
+  function mineAmountForTile(tile) {
+    return tile.type === "i" ? MINE_IRON_AMOUNT : MINE_COPPER_AMOUNT;
+  }
+
+  // ----------------------------------------------------------------
+  // Yin & Yang helpers
+  // ----------------------------------------------------------------
+
+  function checkYinYangUnlock() {
+    if (state.unlockedYinYang) return;
+    if (state.ironAmt >= YINYANG_UNLOCK_GRAMS && state.copperAmt >= YINYANG_UNLOCK_GRAMS) {
+      state.unlockedYinYang = true;
+    }
+  }
+
+  // How close yin and yang are, as a ratio (0 = one bar totally idle
+  // while the other has moved, 1 = dead even). Used purely for the
+  // balance bonus -- separate from the win condition, which needs both
+  // bars to actually reach 100, not just be proportionally close.
+  function harmonyRatio() {
+    if (!state.unlockedYinYang) return 0;
+    var lo = Math.min(state.yin, state.yang);
+    var hi = Math.max(state.yin, state.yang);
+    if (hi <= 0) return 0; // nothing has happened yet -- no bonus to give
+    return lo / hi;
+  }
+
+  // Balance is rewarded, not enforced -- a pure bonus on top of the
+  // baseline, so drifting out of balance only means missing out on the
+  // bonus, never an active penalty. Fully additive, fully idle-friendly.
+  function harmonyBonusMultiplier() {
+    return 1 + HARMONY_MAX_BONUS * harmonyRatio();
+  }
+
+  // Permanent public-demand multiplier from past yin/yang levels --
+  // this is the one effect of the system that never resets.
+  function yinYangPDMultiplier() {
+    return 1 + YINYANG_PD_BONUS_PER_LEVEL * state.yinYangLevel;
+  }
+
+  // Called once per real second (from the settle loop in tick()).
+  // Compares grams harvested vs. grams profited since the last check:
+  // whichever was ahead ticks its bar up by one, capped at 100. If both
+  // bars are sitting at 100 together, that's a level -- bump public
+  // demand permanently and reset both bars to start the next lap.
+  function settleYinYang() {
+    if (state.unlockedYinYang) {
+      if (state.harvestAccum > state.profitAccum) {
+        state.yin = Math.min(YINYANG_MAX, state.yin + YINYANG_TICK_AMOUNT);
+      } else if (state.profitAccum > state.harvestAccum) {
+        state.yang = Math.min(YINYANG_MAX, state.yang + YINYANG_TICK_AMOUNT);
+      }
+
+      if (state.yin >= YINYANG_MAX && state.yang >= YINYANG_MAX) {
+        state.yinYangLevel += 1;
+        state.yin = 0;
+        state.yang = 0;
+      }
+    }
+
+    state.harvestAccum = 0;
+    state.profitAccum = 0;
+  }
+
+  // ----------------------------------------------------------------
+  // DOM refs
+  // ----------------------------------------------------------------
+
+  var el = {
+    title: document.getElementById("titleCount"),
+    funds: document.getElementById("valFunds"),
+    unsold: document.getElementById("valUnsold"),
+    price: document.getElementById("valPrice"),
+    demand: document.getElementById("valDemand"),
+    demandYYNote: document.getElementById("valDemandYYNote"),
+    marketing: document.getElementById("valMarketing"),
+    iron: document.getElementById("valIron"),
+    copper: document.getElementById("valCopper"),
+    nailMakers: document.getElementById("valNailMakers"),
+    factories: document.getElementById("valFactories"),
+    breakers: document.getElementById("valBreakers"),
+    avgRev: document.getElementById("valAvgRev"),
+    avgNails: document.getElementById("valAvgNails"),
+    btnPriceMinus: document.getElementById("btnPriceMinus"),
+    btnPricePlus: document.getElementById("btnPricePlus"),
+    btnMakeNail: document.getElementById("btnMakeNail"),
+    btnBuyMarketing: document.getElementById("btnBuyMarketing"),
+    btnBuyIron: document.getElementById("btnBuyIron"),
+    btnSellCopper: document.getElementById("btnSellCopper"),
+    btnBuyNailMaker: document.getElementById("btnBuyNailMaker"),
+    btnBuyFactory: document.getElementById("btnBuyFactory"),
+    btnSave: document.getElementById("btnSave"),
+    btnLoad: document.getElementById("btnLoad"),
+    mapDisplay: document.getElementById("mapDisplay"),
+    mapIndexLabel: document.getElementById("mapIndexLabel"),
+    mapHealthText: document.getElementById("mapHealthText"),
+    mapHealthFill: document.getElementById("mapHealthFill"),
+    btnBuyBreaker: document.getElementById("btnBuyBreaker"),
+    btnNextMap: document.getElementById("btnNextMap"),
+    btnAutoNextMap: document.getElementById("btnAutoNextMap"),
+    cheatBox: document.getElementById("cheatBox"),
+
+    factoryIronRate: document.getElementById("valFactoryIronRate"),
+    factoryCopperRate: document.getElementById("valFactoryCopperRate"),
+    factoryOutputRate: document.getElementById("valFactoryOutputRate"),
+    sliderFactoryBalance: document.getElementById("sliderFactoryBalance"),
+
+    breakerNailsRate: document.getElementById("valBreakerNailsRate"),
+    breakerIronRate: document.getElementById("valBreakerIronRate"),
+    breakerCopperRate: document.getElementById("valBreakerCopperRate"),
+
+    btnToggleNailMakers: document.getElementById("btnToggleNailMakers"),
+    btnToggleFactories: document.getElementById("btnToggleFactories"),
+    btnToggleBreakers: document.getElementById("btnToggleBreakers"),
+
+    machinerySection: document.getElementById("machinerySection"),
+    tuningSection: document.getElementById("tuningSection"),
+    mapSection: document.getElementById("mapSection"),
+
+    yinYangSection: document.getElementById("yinYangSection"),
+    yin: document.getElementById("valYin"),
+    yang: document.getElementById("valYang"),
+    yinYangLevel: document.getElementById("valYinYangLevel"),
+    sliderYinYang: document.getElementById("sliderYinYang"),
+    yinYangStatus: document.getElementById("valYinYangStatus"),
+    yinYangHint: document.getElementById("yinYangHint"),
+  };
+
+  // ----------------------------------------------------------------
+  // Formatting
+  // ----------------------------------------------------------------
+
+  function fmtMoney(n) {
+    return "$" + n.toFixed(2);
+  }
+
+  function fmtInt(n) {
+    return Math.floor(n).toLocaleString();
+  }
+
+  function fmtDecimal(n, places) {
+    return n.toFixed(places === undefined ? 1 : places);
+  }
+
+  function fmtWeight(grams) {
+    if (grams >= 1000000) return (grams / 1000000).toFixed(2) + " t";
+    if (grams >= 1000) return (grams / 1000).toFixed(2) + " kg";
+    return fmtInt(grams) + " g";
+  }
+
+  function round2(n) {
+    return Math.round(n * 100) / 100;
+  }
+
+  function buyButtonLabel(btn, cooldownUntil, readyText) {
+    var ready = Date.now() >= cooldownUntil;
+    if (!ready) {
+      var secs = Math.max(0, (cooldownUntil - Date.now()) / 1000);
+      btn.textContent = "wait " + secs.toFixed(1) + "s";
+    } else {
+      btn.textContent = readyText;
+    }
+    return ready;
+  }
+
+  // ----------------------------------------------------------------
+  // Render
+  // ----------------------------------------------------------------
+
+  function render() {
+    el.title.textContent = "nails: " + fmtInt(state.totalNailsMade);
+    el.funds.textContent = fmtMoney(state.funds);
+    el.unsold.textContent = fmtInt(state.unsold);
+    el.price.textContent = fmtMoney(state.price);
+    el.demand.textContent = Math.round(publicDemandPD()) + "%";
+    if (state.unlockedYinYang && state.yinYangLevel > 0) {
+      el.demandYYNote.textContent = "(+" + Math.round(YINYANG_PD_BONUS_PER_LEVEL * state.yinYangLevel * 100) + "% from balance)";
+    } else {
+      el.demandYYNote.textContent = "";
+    }
+    el.marketing.textContent = state.marketingLevel;
+    el.iron.textContent = fmtWeight(state.ironAmt);
+    el.copper.textContent = fmtWeight(state.copperAmt);
+    el.nailMakers.textContent = state.nailMakers;
+    el.factories.textContent = state.factories;
+    el.breakers.textContent = state.breakers;
+    el.avgRev.textContent = fmtMoney(histRatePerSec(state.histRevenue));
+    el.avgNails.textContent = fmtDecimal(histRatePerSec(state.histNailsMade));
+    el.mapIndexLabel.textContent = state.mapIndex;
+
+    // ---- machinery: factories ----
+    el.factoryIronRate.textContent = fmtWeight(histRatePerSec(state.histFactoryIron));
+    el.factoryCopperRate.textContent = fmtWeight(histRatePerSec(state.histFactoryCopper));
+    el.factoryOutputRate.textContent = fmtDecimal(histRatePerSec(state.histFactoryOutput) * 60);
+
+    el.sliderFactoryBalance.value = state.factoryBalance;
+    var gray = Math.round(255 * (state.factoryBalance / 100));
+    el.sliderFactoryBalance.style.accentColor = "rgb(" + gray + "," + gray + "," + gray + ")";
+
+    var factoryReady = buyButtonLabel(
+      el.btnBuyFactory,
+      state.factoryCooldownUntil,
+      "buy (" + fmtMoney(factoryBuildCostEffective()) + ")"
+    );
+    el.btnBuyFactory.disabled = !factoryReady || state.funds < factoryBuildCostEffective();
+
+    // ---- machinery: nail breakers ----
+    el.breakerNailsRate.textContent = fmtDecimal(histRatePerSec(state.histBreakerNails));
+    el.breakerIronRate.textContent = fmtWeight(histRatePerSec(state.histBreakerIron));
+    el.breakerCopperRate.textContent = fmtWeight(histRatePerSec(state.histBreakerCopper));
+
+    var breakerReady = buyButtonLabel(
+      el.btnBuyBreaker,
+      state.breakerCooldownUntil,
+      "buy (" + fmtMoney(breakerBuildCostEffective()) + ")"
+    );
+    el.btnBuyBreaker.disabled = !breakerReady || state.funds < breakerBuildCostEffective();
+
+    el.btnBuyMarketing.textContent = "buy (" + fmtMoney(priceForMarketing()) + ")";
+    el.btnBuyMarketing.disabled = state.funds < priceForMarketing();
+
+    el.btnBuyIron.textContent = "buy " + fmtWeight(IRON_BUY_AMOUNT) + " (" + fmtMoney(IRON_BUY_COST) + ")";
+    el.btnBuyIron.disabled = state.funds < IRON_BUY_COST;
+
+    el.btnSellCopper.textContent = "sell (" + fmtMoney(state.copperAmt * COPPER_SELL_PRICE) + ")";
+    el.btnSellCopper.disabled = state.copperAmt <= 0;
+
+    var nailMakerReady = buyButtonLabel(
+      el.btnBuyNailMaker,
+      state.nailMakerCooldownUntil,
+      "buy (" + fmtMoney(nailMakerCostEffective()) + ")"
+    );
+    el.btnBuyNailMaker.disabled = !nailMakerReady || state.funds < nailMakerCostEffective();
+
+    el.btnMakeNail.disabled = state.ironAmt < IRON_PER_NAIL;
+    el.btnPriceMinus.disabled = state.price <= PRICE_MIN;
+
+    // ---- tuning: simple on/off ----
+    el.btnToggleNailMakers.textContent = state.nailMakersOn ? "ON" : "OFF";
+    el.btnToggleFactories.textContent = state.factoriesOn ? "ON" : "OFF";
+    el.btnToggleBreakers.textContent = state.breakersOn ? "ON" : "OFF";
+
+    // ---- yin & yang ----
+    checkYinYangUnlock();
+    if (state.unlockedYinYang) {
+      el.yin.textContent = fmtInt(state.yin) + " / " + YINYANG_MAX;
+      el.yang.textContent = fmtInt(state.yang) + " / " + YINYANG_MAX;
+      el.yinYangLevel.textContent = state.yinYangLevel;
+
+      var diff = state.yang - state.yin;
+      var pos = Math.max(0, Math.min(100, 50 + diff / 2));
+      el.sliderYinYang.value = pos;
+      var yyGray = Math.round(255 * (pos / 100));
+      el.sliderYinYang.style.accentColor = "rgb(" + yyGray + "," + yyGray + "," + yyGray + ")";
+
+      var ratio = harmonyRatio();
+      var bonusPct = Math.round(HARMONY_MAX_BONUS * ratio * 100);
+      if (ratio >= YINYANG_STATUS_DEADZONE) {
+        el.yinYangStatus.textContent = "BALANCED \u2014 +" + bonusPct + "% bonus";
+      } else if (diff > 0) {
+        el.yinYangStatus.textContent = "YANG-LEANING \u2014 +" + bonusPct + "% bonus";
+      } else {
+        el.yinYangStatus.textContent = "YIN-LEANING \u2014 +" + bonusPct + "% bonus";
+      }
+
+      if (el.yinYangHint) {
+        el.yinYangHint.textContent = "harvest more than you use to fill yin, use more than you harvest to fill yang \u2014 fill both to level up";
+      }
+    }
+
+    // ---- progressive reveal: unlock once, never re-hide ----
+    if (!state.unlockedMap && state.breakers > 0) state.unlockedMap = true;
+    if (!state.unlockedMachinery && state.totalNailsMade >= MACHINERY_UNLOCK_NAILS) state.unlockedMachinery = true;
+    if (!state.unlockedTuning && state.totalNailsMade >= TUNING_UNLOCK_NAILS) state.unlockedTuning = true;
+
+    el.mapSection.style.display = state.unlockedMap ? "" : "none";
+    el.machinerySection.style.display = state.unlockedMachinery ? "" : "none";
+    el.tuningSection.style.display = state.unlockedTuning ? "" : "none";
+    el.yinYangSection.style.display = state.unlockedYinYang ? "" : "none";
+
+    renderMap();
+  }
+
+  function renderMap() {
+    var activeTiles = activeDepositTiles(state.mapTiles);
+    var beingWorked = state.breakers > 0 && state.breakersOn && activeTiles.length > 0;
+
+    var lines = [];
+    for (var r = 0; r < MAP_ROWS; r++) {
+      var line = "";
+      for (var c = 0; c < MAP_COLS; c++) {
+        var tile = state.mapTiles[r][c];
+        if (tile.remaining > 0) {
+          line += beingWorked ? tile.type.toUpperCase() : tile.type;
+        } else {
+          line += ".";
+        }
+      }
+      lines.push(line);
+    }
+    el.mapDisplay.textContent = lines.join("\n");
+
+    var remaining = mapRemainingWeight(state.mapTiles);
+    var total = state.mapTotalWeight || remaining;
+    el.mapHealthText.textContent = fmtWeight(remaining) + " / " + fmtWeight(total);
+    var pct = total > 0 ? Math.max(0, Math.min(100, (remaining / total) * 100)) : 0;
+    el.mapHealthFill.style.width = pct + "%";
+
+    el.btnNextMap.style.display = mapHasDeposits(state.mapTiles) ? "none" : "block";
+    el.btnAutoNextMap.textContent = "auto-next map: " + (state.autoNextMap ? "ON" : "OFF");
+  }
+
+  // ----------------------------------------------------------------
+  // Actions
+  // ----------------------------------------------------------------
+
+  el.btnPriceMinus.addEventListener("click", function () {
+    state.price = Math.max(PRICE_MIN, round2(state.price - PRICE_STEP));
+    render();
+  });
+
+  el.btnPricePlus.addEventListener("click", function () {
+    state.price = round2(state.price + PRICE_STEP);
+    render();
+  });
+
+  el.btnMakeNail.addEventListener("click", function () {
+    if (state.ironAmt >= IRON_PER_NAIL) {
+      state.ironAmt -= IRON_PER_NAIL;
+      state.unsold += 1;
+      state.totalNailsMade += 1;
+      render();
+    }
+  });
+
+  el.btnBuyMarketing.addEventListener("click", function () {
+    var cost = priceForMarketing();
+    if (state.funds >= cost) {
+      state.funds -= cost;
+      state.marketingLevel += 1;
+      render();
+    }
+  });
+
+  el.btnBuyIron.addEventListener("click", function () {
+    if (state.funds >= IRON_BUY_COST) {
+      state.funds -= IRON_BUY_COST;
+      state.ironAmt += IRON_BUY_AMOUNT;
+      render();
+    }
+  });
+
+  el.btnSellCopper.addEventListener("click", function () {
+    if (state.copperAmt > 0) {
+      state.funds += state.copperAmt * COPPER_SELL_PRICE;
+      state.profitAccum += state.copperAmt;
+      state.copperAmt = 0;
+      render();
+    }
+  });
+
+  el.btnBuyNailMaker.addEventListener("click", function () {
+    if (Date.now() < state.nailMakerCooldownUntil) return;
+    var cost = nailMakerCostEffective();
+    if (state.funds >= cost) {
+      state.funds -= cost;
+      state.nailMakers += 1;
+      state.nailMakerCooldownUntil = Date.now() + NAILMAKER_COOLDOWN_MS;
+      render();
+    }
+  });
+
+  el.sliderFactoryBalance.addEventListener("input", function () {
+    state.factoryBalance = parseInt(el.sliderFactoryBalance.value, 10);
+    render();
+  });
+
+  el.btnBuyFactory.addEventListener("click", function () {
+    if (Date.now() < state.factoryCooldownUntil) return;
+    var cost = factoryBuildCostEffective();
+    if (state.funds < cost) return;
+
+    state.funds -= cost;
+    state.factories += 1;
+    state.factoryTimers.push(0);
+    state.factoryCooldownUntil = Date.now() + FACTORY_COOLDOWN_MS;
+    render();
+  });
+  el.btnBuyBreaker.addEventListener("click", function () {
+    if (Date.now() < state.breakerCooldownUntil) return;
+    var cost = breakerBuildCostEffective();
+    if (state.funds < cost) return;
+
+    state.funds -= cost;
+    state.breakers += 1;
+    state.unlockedMap = true;
+    state.breakerCooldownUntil = Date.now() + BREAKER_COOLDOWN_MS;
+    render();
+  });
+  el.btnNextMap.addEventListener("click", goToNextMap);
+  el.btnAutoNextMap.addEventListener("click", function () {
+    state.autoNextMap = !state.autoNextMap;
+    render();
+  });
+
+  el.btnToggleNailMakers.addEventListener("click", function () {
+    state.nailMakersOn = !state.nailMakersOn;
+    render();
+  });
+  el.btnToggleFactories.addEventListener("click", function () {
+    state.factoriesOn = !state.factoriesOn;
+    render();
+  });
+  el.btnToggleBreakers.addEventListener("click", function () {
+    state.breakersOn = !state.breakersOn;
+    render();
+  });
+
+  function goToNextMap() {
+    if (mapHasDeposits(state.mapTiles)) return;
+    state.mapIndex += 1;
+    state.mapTiles = generateMapTiles(state.mapIndex);
+    state.mapTotalWeight = mapRemainingWeight(state.mapTiles);
+    render();
+  }
+
+  el.btnSave.addEventListener("click", function () {
+    localStorage.setItem("nailMakerSave", JSON.stringify(state));
+    flashButton(el.btnSave, "saved!");
+  });
+
+  el.btnLoad.addEventListener("click", function () {
+    var raw = localStorage.getItem("nailMakerSave");
+    if (!raw) {
+      flashButton(el.btnLoad, "no save found");
+      return;
+    }
+    try {
+      var data = JSON.parse(raw);
+      state = Object.assign(defaultState(), data);
+      migrateLoadedState();
+      render();
+      flashButton(el.btnLoad, "loaded!");
+    } catch (e) {
+      flashButton(el.btnLoad, "load failed");
+    }
+  });
+
+  function migrateLoadedState() {
+    if (Array.isArray(state.factories)) {
+      var old = state.factories;
+      state.factoryTimers = [];
+      for (var i = 0; i < old.length; i++) {
+        state.factoryTimers.push(old[i] && typeof old[i].timer === "number" ? old[i].timer : 0);
+      }
+      state.factories = old.length;
+    } else {
+      state.factories = Math.max(0, Math.floor(state.factories || 0));
+      if (!Array.isArray(state.factoryTimers)) state.factoryTimers = [];
+      while (state.factoryTimers.length < state.factories) state.factoryTimers.push(0);
+      if (state.factoryTimers.length > state.factories) {
+        state.factoryTimers = state.factoryTimers.slice(0, state.factories);
+      }
+    }
+    if (typeof state.factoryCooldownUntil !== "number") state.factoryCooldownUntil = 0;
+    state.unlockedMap = state.breakers > 0;
+    if (!state.mapTotalWeight) {
+      state.mapTotalWeight = Math.max(
+        mapRemainingWeight(state.mapTiles),
+        depositCapacityForMap(state.mapIndex) * DEPOSITS_PER_MAP
+      );
+    }
+    delete state.playerRow;
+    delete state.playerCol;
+    delete state.mineCooldownUntil;
+    delete state.blueprints;
+    delete state.upgradesOwned;
+  }
+
+  function flashButton(btn, text) {
+    var old = btn.textContent;
+    btn.textContent = text;
+    setTimeout(function () {
+      btn.textContent = old;
+    }, 1000);
+  }
+
+  // ----------------------------------------------------------------
+  // Cheat box -- deliberately blends into the corner, no label.
+  // Type "<key> <amount>" and hit Enter.
+  // Keys: funds, unsold, iron, copper, nailmakers, factories, breakers, marketing, yin, yang
+  // ----------------------------------------------------------------
+
+  el.cheatBox.addEventListener("keydown", function (e) {
+    if (e.key !== "Enter") return;
+    var raw = el.cheatBox.value.trim().toLowerCase();
+    var parts = raw.split(/\s+/);
+    if (parts.length === 2) {
+      var key = parts[0];
+      var amount = parseFloat(parts[1]);
+      if (!isNaN(amount)) {
+        switch (key) {
+          case "funds": state.funds = amount; break;
+          case "unsold": state.unsold = Math.max(0, amount); break;
+          case "iron": state.ironAmt = Math.max(0, amount); break;
+          case "copper": state.copperAmt = Math.max(0, amount); break;
+          case "nailmakers": state.nailMakers = Math.max(0, Math.floor(amount)); break;
+          case "factories":
+            state.factories = Math.max(0, Math.floor(amount));
+            state.factoryTimers = [];
+            for (var i = 0; i < state.factories; i++) state.factoryTimers.push(0);
+            break;
+          case "breakers":
+            state.breakers = Math.max(0, Math.floor(amount));
+            if (state.breakers > 0) state.unlockedMap = true;
+            break;
+          case "marketing": state.marketingLevel = Math.max(0, Math.floor(amount)); break;
+          case "yin": state.yin = Math.max(0, Math.min(YINYANG_MAX, amount)); break;
+          case "yang": state.yang = Math.max(0, Math.min(YINYANG_MAX, amount)); break;
+          case "yylevel": state.yinYangLevel = Math.max(0, Math.floor(amount)); break;
+        }
+        render();
+      }
+    }
+    el.cheatBox.value = "";
+    el.cheatBox.blur();
+  });
+
+  // ----------------------------------------------------------------
+  // Game loop
+  // ----------------------------------------------------------------
+
+  function tick(dt) {
+    state.simTime += dt;
+
+    // Production: nail makers turn iron into unsold nails. The "nail
+    // makers: ON/OFF" tuning toggle folds into nailMakerRateEffective().
+    var wantToMake = state.nailMakers * nailMakerRateEffective() * dt;
+    var ironAvailableAsNails = state.ironAmt / IRON_PER_NAIL;
+    var actuallyMade = Math.min(wantToMake, ironAvailableAsNails);
+
+    state.ironAmt -= actuallyMade * IRON_PER_NAIL;
+    state.unsold += actuallyMade;
+    state.totalNailsMade += actuallyMade;
+    state.profitAccum += actuallyMade * IRON_PER_NAIL;
+    histPush(state.histNailsMade, actuallyMade);
+
+    // Breakers and selling both settle once per real second, in a lump --
+    // not continuously. This is what makes the sawtooth visible: unsold
+    // inventory climbs smoothly every tick from production, then drops
+    // all at once when the second ticks over, based on how many nails
+    // breakers burned as ammo and how many the public bought.
+    state.settleAccum += dt;
+    while (state.settleAccum >= 1) {
+      state.settleAccum -= 1;
+
+      // Breakers get first claim on the inventory that's accumulated
+      // this second. Each nail hits every remaining deposit once, so
+      // 10 iron deposits and 5 copper deposits return 10g iron and 5g
+      // copper per nail.
+      var breakerRate = breakerIntakeEffective();
+      if (state.breakers > 0 && breakerRate > 0 && mapHasDeposits(state.mapTiles)) {
+        var nailsBudget = Math.min(state.breakers * breakerRate, state.unsold);
+        var nailsUsed = 0;
+        var ironGot = 0;
+        var copperGot = 0;
+
+        while (nailsBudget > 0 && mapHasDeposits(state.mapTiles)) {
+          var activeTiles = activeDepositTiles(state.mapTiles);
+          var maxHits = nailsBudget;
+          for (var d = 0; d < activeTiles.length; d++) {
+            var yieldAmt = mineAmountForTile(activeTiles[d]);
+            if (yieldAmt <= 0) continue;
+            var hitsUntilEmpty = activeTiles[d].remaining / yieldAmt;
+            if (hitsUntilEmpty < maxHits) maxHits = hitsUntilEmpty;
+          }
+          if (maxHits <= 0) break;
+
+          for (var t = 0; t < activeTiles.length; t++) {
+            var tile = activeTiles[t];
+            var amt = Math.min(maxHits * mineAmountForTile(tile), tile.remaining);
+            if (amt <= 0) continue;
+            tile.remaining -= amt;
+            state.harvestAccum += amt;
+            if (tile.type === "i") ironGot += amt;
+            else copperGot += amt;
+          }
+
+          nailsUsed += maxHits;
+          nailsBudget -= maxHits;
+        }
+
+        state.unsold -= nailsUsed;
+        if (nailsUsed > 0) histPush(state.histBreakerNails, nailsUsed);
+        if (ironGot > 0) {
+          state.ironAmt += ironGot;
+          histPush(state.histBreakerIron, ironGot);
+        }
+        if (copperGot > 0) {
+          state.copperAmt += copperGot;
+          histPush(state.histBreakerCopper, copperGot);
+        }
+      }
+
+      // Selling, Universal-Paperclips style: a deterministic rate
+      // derived from price and marketing, settling once per second
+      // like the original game -- not a continuous trickle. Steeply
+      // super-linear once demand clears 100, which is what makes a
+      // sharp price cut trigger a genuine mass sell-off the very next
+      // second instead of a gentle nudge.
+      var soldPerSec = avgNailsSoldPerSec();
+      if (soldPerSec > 0 && state.unsold > 0) {
+        var sold = Math.min(state.unsold, soldPerSec);
+        state.unsold -= sold;
+        var revenue = sold * state.price;
+        state.funds += revenue;
+        histPush(state.histRevenue, revenue);
+      }
+
+      // Yin & Yang: once per real second, whichever of harvesting or
+      // profiting won that second ticks its bar up.
+      settleYinYang();
+    }
+
+    // Factories: the yin-yang engine. Each completed cycle produces
+    // either one nail maker or one nail breaker -- decided by a
+    // Bresenham-style accumulator so the output ratio matches the
+    // balance slider exactly over time, not just on average.
+    if (state.factoriesOn) {
+      var period = FACTORY_PERIOD_SEC;
+      while (state.factoryTimers.length < state.factories) state.factoryTimers.push(0);
+      for (var i = 0; i < state.factories; i++) {
+        var fTimer = state.factoryTimers[i];
+        if (fTimer < period) {
+          fTimer = Math.min(period, fTimer + dt);
+        }
+        if (fTimer >= period &&
+            state.ironAmt >= FACTORY_IRON_COST &&
+            state.copperAmt >= FACTORY_COPPER_COST) {
+          state.ironAmt -= FACTORY_IRON_COST;
+          state.copperAmt -= FACTORY_COPPER_COST;
+          fTimer -= period;
+
+          state.factoryAllocAccum += state.factoryBalance / 100;
+          if (state.factoryAllocAccum >= 1) {
+            state.factoryAllocAccum -= 1;
+            state.nailMakers += 1;
+          } else {
+            state.breakers += 1;
+            state.unlockedMap = true;
+          }
+
+          histPush(state.histFactoryIron, FACTORY_IRON_COST);
+          histPush(state.histFactoryCopper, FACTORY_COPPER_COST);
+          histPush(state.histFactoryOutput, 1);
+        }
+        state.factoryTimers[i] = fTimer;
+      }
+    }
+
+    // Prune all the rolling-average buffers to the trailing window.
+    histPrune(state.histRevenue);
+    histPrune(state.histNailsMade);
+    histPrune(state.histFactoryIron);
+    histPrune(state.histFactoryCopper);
+    histPrune(state.histFactoryOutput);
+    histPrune(state.histBreakerNails);
+    histPrune(state.histBreakerIron);
+    histPrune(state.histBreakerCopper);
+
+    checkYinYangUnlock();
+
+    if (state.autoNextMap && !mapHasDeposits(state.mapTiles)) {
+      goToNextMap(); // calls render() itself
+      return;
+    }
+
+    render();
+  }
+
+  setInterval(function () {
+    tick(TICK_MS / 1000);
+  }, TICK_MS);
+
+  render();
+})();
+</script>
+
+</body>
+</html>

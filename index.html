@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+
+<link rel="icon" type="image/png" href="./nail.png">
+ 
+<title>Nail Maker</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    background: #ffffff;
+    color: #000000;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 13px;
+    margin: 20px;
+  }
+
+  h1 {
+    font-size: 16px;
+    font-weight: bold;
+    margin: 0 0 12px 0;
+  }
+
+  .columns {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 3px 0;
+  }
+
+  .label { color: #000; }
+  .value { color: #000; font-variant-numeric: tabular-nums; }
+
+  .panel {
+    border: 1px solid #000;
+    background: #fff;
+    margin-bottom: 14px;
+    width: 320px;
+  }
+
+  .panel-header {
+    border-bottom: 1px solid #000;
+    padding: 4px 8px;
+    background: #fff;
+    font-weight: bold;
+  }
+
+  .panel-body {
+    padding: 8px;
+  }
+
+  button {
+    background: #fff;
+    border: 1px solid #000;
+    color: #000;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 12px;
+    padding: 4px 8px;
+    cursor: pointer;
+  }
+
+  button:hover:not(:disabled) {
+    background: #f2f2f2;
+  }
+
+  button:disabled {
+    color: #999;
+    border-color: #999;
+    cursor: default;
+  }
+
+  .row button {
+    width: 140px;
+    flex-shrink: 0;
+    margin-left: 10px;
+  }
+
+  .stepper {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 4px 0;
+  }
+
+  .stepper button {
+    width: 24px;
+    padding: 2px 0;
+    margin: 0;
+  }
+
+  .stepper .value {
+    width: 70px;
+    text-align: center;
+    border: 1px solid #000;
+    padding: 2px 0;
+  }
+
+  .top-buttons {
+    display: flex;
+    gap: 6px;
+    width: 320px;
+    margin-bottom: 14px;
+  }
+
+  .top-buttons button {
+    flex: 1;
+    margin: 0;
+  }
+
+  #mapDisplay {
+    font-family: "Courier New", Courier, monospace;
+    font-size: 15px;
+    line-height: 1.15;
+    letter-spacing: 2px;
+    white-space: pre;
+    border: 1px solid #000;
+    padding: 8px;
+    background: #fff;
+    width: fit-content;
+  }
+
+  .map-controls {
+    display: flex;
+    gap: 6px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+  }
+
+  .map-controls button {
+    flex: 1;
+    min-width: 120px;
+  }
+
+  .hint {
+    color: #555;
+    font-size: 11px;
+    margin-top: 6px;
+  }
+
+  .machinery-block {
+    border-top: 1px solid #ddd;
+    margin-top: 8px;
+    padding-top: 8px;
+  }
+
+  .machinery-block .hint {
+    margin-top: 4px;
+    margin-bottom: 4px;
+  }
+
+  #btnNextMap {
+    width: 100%;
+    margin-top: 8px;
+    display: none;
+  }
+
+  /* Balance slider: white = all nail makers, black = all nail breakers,
+     gray in between. The slider's own accent color shifts to match via
+     JS, so its color literally shows you the current balance. */
+  .balance-slider-wrap {
+    border: 1px solid #000;
+    padding: 6px 8px;
+    margin: 6px 0;
+  }
+
+  .balance-slider-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: #555;
+    margin-bottom: 4px;
+  }
+
+  #sliderFactoryBalance {
+    width: 100%;
+  }
+
+  .toggle-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0;
+  }
+
+  .toggle-row button {
+    width: 70px;
+  }
+
+  .map-health {
+    margin-top: 8px;
+    width: 100%;
+  }
+
+  .map-health-text {
+    font-variant-numeric: tabular-nums;
+    margin-bottom: 4px;
+  }
+
+  .map-readout {
+    width: fit-content;
+  }
+
+  .map-health-track {
+    border: 1px solid #000;
+    height: 12px;
+    background: #fff;
+    overflow: hidden;
+  }
+
+  .map-health-fill {
+    height: 100%;
+    background: #000;
+    width: 0%;
+  }
+
+  /* Yin-Yang: the one place in the game deliberately allowed to break
+     from plain black-on-white -- a stark inverted header and a
+     black/white balance bar make it feel like a different kind of
+     system than everything else, since it is one. */
+  #yinYangSection .panel-header {
+    background: #fff;
+    color: #000;
+    border-bottom: 1px solid #000;
+  }
+
+  .yy-bar-wrap {
+    border: 1px solid #000;
+    padding: 6px 8px;
+    margin: 8px 0 4px 0;
+    background: linear-gradient(to right, #000 0%, #808080 50%, #fff 100%);
+  }
+
+  .yy-bar-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    margin-bottom: 4px;
+  }
+
+  .yy-bar-labels span:first-child { color: #fff; text-shadow: 0 0 2px #000; }
+  .yy-bar-labels span:last-child { color: #000; text-shadow: 0 0 2px #fff; }
+
+  #sliderYinYang {
+    width: 100%;
+    pointer-events: none; /* readout only, not a control */
+  }
+
+  .yy-status {
+    text-align: center;
+    font-weight: bold;
+    letter-spacing: 1px;
+    margin-top: 6px;
+  }
+
+  /* Deliberately unlabeled and unobtrusive. */
+  #cheatBox {
+    position: fixed;
+    bottom: 6px;
+    right: 6px;
+    width: 90px;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 10px;
+    border: 1px solid #ddd;
+    color: #ccc;
+    padding: 2px 4px;
+    background: #fff;
+    opacity: 0.35;
+  }
+
+  #cheatBox:focus {
+    color: #000;
+    border-color: #000;
+    opacity: 1;
+  }
+</style>
+</head>
+<body>
+
+<h1 id="titleCount">nails: 0</h1>
+
+<div class="top-buttons">
+  <button id="btnSave">save</button>
+  <button id="btnLoad">load</button>
+  <button id="btnEndRun">end run</button>
+</div>
+
+<div class="columns">
+  <div>
+    <div class="panel">
+      <div class="panel-body">
+        <div class="row"><span class="label">available funds:</span><span class="value" id="valFunds">$0.00</span></div>
+        <div class="row"><span class="label">unsold inventory:</span><span class="value" id="valUnsold">0</span></div>
+
+        <div class="stepper">
+          <span class="label" style="margin-right:auto;">price ($):</span>
+          <button id="btnPriceMinus">-</button>
+          <span class="value" id="valPrice">$0.00</span>
+          <button id="btnPricePlus">+</button>
+        </div>
+
+        <div class="row"><span class="label">public demand (%):</span><span class="value"><span id="valDemand">0%</span><span id="valDemandYYNote" style="color:#999; font-weight:normal; font-size:11px; margin-left:4px;"></span></span></div>
+
+        <div class="row">
+          <span class="label">marketing level:</span>
+          <span class="value" id="valMarketing">0</span>
+          <button id="btnBuyMarketing">buy marketing</button>
+        </div>
+        <div class="hint">each level multiplies public demand &times;1.4</div>
+
+        <div class="row">
+          <span class="label">iron:</span>
+          <span class="value" id="valIron">0 g</span>
+          <button id="btnBuyIron">buy iron</button>
+        </div>
+
+        <div class="row"><span class="label">avg revenue/s:</span><span class="value" id="valAvgRev">$0.00</span></div>
+        <div class="row"><span class="label">avg nails/s:</span><span class="value" id="valAvgNails">0.0</span></div>
+      </div>
+    </div>
+
+    <button id="btnMakeNail" style="width:320px;">make nail</button>
+
+    <div class="panel" id="machinerySection" style="margin-top:14px; display:none;">
+      <div class="panel-header">machinery</div>
+      <div class="panel-body">
+
+        <div class="row">
+          <span class="label">copper:</span>
+          <span class="value" id="valCopper">0 g</span>
+          <button id="btnSellCopper">sell copper</button>
+        </div>
+
+        <div class="machinery-block">
+          <div class="row">
+            <span class="label">nail makers:</span>
+            <span class="value" id="valNailMakers">0</span>
+            <button id="btnBuyNailMaker">buy nail maker</button>
+          </div>
+
+          <div class="row">
+            <span class="label">nail breakers:</span>
+            <span class="value" id="valBreakers">0</span>
+            <button id="btnBuyBreaker">buy breaker</button>
+          </div>
+          <div class="hint">
+            consuming: <span id="valBreakerNailsRate">0.0</span> nails/s &middot;
+            producing: <span id="valBreakerIronRate">0 g</span> iron/s, <span id="valBreakerCopperRate">0 g</span> copper/s
+          </div>
+        </div>
+
+        <div class="machinery-block">
+          <div class="row">
+            <span class="label">factories:</span>
+            <span class="value" id="valFactories">0</span>
+            <button id="btnBuyFactory">buy factory</button>
+          </div>
+
+          <div class="balance-slider-wrap">
+            <div class="balance-slider-labels">
+              <span>&#9679; nail breakers</span>
+              <span>nail makers &#9675;</span>
+            </div>
+            <input type="range" id="sliderFactoryBalance" min="0" max="100" step="5" value="50">
+          </div>
+
+          <div class="hint">
+            consuming: <span id="valFactoryIronRate">0 g</span> iron/s, <span id="valFactoryCopperRate">0 g</span> copper/s &middot;
+            producing: <span id="valFactoryOutputRate">0.0</span> units/min
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="panel" id="tuningSection" style="display:none;">
+      <div class="panel-header">tuning</div>
+      <div class="panel-body">
+        <div class="hint">simple on/off -- turn a system off to stop it consuming or producing entirely.</div>
+
+        <div class="toggle-row">
+          <span class="label">nail makers</span>
+          <button id="btnToggleNailMakers">ON</button>
+        </div>
+        <div class="toggle-row">
+          <span class="label">factories</span>
+          <button id="btnToggleFactories">ON</button>
+        </div>
+        <div class="toggle-row">
+          <span class="label">nail breakers</span>
+          <button id="btnToggleBreakers">ON</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div id="mapSection" style="display:none;">
+    <div class="map-readout">
+    <div class="panel-header" style="width:100%; border:1px solid #000; border-bottom:none;">extraction &mdash; map <span id="mapIndexLabel">1</span></div>
+    <div id="mapDisplay"></div>
+    <div class="map-health">
+      <div class="map-health-text" id="mapHealthText">0 / 0</div>
+      <div class="map-health-track"><div class="map-health-fill" id="mapHealthFill"></div></div>
+    </div>
+    </div>
+    <div class="map-controls">
+      <button id="btnAutoNextMap">auto-next map: OFF</button>
+    </div>
+    <button id="btnNextMap">go to next map</button>
+    <div class="hint">i/c = iron/copper &nbsp; I/C = worked by breaker &nbsp; . = drained/empty</div>
+
+    <div class="panel" id="yinYangSection" style="margin-top:14px; display:none;">
+      <div class="panel-header">yin &amp; yang</div>
+      <div class="panel-body">
+        <div class="row"><span class="label">yin (breaking):</span><span class="value" id="valYin">0.0</span></div>
+        <div class="row"><span class="label">yang (making):</span><span class="value" id="valYang">0.0</span></div>
+        <div class="row"><span class="label">tao:</span><span class="value" id="valYinYangLevel">0</span></div>
+
+        <div class="yy-bar-wrap">
+          <div class="yy-bar-labels"><span>yin</span><span>yang</span></div>
+          <input type="range" id="sliderYinYang" min="0" max="100" step="1" value="50" tabindex="-1">
+        </div>
+        <div class="yy-status" id="valYinYangStatus">BALANCED</div>
+        <div class="hint" id="yinYangHint">stay balanced for a production/sales bonus</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" id="leaderboardSection" style="width:320px;">
+    <div class="panel-header">leaderboard <span style="font-weight:normal; color:#777; font-size:11px;">(this browser only)</span></div>
+    <div class="panel-body">
+      <div class="hint">"end run" banks your nail count under a name, then starts a fresh run. Scores are stored on this device only -- there's no shared server, so this can't show other players' runs.</div>
+      <div id="leaderboardList"></div>
+    </div>
+  </div>
+</div>
+
+<input type="text" id="cheatBox" spellcheck="false">
+
+<script src="js/state.js"></script>
+<script src="js/formulas.js"></script>
+<script src="js/dom.js"></script>
+<script src="js/render.js"></script>
+<script src="js/actions.js"></script>
+<script src="js/engine.js"></script>
+
+</body>
+</html>

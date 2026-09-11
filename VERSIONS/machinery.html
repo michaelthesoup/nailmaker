@@ -1,0 +1,1045 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Nail Maker</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    background: #ffffff;
+    color: #000000;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 13px;
+    margin: 20px;
+  }
+
+  h1 {
+    font-size: 16px;
+    font-weight: bold;
+    margin: 0 0 12px 0;
+  }
+
+  .columns {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 3px 0;
+  }
+
+  .label { color: #000; }
+  .value { color: #000; font-variant-numeric: tabular-nums; }
+
+  .panel {
+    border: 1px solid #000;
+    background: #fff;
+    margin-bottom: 14px;
+    width: 320px;
+  }
+
+  .panel-header {
+    border-bottom: 1px solid #000;
+    padding: 4px 8px;
+    background: #fff;
+    font-weight: bold;
+  }
+
+  .panel-body {
+    padding: 8px;
+  }
+
+  button {
+    background: #fff;
+    border: 1px solid #000;
+    color: #000;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 12px;
+    padding: 4px 8px;
+    cursor: pointer;
+  }
+
+  button:hover:not(:disabled) {
+    background: #f2f2f2;
+  }
+
+  button:disabled {
+    color: #999;
+    border-color: #999;
+    cursor: default;
+  }
+
+  .row button {
+    width: 140px;
+    flex-shrink: 0;
+    margin-left: 10px;
+  }
+
+  .stepper {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 4px 0;
+  }
+
+  .stepper button {
+    width: 24px;
+    padding: 2px 0;
+    margin: 0;
+  }
+
+  .stepper .value {
+    width: 70px;
+    text-align: center;
+    border: 1px solid #000;
+    padding: 2px 0;
+  }
+
+  .top-buttons {
+    display: flex;
+    gap: 6px;
+    width: 320px;
+    margin-bottom: 14px;
+  }
+
+  .top-buttons button {
+    flex: 1;
+    margin: 0;
+  }
+
+  #mapDisplay {
+    font-family: "Courier New", Courier, monospace;
+    font-size: 15px;
+    line-height: 1.15;
+    letter-spacing: 2px;
+    white-space: pre;
+    border: 1px solid #000;
+    padding: 8px;
+    background: #fff;
+    width: fit-content;
+  }
+
+  .map-controls {
+    display: flex;
+    gap: 6px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+  }
+
+  .map-controls button {
+    flex: 1;
+    min-width: 120px;
+  }
+
+  .hint {
+    color: #555;
+    font-size: 11px;
+    margin-top: 6px;
+  }
+
+  .machinery-block {
+    border-top: 1px solid #ddd;
+    margin-top: 8px;
+    padding-top: 8px;
+  }
+
+  .machinery-block .hint {
+    margin-top: 4px;
+    margin-bottom: 4px;
+  }
+
+  #btnNextMap {
+    width: 100%;
+    margin-top: 8px;
+    display: none;
+  }
+
+  /* Deliberately unlabeled and unobtrusive. */
+  #cheatBox {
+    position: fixed;
+    bottom: 6px;
+    right: 6px;
+    width: 90px;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 10px;
+    border: 1px solid #ddd;
+    color: #ccc;
+    padding: 2px 4px;
+    background: #fff;
+    opacity: 0.35;
+  }
+
+  #cheatBox:focus {
+    color: #000;
+    border-color: #000;
+    opacity: 1;
+  }
+</style>
+</head>
+<body>
+
+<h1 id="titleCount">nails: 0</h1>
+
+<div class="top-buttons">
+  <button id="btnSave">save</button>
+  <button id="btnLoad">load</button>
+</div>
+
+<div class="columns">
+  <div>
+    <div class="panel">
+      <div class="panel-body">
+        <div class="row"><span class="label">available funds:</span><span class="value" id="valFunds">$0.00</span></div>
+        <div class="row"><span class="label">unsold inventory:</span><span class="value" id="valUnsold">0</span></div>
+
+        <div class="stepper">
+          <span class="label" style="margin-right:auto;">price ($):</span>
+          <button id="btnPriceMinus">-</button>
+          <span class="value" id="valPrice">$0.00</span>
+          <button id="btnPricePlus">+</button>
+        </div>
+
+        <div class="row"><span class="label">public demand (%):</span><span class="value" id="valDemand">0%</span></div>
+
+        <div class="row">
+          <span class="label">marketing level:</span>
+          <span class="value" id="valMarketing">0</span>
+          <button id="btnBuyMarketing">buy marketing</button>
+        </div>
+
+        <div class="row">
+          <span class="label">iron:</span>
+          <span class="value" id="valIron">0 g</span>
+          <button id="btnBuyIron">buy 100 iron</button>
+        </div>
+
+        <div class="row"><span class="label">avg revenue/s:</span><span class="value" id="valAvgRev">$0.00</span></div>
+        <div class="row"><span class="label">avg nails/s:</span><span class="value" id="valAvgNails">0.0</span></div>
+      </div>
+    </div>
+
+    <button id="btnMakeNail" style="width:320px;">make nail</button>
+
+    <div class="panel" style="margin-top:14px;">
+      <div class="panel-header">machinery</div>
+      <div class="panel-body">
+
+        <div class="row">
+          <span class="label">nail makers:</span>
+          <span class="value" id="valNailMakers">0</span>
+          <button id="btnBuyNailMaker">buy nail maker</button>
+        </div>
+
+        <div class="row">
+          <span class="label">copper:</span>
+          <span class="value" id="valCopper">0 g</span>
+          <button id="btnSellCopper">sell copper</button>
+        </div>
+
+        <div class="machinery-block">
+          <div class="row"><span class="label">maker factories:</span><span class="value" id="valFactories">0</span></div>
+          <div class="hint">build cost: <span id="valFactoryBuildCost">$0.00</span> &middot; built by walking to an empty tile on the map</div>
+
+          <div class="stepper">
+            <span class="label" style="margin-right:auto;">throughput:</span>
+            <button id="btnFactoryThroughputMinus">-</button>
+            <span class="value" id="valFactoryThroughput">100%</span>
+            <button id="btnFactoryThroughputPlus">+</button>
+          </div>
+
+          <div class="hint">
+            consuming: <span id="valFactoryIronRate">0 g</span> iron/s, <span id="valFactoryCopperRate">0 g</span> copper/s &middot;
+            producing: <span id="valFactoryOutputRate">0.0</span> nail makers/min
+          </div>
+        </div>
+
+        <div class="machinery-block">
+          <div class="row"><span class="label">diggers:</span><span class="value" id="valDiggers">0</span></div>
+          <div class="hint">build cost: <span id="valDiggerBuildCost">$0.00</span> &middot; built by walking to an empty tile on the map</div>
+
+          <div class="stepper">
+            <span class="label" style="margin-right:auto;">intake:</span>
+            <button id="btnDiggerIntakeMinus">-</button>
+            <span class="value" id="valDiggerIntake">1.00/s</span>
+            <button id="btnDiggerIntakePlus">+</button>
+          </div>
+
+          <div class="hint">
+            consuming: <span id="valDiggerNailsRate">0.0</span> nails/s &middot;
+            producing: <span id="valDiggerIronRate">0 g</span> iron/s, <span id="valDiggerCopperRate">0 g</span> copper/s
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="panel-header" style="width:fit-content; border:1px solid #000; border-bottom:none;">extraction &mdash; map <span id="mapIndexLabel">1</span></div>
+    <div id="mapDisplay"></div>
+    <div class="map-controls">
+      <button id="btnMine">mine (E)</button>
+      <button id="btnBuildFactory">build factory here</button>
+      <button id="btnBuildDigger">build digger here</button>
+    </div>
+    <button id="btnNextMap">go to next map</button>
+    <div class="hint">move: arrow keys / WASD &nbsp;&middot;&nbsp; i = iron &nbsp; c = copper &nbsp; F = factory &nbsp; D = digger &nbsp; @ = you &nbsp; . = drained/empty</div>
+  </div>
+</div>
+
+<input type="text" id="cheatBox" spellcheck="false">
+
+<script>
+(function () {
+  "use strict";
+
+  // ----------------------------------------------------------------
+  // Tunables
+  // ----------------------------------------------------------------
+
+  var PRICE_MIN = 0.01;
+  var PRICE_STEP = 0.01;
+  var PRICE_MAX = 0.08;
+
+  var MARKETING_BASE_COST = 10;
+  var MARKETING_GROWTH = 1.6;
+  var MARKETING_BONUS_PER_LEVEL = 0.08;
+
+  var IRON_BUY_COST = 1;
+  var IRON_BUY_AMOUNT = 100; // grams
+
+  var NAILMAKER_COST = 5; // flat, forever
+  var NAILMAKER_COOLDOWN_MS = 1000;
+  var NAILMAKER_RATE = 1; // nails/sec each maker produces, iron permitting
+  var IRON_PER_NAIL = 1; // grams
+
+  var FACTORY_BUILD_COST_FUNDS = 100;
+  var FACTORY_PERIOD_SEC = 1;
+  var FACTORY_IRON_PER_NAILMAKER = 100;   // was 1000 -- cheaper per nail maker made
+  var FACTORY_COPPER_PER_NAILMAKER = 10; // was 500
+
+  var DIGGER_BUILD_COST_FUNDS = 25; // was 300 -- cheaper to get into
+  var DIGGER_BUILD_COST_IRON = 0;  // was 500
+  var DIGGER_BUILD_COST_COPPER = 0; // was 250
+
+  // Digger intake and factory throughput are now player-adjustable --
+  // these are just the starting defaults and the step/bounds for the
+  // +/- controls in the Machinery panel.
+  var DIGGER_INTAKE_DEFAULT = 1;   // nails/sec consumed per digger
+  var DIGGER_INTAKE_STEP = 0.25;
+  var DIGGER_INTAKE_MIN = 0.25;
+  var DIGGER_INTAKE_MAX = 5;
+
+  var FACTORY_THROUGHPUT_DEFAULT = 1;   // 100% = FACTORY_PERIOD_SEC as tuned above
+  var FACTORY_THROUGHPUT_STEP = 0.25;
+  var FACTORY_THROUGHPUT_MIN = 0.25;
+  var FACTORY_THROUGHPUT_MAX = 3;
+
+  // Selling happens in irregular chunks rather than a smooth trickle --
+  // both how often a sale fires and how big it is scale with demand.
+  var SALE_EVENT_RATE = 2.5;   // sale events/sec at 100% demand
+  var SALE_CHUNK_BASE = 4;     // baseline nails per sale event
+
+  var COPPER_SELL_PRICE = 0.05; // $ per gram
+
+  var MINE_IRON_AMOUNT = 50; // grams per mine action (manual or digger)
+  var MINE_COPPER_AMOUNT = 10; // grams per mine action (manual or digger)
+  var MINE_COOLDOWN_MS = 400;
+  var DEPOSIT_CAPACITY = 2000; // grams -- every deposit tile holds 2kg before it's drained
+
+  // How many seconds of history the "avg/s" and machinery-analytics
+  // readouts are averaged over. Bigger = steadier, more readable
+  // numbers; smaller = more responsive to what's happening right now.
+  var STATS_WINDOW_SEC = 5;
+
+  var TICK_MS = 100;
+
+  var MAP_ROWS = 10;
+  var MAP_COLS = 21;
+  var DEPOSITS_PER_MAP = 15;
+
+  // ----------------------------------------------------------------
+  // Map generation
+  // ----------------------------------------------------------------
+
+  function mulberry32(seed) {
+    return function () {
+      seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+      var t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  function generateMapTiles(mapIndex) {
+    var rand = mulberry32(mapIndex * 7919 + 13);
+    var tiles = [];
+    for (var r = 0; r < MAP_ROWS; r++) {
+      var row = [];
+      for (var c = 0; c < MAP_COLS; c++) {
+        row.push({ type: ".", remaining: 0 });
+      }
+      tiles.push(row);
+    }
+
+    var placed = 0;
+    var attempts = 0;
+    while (placed < DEPOSITS_PER_MAP && attempts < 1000) {
+      attempts++;
+      var r = Math.floor(rand() * MAP_ROWS);
+      var c = Math.floor(rand() * MAP_COLS);
+      if (r === 0 && c === 0) continue;
+      if (tiles[r][c].type !== ".") continue;
+      var type = rand() < 0.5 ? "i" : "c";
+      tiles[r][c] = { type: type, remaining: DEPOSIT_CAPACITY };
+      placed++;
+    }
+    return tiles;
+  }
+
+  function mapHasDeposits(tiles) {
+    for (var r = 0; r < MAP_ROWS; r++) {
+      for (var c = 0; c < MAP_COLS; c++) {
+        if (tiles[r][c].remaining > 0) return true;
+      }
+    }
+    return false;
+  }
+
+  // ----------------------------------------------------------------
+  // State
+  // ----------------------------------------------------------------
+
+  function defaultState() {
+    return {
+      funds: 25.00,
+      unsold: 0,
+      price: 0.02,
+      ironAmt: 100,
+      copperAmt: 0,
+      marketingLevel: 0,
+      nailMakers: 0,
+      totalNailsMade: 0,
+      nailMakerCooldownUntil: 0,
+      playerRow: 0,
+      playerCol: 0,
+      mineCooldownUntil: 0,
+      mapIndex: 1,
+      mapTiles: generateMapTiles(1),
+      factories: [], // { row, col, mapIndex, timer }
+      diggers: [],   // { row, col, mapIndex }
+      diggerActionAccum: 0, // fractional nail/action accumulator for diggers
+      saleAccum: 0,
+
+      factoryThroughput: FACTORY_THROUGHPUT_DEFAULT,
+      diggerIntake: DIGGER_INTAKE_DEFAULT,
+
+      simTime: 0, // seconds of game time elapsed, used to window the stats below
+
+      // Rolling history for readable "avg/s" style numbers -- each entry
+      // is [simTime, amount]; amounts are summed and divided by
+      // STATS_WINDOW_SEC to get a smooth per-second rate, instead of a
+      // jumpy instant-tick number.
+      histRevenue: [],
+      histNailsMade: [],
+      histFactoryIron: [],
+      histFactoryCopper: [],
+      histFactoryOutput: [],
+      histDiggerNails: [],
+      histDiggerIron: [],
+      histDiggerCopper: [],
+    };
+  }
+
+  var state = defaultState();
+
+  // ----------------------------------------------------------------
+  // Rolling-average helpers
+  // ----------------------------------------------------------------
+
+  function histPush(arr, amount) {
+    arr.push([state.simTime, amount]);
+  }
+
+  function histPrune(arr) {
+    while (arr.length && (state.simTime - arr[0][0]) > STATS_WINDOW_SEC) {
+      arr.shift();
+    }
+  }
+
+  function histRatePerSec(arr) {
+    var sum = 0;
+    for (var i = 0; i < arr.length; i++) sum += arr[i][1];
+    return sum / STATS_WINDOW_SEC;
+  }
+
+  // ----------------------------------------------------------------
+  // Formulas
+  // ----------------------------------------------------------------
+
+  function marketingBonus() {
+    return MARKETING_BONUS_PER_LEVEL * state.marketingLevel;
+  }
+
+  function demandFraction() {
+    var base = 1 - (state.price / PRICE_MAX);
+    return Math.max(0, base + marketingBonus());
+  }
+
+  function priceForMarketing() {
+    return MARKETING_BASE_COST * Math.pow(MARKETING_GROWTH, state.marketingLevel);
+  }
+
+  function structureAt(row, col) {
+    for (var i = 0; i < state.factories.length; i++) {
+      if (state.factories[i].row === row && state.factories[i].col === col) return state.factories[i];
+    }
+    for (var j = 0; j < state.diggers.length; j++) {
+      if (state.diggers[j].row === row && state.diggers[j].col === col) return state.diggers[j];
+    }
+    return null;
+  }
+
+  function activeDiggerCount() {
+    var count = 0;
+    for (var i = 0; i < state.diggers.length; i++) {
+      if (state.diggers[i].mapIndex === state.mapIndex) count++;
+    }
+    return count;
+  }
+
+  // ----------------------------------------------------------------
+  // DOM refs
+  // ----------------------------------------------------------------
+
+  var el = {
+    title: document.getElementById("titleCount"),
+    funds: document.getElementById("valFunds"),
+    unsold: document.getElementById("valUnsold"),
+    price: document.getElementById("valPrice"),
+    demand: document.getElementById("valDemand"),
+    marketing: document.getElementById("valMarketing"),
+    iron: document.getElementById("valIron"),
+    copper: document.getElementById("valCopper"),
+    nailMakers: document.getElementById("valNailMakers"),
+    factories: document.getElementById("valFactories"),
+    diggers: document.getElementById("valDiggers"),
+    avgRev: document.getElementById("valAvgRev"),
+    avgNails: document.getElementById("valAvgNails"),
+    btnPriceMinus: document.getElementById("btnPriceMinus"),
+    btnPricePlus: document.getElementById("btnPricePlus"),
+    btnMakeNail: document.getElementById("btnMakeNail"),
+    btnBuyMarketing: document.getElementById("btnBuyMarketing"),
+    btnBuyIron: document.getElementById("btnBuyIron"),
+    btnSellCopper: document.getElementById("btnSellCopper"),
+    btnBuyNailMaker: document.getElementById("btnBuyNailMaker"),
+    btnSave: document.getElementById("btnSave"),
+    btnLoad: document.getElementById("btnLoad"),
+    mapDisplay: document.getElementById("mapDisplay"),
+    mapIndexLabel: document.getElementById("mapIndexLabel"),
+    btnMine: document.getElementById("btnMine"),
+    btnBuildFactory: document.getElementById("btnBuildFactory"),
+    btnBuildDigger: document.getElementById("btnBuildDigger"),
+    btnNextMap: document.getElementById("btnNextMap"),
+    cheatBox: document.getElementById("cheatBox"),
+
+    factoryBuildCost: document.getElementById("valFactoryBuildCost"),
+    factoryThroughput: document.getElementById("valFactoryThroughput"),
+    factoryIronRate: document.getElementById("valFactoryIronRate"),
+    factoryCopperRate: document.getElementById("valFactoryCopperRate"),
+    factoryOutputRate: document.getElementById("valFactoryOutputRate"),
+    btnFactoryThroughputMinus: document.getElementById("btnFactoryThroughputMinus"),
+    btnFactoryThroughputPlus: document.getElementById("btnFactoryThroughputPlus"),
+
+    diggerBuildCost: document.getElementById("valDiggerBuildCost"),
+    diggerIntake: document.getElementById("valDiggerIntake"),
+    diggerNailsRate: document.getElementById("valDiggerNailsRate"),
+    diggerIronRate: document.getElementById("valDiggerIronRate"),
+    diggerCopperRate: document.getElementById("valDiggerCopperRate"),
+    btnDiggerIntakeMinus: document.getElementById("btnDiggerIntakeMinus"),
+    btnDiggerIntakePlus: document.getElementById("btnDiggerIntakePlus"),
+  };
+
+  // ----------------------------------------------------------------
+  // Formatting
+  // ----------------------------------------------------------------
+
+  function fmtMoney(n) {
+    return "$" + n.toFixed(2);
+  }
+
+  function fmtInt(n) {
+    return Math.floor(n).toLocaleString();
+  }
+
+  function fmtDecimal(n, places) {
+    return n.toFixed(places === undefined ? 1 : places);
+  }
+
+  function fmtWeight(grams) {
+    if (grams >= 1000000) return (grams / 1000000).toFixed(2) + " t";
+    if (grams >= 1000) return (grams / 1000).toFixed(2) + " kg";
+    return fmtInt(grams) + " g";
+  }
+
+  function round2(n) {
+    return Math.round(n * 100) / 100;
+  }
+
+  // ----------------------------------------------------------------
+  // Render
+  // ----------------------------------------------------------------
+
+  function render() {
+    el.title.textContent = "nails: " + fmtInt(state.totalNailsMade);
+    el.funds.textContent = fmtMoney(state.funds);
+    el.unsold.textContent = fmtInt(state.unsold);
+    el.price.textContent = fmtMoney(state.price);
+    el.demand.textContent = Math.round(demandFraction() * 100) + "%";
+    el.marketing.textContent = state.marketingLevel;
+    el.iron.textContent = fmtWeight(state.ironAmt);
+    el.copper.textContent = fmtWeight(state.copperAmt);
+    el.nailMakers.textContent = state.nailMakers;
+    el.factories.textContent = state.factories.length;
+    el.diggers.textContent = state.diggers.length;
+    el.avgRev.textContent = fmtMoney(histRatePerSec(state.histRevenue));
+    el.avgNails.textContent = fmtDecimal(histRatePerSec(state.histNailsMade));
+    el.mapIndexLabel.textContent = state.mapIndex;
+
+    // ---- machinery: factories ----
+    el.factoryBuildCost.textContent = fmtMoney(FACTORY_BUILD_COST_FUNDS);
+    el.factoryThroughput.textContent = Math.round(state.factoryThroughput * 100) + "%";
+    el.btnFactoryThroughputMinus.disabled = state.factoryThroughput <= FACTORY_THROUGHPUT_MIN;
+    el.btnFactoryThroughputPlus.disabled = state.factoryThroughput >= FACTORY_THROUGHPUT_MAX;
+    el.factoryIronRate.textContent = fmtWeight(histRatePerSec(state.histFactoryIron));
+    el.factoryCopperRate.textContent = fmtWeight(histRatePerSec(state.histFactoryCopper));
+    el.factoryOutputRate.textContent = fmtDecimal(histRatePerSec(state.histFactoryOutput) * 60);
+
+    // ---- machinery: diggers ----
+    el.diggerBuildCost.textContent = fmtMoney(DIGGER_BUILD_COST_FUNDS);
+    el.diggerIntake.textContent = state.diggerIntake.toFixed(2) + "/s";
+    el.btnDiggerIntakeMinus.disabled = state.diggerIntake <= DIGGER_INTAKE_MIN;
+    el.btnDiggerIntakePlus.disabled = state.diggerIntake >= DIGGER_INTAKE_MAX;
+    el.diggerNailsRate.textContent = fmtDecimal(histRatePerSec(state.histDiggerNails));
+    el.diggerIronRate.textContent = fmtWeight(histRatePerSec(state.histDiggerIron));
+    el.diggerCopperRate.textContent = fmtWeight(histRatePerSec(state.histDiggerCopper));
+
+    el.btnBuyMarketing.textContent = "buy (" + fmtMoney(priceForMarketing()) + ")";
+    el.btnBuyMarketing.disabled = state.funds < priceForMarketing();
+
+    el.btnBuyIron.textContent = "buy " + IRON_BUY_AMOUNT + "g (" + fmtMoney(IRON_BUY_COST) + ")";
+    el.btnBuyIron.disabled = state.funds < IRON_BUY_COST;
+
+    el.btnSellCopper.textContent = "sell (" + fmtMoney(state.copperAmt * COPPER_SELL_PRICE) + ")";
+    el.btnSellCopper.disabled = state.copperAmt <= 0;
+
+    var nailMakerReady = Date.now() >= state.nailMakerCooldownUntil;
+    if (!nailMakerReady) {
+      var secsLeft = Math.max(0, (state.nailMakerCooldownUntil - Date.now()) / 1000);
+      el.btnBuyNailMaker.textContent = "wait " + secsLeft.toFixed(1) + "s";
+    } else {
+      el.btnBuyNailMaker.textContent = "buy (" + fmtMoney(NAILMAKER_COST) + ")";
+    }
+    el.btnBuyNailMaker.disabled = !nailMakerReady || state.funds < NAILMAKER_COST;
+
+    el.btnMakeNail.disabled = state.ironAmt < IRON_PER_NAIL;
+    el.btnPriceMinus.disabled = state.price <= PRICE_MIN;
+
+    renderMap();
+  }
+
+  function renderMap() {
+    var lines = [];
+    for (var r = 0; r < MAP_ROWS; r++) {
+      var line = "";
+      for (var c = 0; c < MAP_COLS; c++) {
+        var tile = state.mapTiles[r][c];
+        var structure = structureAt(r, c);
+        if (r === state.playerRow && c === state.playerCol) {
+          line += "@";
+        } else if (structure && structure.mapIndex === state.mapIndex) {
+          line += (structure.timer !== undefined) ? "F" : "D";
+        } else if (tile.remaining > 0) {
+          line += tile.type;
+        } else {
+          line += ".";
+        }
+      }
+      lines.push(line);
+    }
+    el.mapDisplay.textContent = lines.join("\n");
+
+    var currentTile = state.mapTiles[state.playerRow][state.playerCol];
+    var onStructure = !!structureAt(state.playerRow, state.playerCol);
+    var mineReady = Date.now() >= state.mineCooldownUntil;
+
+    el.btnMine.disabled = onStructure || currentTile.remaining <= 0 || !mineReady;
+    el.btnBuildFactory.disabled = onStructure || currentTile.type !== "." ||
+      state.funds < FACTORY_BUILD_COST_FUNDS;
+    el.btnBuildDigger.disabled = onStructure || currentTile.type !== "." ||
+      state.funds < DIGGER_BUILD_COST_FUNDS ||
+      state.ironAmt < DIGGER_BUILD_COST_IRON ||
+      state.copperAmt < DIGGER_BUILD_COST_COPPER;
+
+    el.btnNextMap.style.display = mapHasDeposits(state.mapTiles) ? "none" : "block";
+  }
+
+  // ----------------------------------------------------------------
+  // Actions
+  // ----------------------------------------------------------------
+
+  el.btnPriceMinus.addEventListener("click", function () {
+    state.price = Math.max(PRICE_MIN, round2(state.price - PRICE_STEP));
+    render();
+  });
+
+  el.btnPricePlus.addEventListener("click", function () {
+    state.price = round2(state.price + PRICE_STEP);
+    render();
+  });
+
+  el.btnMakeNail.addEventListener("click", function () {
+    if (state.ironAmt >= IRON_PER_NAIL) {
+      state.ironAmt -= IRON_PER_NAIL;
+      state.unsold += 1;
+      state.totalNailsMade += 1;
+      render();
+    }
+  });
+
+  el.btnBuyMarketing.addEventListener("click", function () {
+    var cost = priceForMarketing();
+    if (state.funds >= cost) {
+      state.funds -= cost;
+      state.marketingLevel += 1;
+      render();
+    }
+  });
+
+  el.btnBuyIron.addEventListener("click", function () {
+    if (state.funds >= IRON_BUY_COST) {
+      state.funds -= IRON_BUY_COST;
+      state.ironAmt += IRON_BUY_AMOUNT;
+      render();
+    }
+  });
+
+  el.btnSellCopper.addEventListener("click", function () {
+    if (state.copperAmt > 0) {
+      state.funds += state.copperAmt * COPPER_SELL_PRICE;
+      state.copperAmt = 0;
+      render();
+    }
+  });
+
+  el.btnBuyNailMaker.addEventListener("click", function () {
+    if (Date.now() < state.nailMakerCooldownUntil) return;
+    if (state.funds >= NAILMAKER_COST) {
+      state.funds -= NAILMAKER_COST;
+      state.nailMakers += 1;
+      state.nailMakerCooldownUntil = Date.now() + NAILMAKER_COOLDOWN_MS;
+      render();
+    }
+  });
+
+  el.btnFactoryThroughputMinus.addEventListener("click", function () {
+    state.factoryThroughput = Math.max(FACTORY_THROUGHPUT_MIN, round2(state.factoryThroughput - FACTORY_THROUGHPUT_STEP));
+    render();
+  });
+  el.btnFactoryThroughputPlus.addEventListener("click", function () {
+    state.factoryThroughput = Math.min(FACTORY_THROUGHPUT_MAX, round2(state.factoryThroughput + FACTORY_THROUGHPUT_STEP));
+    render();
+  });
+
+  el.btnDiggerIntakeMinus.addEventListener("click", function () {
+    state.diggerIntake = Math.max(DIGGER_INTAKE_MIN, round2(state.diggerIntake - DIGGER_INTAKE_STEP));
+    render();
+  });
+  el.btnDiggerIntakePlus.addEventListener("click", function () {
+    state.diggerIntake = Math.min(DIGGER_INTAKE_MAX, round2(state.diggerIntake + DIGGER_INTAKE_STEP));
+    render();
+  });
+
+  el.btnMine.addEventListener("click", mineCurrentTile);
+  el.btnBuildFactory.addEventListener("click", buildFactoryHere);
+  el.btnBuildDigger.addEventListener("click", buildDiggerHere);
+  el.btnNextMap.addEventListener("click", goToNextMap);
+
+  function mineCurrentTile() {
+    if (Date.now() < state.mineCooldownUntil) return;
+    if (structureAt(state.playerRow, state.playerCol)) return;
+    var tile = state.mapTiles[state.playerRow][state.playerCol];
+    if (tile.remaining <= 0) return;
+
+    var amount = tile.type === "i" ? MINE_IRON_AMOUNT : MINE_COPPER_AMOUNT;
+    amount = Math.min(amount, tile.remaining);
+    tile.remaining -= amount;
+
+    if (tile.type === "i") {
+      state.ironAmt += amount;
+    } else {
+      state.copperAmt += amount;
+    }
+
+    state.mineCooldownUntil = Date.now() + MINE_COOLDOWN_MS;
+    render();
+  }
+
+  function buildFactoryHere() {
+    var row = state.playerRow, col = state.playerCol;
+    var tile = state.mapTiles[row][col];
+    if (tile.type !== "." || structureAt(row, col)) return;
+    if (state.funds < FACTORY_BUILD_COST_FUNDS) return;
+
+    state.funds -= FACTORY_BUILD_COST_FUNDS;
+    state.factories.push({ row: row, col: col, mapIndex: state.mapIndex, timer: 0 });
+    render();
+  }
+
+  function buildDiggerHere() {
+    var row = state.playerRow, col = state.playerCol;
+    var tile = state.mapTiles[row][col];
+    if (tile.type !== "." || structureAt(row, col)) return;
+    if (state.funds < DIGGER_BUILD_COST_FUNDS) return;
+    if (state.ironAmt < DIGGER_BUILD_COST_IRON) return;
+    if (state.copperAmt < DIGGER_BUILD_COST_COPPER) return;
+
+    state.funds -= DIGGER_BUILD_COST_FUNDS;
+    state.ironAmt -= DIGGER_BUILD_COST_IRON;
+    state.copperAmt -= DIGGER_BUILD_COST_COPPER;
+    state.diggers.push({ row: row, col: col, mapIndex: state.mapIndex });
+    render();
+  }
+
+  function goToNextMap() {
+    if (mapHasDeposits(state.mapTiles)) return;
+    state.mapIndex += 1;
+    state.mapTiles = generateMapTiles(state.mapIndex);
+    state.playerRow = 0;
+    state.playerCol = 0;
+    render();
+  }
+
+  function movePlayer(dRow, dCol) {
+    var newRow = state.playerRow + dRow;
+    var newCol = state.playerCol + dCol;
+    if (newRow < 0 || newRow >= MAP_ROWS || newCol < 0 || newCol >= MAP_COLS) return;
+    state.playerRow = newRow;
+    state.playerCol = newCol;
+    render();
+  }
+
+  window.addEventListener("keydown", function (e) {
+    if (document.activeElement === el.cheatBox) return; // don't hijack typing
+    switch (e.key) {
+      case "ArrowUp": case "w": case "W": movePlayer(-1, 0); break;
+      case "ArrowDown": case "s": case "S": movePlayer(1, 0); break;
+      case "ArrowLeft": case "a": case "A": movePlayer(0, -1); break;
+      case "ArrowRight": case "d": case "D": movePlayer(0, 1); break;
+      case "e": case "E": mineCurrentTile(); break;
+      default: return;
+    }
+    e.preventDefault();
+  });
+
+  el.btnSave.addEventListener("click", function () {
+    localStorage.setItem("nailMakerSave", JSON.stringify(state));
+    flashButton(el.btnSave, "saved!");
+  });
+
+  el.btnLoad.addEventListener("click", function () {
+    var raw = localStorage.getItem("nailMakerSave");
+    if (!raw) {
+      flashButton(el.btnLoad, "no save found");
+      return;
+    }
+    try {
+      var data = JSON.parse(raw);
+      state = Object.assign(defaultState(), data);
+      render();
+      flashButton(el.btnLoad, "loaded!");
+    } catch (e) {
+      flashButton(el.btnLoad, "load failed");
+    }
+  });
+
+  function flashButton(btn, text) {
+    var old = btn.textContent;
+    btn.textContent = text;
+    setTimeout(function () {
+      btn.textContent = old;
+    }, 1000);
+  }
+
+  // ----------------------------------------------------------------
+  // Cheat box -- deliberately blends into the corner, no label.
+  // Type "<key> <amount>" and hit Enter.
+  // Keys: funds, unsold, iron, copper, nailmakers, factories, diggers, marketing
+  // ----------------------------------------------------------------
+
+  el.cheatBox.addEventListener("keydown", function (e) {
+    if (e.key !== "Enter") return;
+    var raw = el.cheatBox.value.trim().toLowerCase();
+    var parts = raw.split(/\s+/);
+    if (parts.length === 2) {
+      var key = parts[0];
+      var amount = parseFloat(parts[1]);
+      if (!isNaN(amount)) {
+        switch (key) {
+          case "funds": state.funds = amount; break;
+          case "unsold": state.unsold = Math.max(0, amount); break;
+          case "iron": state.ironAmt = Math.max(0, amount); break;
+          case "copper": state.copperAmt = Math.max(0, amount); break;
+          case "nailmakers": state.nailMakers = Math.max(0, Math.floor(amount)); break;
+          case "factories":
+            state.factories = [];
+            for (var i = 0; i < Math.max(0, Math.floor(amount)); i++) {
+              state.factories.push({ row: -1, col: -1, mapIndex: -1, timer: 0 });
+            }
+            break;
+          case "diggers":
+            state.diggers = [];
+            for (var j = 0; j < Math.max(0, Math.floor(amount)); j++) {
+              state.diggers.push({ row: -1, col: -1, mapIndex: -1 });
+            }
+            break;
+          case "marketing": state.marketingLevel = Math.max(0, Math.floor(amount)); break;
+        }
+        render();
+      }
+    }
+    el.cheatBox.value = "";
+    el.cheatBox.blur();
+  });
+
+  // ----------------------------------------------------------------
+  // Game loop
+  // ----------------------------------------------------------------
+
+  function tick(dt) {
+    state.simTime += dt;
+
+    // Production: nail makers turn iron into unsold nails.
+    var wantToMake = state.nailMakers * NAILMAKER_RATE * dt;
+    var ironAvailableAsNails = state.ironAmt / IRON_PER_NAIL;
+    var actuallyMade = Math.min(wantToMake, ironAvailableAsNails);
+
+    state.ironAmt -= actuallyMade * IRON_PER_NAIL;
+    state.unsold += actuallyMade;
+    state.totalNailsMade += actuallyMade;
+    histPush(state.histNailsMade, actuallyMade);
+
+    // Selling: instead of a smooth trickle, nails sell off in irregular
+    // chunks -- bigger and more frequent the higher demand runs. The
+    // *displayed* avg revenue/s stays smooth because it's a rolling
+    // average over the last few seconds, not this instant.
+    var demand = demandFraction();
+    if (demand > 0 && state.unsold > 0) {
+      state.saleAccum += demand * SALE_EVENT_RATE * dt;
+      while (state.saleAccum >= 1 && state.unsold > 0) {
+        state.saleAccum -= 1;
+        var chunk = Math.max(1, Math.round(SALE_CHUNK_BASE * demand * (0.5 + Math.random())));
+        chunk = Math.min(chunk, state.unsold);
+        state.unsold -= chunk;
+        var revenue = chunk * state.price;
+        state.funds += revenue;
+        histPush(state.histRevenue, revenue);
+      }
+    }
+
+    // Maker factories: cycle length is fixed, but throughput scales how
+    // fast the timer fills -- 200% throughput means factories complete
+    // cycles (and consume iron/copper) twice as fast. Only completes
+    // once both resources are on hand; otherwise the timer holds at the
+    // cap and waits.
+    for (var i = 0; i < state.factories.length; i++) {
+      var f = state.factories[i];
+      if (f.timer < FACTORY_PERIOD_SEC) {
+        f.timer = Math.min(FACTORY_PERIOD_SEC, f.timer + dt * state.factoryThroughput);
+      }
+      if (f.timer >= FACTORY_PERIOD_SEC &&
+          state.ironAmt >= FACTORY_IRON_PER_NAILMAKER &&
+          state.copperAmt >= FACTORY_COPPER_PER_NAILMAKER) {
+        state.ironAmt -= FACTORY_IRON_PER_NAILMAKER;
+        state.copperAmt -= FACTORY_COPPER_PER_NAILMAKER;
+        state.nailMakers += 1;
+        f.timer -= FACTORY_PERIOD_SEC;
+        histPush(state.histFactoryIron, FACTORY_IRON_PER_NAILMAKER);
+        histPush(state.histFactoryCopper, FACTORY_COPPER_PER_NAILMAKER);
+        histPush(state.histFactoryOutput, 1);
+      }
+    }
+
+    // Diggers: burn unsold nails as ammo, at the player-adjustable
+    // intake rate. Each whole nail burned performs exactly one "mine"
+    // action against the next available deposit on the current map --
+    // the same MINE_IRON_AMOUNT / MINE_COPPER_AMOUNT the player gets
+    // from clicking the mine button once. Diggers built on a map you've
+    // since left do nothing (nothing left to reach).
+    var activeDiggers = activeDiggerCount();
+    if (activeDiggers > 0 && mapHasDeposits(state.mapTiles)) {
+      state.diggerActionAccum += activeDiggers * state.diggerIntake * dt;
+
+      while (state.diggerActionAccum >= 1 && state.unsold >= 1) {
+        var target = findNextDepositTile();
+        if (!target) break; // nothing left to dig on this map
+
+        state.unsold -= 1;
+        state.diggerActionAccum -= 1;
+        histPush(state.histDiggerNails, 1);
+
+        var amt = target.type === "i" ? MINE_IRON_AMOUNT : MINE_COPPER_AMOUNT;
+        amt = Math.min(amt, target.remaining);
+        target.remaining -= amt;
+
+        if (target.type === "i") {
+          state.ironAmt += amt;
+          histPush(state.histDiggerIron, amt);
+        } else {
+          state.copperAmt += amt;
+          histPush(state.histDiggerCopper, amt);
+        }
+      }
+      // Don't let unspent "want to dig" pile up forever if out of nails.
+      state.diggerActionAccum = Math.min(state.diggerActionAccum, 5);
+    } else {
+      state.diggerActionAccum = 0;
+    }
+
+    // Prune all the rolling-average buffers to the trailing window.
+    histPrune(state.histRevenue);
+    histPrune(state.histNailsMade);
+    histPrune(state.histFactoryIron);
+    histPrune(state.histFactoryCopper);
+    histPrune(state.histFactoryOutput);
+    histPrune(state.histDiggerNails);
+    histPrune(state.histDiggerIron);
+    histPrune(state.histDiggerCopper);
+
+    render();
+  }
+
+  function findNextDepositTile() {
+    for (var r = 0; r < MAP_ROWS; r++) {
+      for (var c = 0; c < MAP_COLS; c++) {
+        if (state.mapTiles[r][c].remaining > 0) return state.mapTiles[r][c];
+      }
+    }
+    return null;
+  }
+
+  setInterval(function () {
+    tick(TICK_MS / 1000);
+  }, TICK_MS);
+
+  render();
+})();
+</script>
+
+</body>
+</html>
