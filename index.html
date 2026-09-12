@@ -435,20 +435,53 @@
   </div>
 
   <div class="panel" id="leaderboardSection" style="width:280px; position:fixed; top:20px; right:20px; z-index:10; max-height:80vh; overflow-y:auto;">
-    <div class="panel-header">leaderboard <span style="font-weight:normal; color:#777; font-size:11px;">(offline)</span></div>
+    <div class="panel-header">leaderboard</div>
     <div class="panel-body">
-      <div class="hint">"end run" banks your nail count under a name, then starts a fresh run. scores are stored on this device only. for now teehee.</div>
+      <div class="hint" id="leaderboardNote">local to this browser -- log in for a global leaderboard</div>
       <div id="leaderboardList"></div>
+    </div>
+  </div>
+</div>
+
+<button id="btnAuthToggle" style="position:fixed; bottom:20px; right:20px; z-index:20;">log in / sign up</button>
+
+<div id="authOverlay" style="display:none; position:fixed; inset:0; background:#fff; z-index:50; align-items:flex-start; justify-content:center;">
+  <div style="width:320px; margin-top:100px; border:1px solid #000; background:#fff;">
+    <div class="panel-header" style="display:flex; justify-content:space-between; align-items:center;">
+      <span id="authTitle">log in</span>
+      <button id="btnAuthClose">x</button>
+    </div>
+    <div class="panel-body">
+      <div id="authError" style="color:#c00; font-size:11px; min-height:14px; margin-bottom:6px;"></div>
+
+      <div class="label" style="margin-bottom:2px;">username:</div>
+      <input type="text" id="authUsername" style="width:100%; border:1px solid #000; padding:5px; margin-bottom:10px; font-family:inherit; font-size:13px;" autocomplete="username">
+
+      <div class="label" style="margin-bottom:2px;">password:</div>
+      <input type="password" id="authPassword" style="width:100%; border:1px solid #000; padding:5px; margin-bottom:10px; font-family:inherit; font-size:13px;" autocomplete="current-password">
+
+      <button id="btnAuthSubmit" style="width:100%;">log in</button>
+
+      <div class="hint" style="text-align:center; margin-top:10px;">
+        <a href="#" id="linkAuthSwitch">need an account? sign up</a>
+      </div>
     </div>
   </div>
 </div>
 
 <input type="text" id="cheatBox" spellcheck="false">
 
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
+<script src="js/firebase-config.js"></script>
+
 <script src="js/state.js"></script>
 <script src="js/formulas.js"></script>
 <script src="js/dom.js"></script>
 <script src="js/render.js"></script>
+<script src="js/leaderboard.js"></script>
+<script src="js/auth.js"></script>
 <script src="js/actions.js"></script>
 <script src="js/engine.js"></script>
 
