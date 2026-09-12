@@ -137,58 +137,8 @@ el.btnLoad.addEventListener("click", function () {
 });
 
 // ----------------------------------------------------------------
-// Leaderboard -- local to this browser only. There's no server here,
-// so this can't be a shared cross-player leaderboard; it's a running
-// top-10 list of your own past runs on this device, stored under a
-// separate localStorage key so resetting your run never touches it.
+// End Run -- leaderboard storage/rendering itself lives in leaderboard.js
 // ----------------------------------------------------------------
-
-var LEADERBOARD_KEY = "nailMakerLeaderboard";
-var LEADERBOARD_MAX_ENTRIES = 10;
-
-function loadLeaderboard() {
-  try {
-    var raw = localStorage.getItem(LEADERBOARD_KEY);
-    var list = raw ? JSON.parse(raw) : [];
-    return Array.isArray(list) ? list : [];
-  } catch (e) {
-    return [];
-  }
-}
-
-function addLeaderboardEntry(name, score) {
-  var list = loadLeaderboard();
-  list.push({ name: name, score: score });
-  list.sort(function (a, b) { return b.score - a.score; });
-  list = list.slice(0, LEADERBOARD_MAX_ENTRIES);
-  localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(list));
-  return list;
-}
-
-function renderLeaderboard() {
-  var list = loadLeaderboard();
-  el.leaderboardList.innerHTML = "";
-  if (list.length === 0) {
-    var empty = document.createElement("div");
-    empty.className = "hint";
-    empty.textContent = "no runs yet -- click \"end run\" to bank your first score";
-    el.leaderboardList.appendChild(empty);
-    return;
-  }
-  for (var i = 0; i < list.length; i++) {
-    var row = document.createElement("div");
-    row.className = "row";
-    var nameSpan = document.createElement("span");
-    nameSpan.className = "label";
-    nameSpan.textContent = (i + 1) + ". " + list[i].name;
-    var scoreSpan = document.createElement("span");
-    scoreSpan.className = "value";
-    scoreSpan.textContent = fmtInt(list[i].score) + " nails";
-    row.appendChild(nameSpan);
-    row.appendChild(scoreSpan);
-    el.leaderboardList.appendChild(row);
-  }
-}
 
 el.btnEndRun.addEventListener("click", function () {
   var confirmed = window.confirm(
@@ -202,9 +152,8 @@ el.btnEndRun.addEventListener("click", function () {
   name = name.trim().slice(0, 20);
   if (!name) name = "anonymous";
 
-  addLeaderboardEntry(name, Math.floor(state.totalNailsMade));
+  submitScore(name, Math.floor(state.totalNailsMade));
   state = defaultState();
-  renderLeaderboard();
   render();
 });
 
