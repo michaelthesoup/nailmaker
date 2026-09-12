@@ -11,7 +11,7 @@
 // ----------------------------------------------------------------
 
 var LOCAL_LEADERBOARD_KEY = "nailMakerLeaderboard";
-var LEADERBOARD_MAX_ENTRIES = 10;
+var LEADERBOARD_MAX_ENTRIES = 100;
 
 function loadLocalLeaderboard() {
   try {

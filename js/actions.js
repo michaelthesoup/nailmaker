@@ -147,10 +147,18 @@ el.btnEndRun.addEventListener("click", function () {
   );
   if (!confirmed) return;
 
-  var name = window.prompt("Name for the leaderboard:", "");
-  if (name === null) return; // cancelled -- don't reset if they backed out
-  name = name.trim().slice(0, 20);
-  if (!name) name = "anonymous";
+  var user = currentAuthUser();
+  var name;
+  if (user) {
+    // Logged-in players are always identified by their account username --
+    // no point asking them to type a name they already have.
+    name = user.displayName || "player";
+  } else {
+    name = window.prompt("Name for the leaderboard:", "");
+    if (name === null) return; // cancelled -- don't reset if they backed out
+    name = name.trim().slice(0, 20);
+    if (!name) name = "anonymous";
+  }
 
   submitScore(name, Math.floor(state.totalNailsMade));
   state = defaultState();
