@@ -261,6 +261,36 @@
   }
 
   /* Deliberately unlabeled and unobtrusive. */
+  /* Reincarnation grid: a wall of monospace characters. Most of it is
+     meaningless noise that keeps re-randomizing; a handful of 3-character
+     tokens are real stats and never flicker, which is the only thing
+     that gives them away. */
+  #reincarnateGrid {
+    font-family: "Courier New", Courier, monospace;
+    font-size: 15px;
+    line-height: 1.5;
+    letter-spacing: 2px;
+    white-space: pre-wrap;
+    word-break: break-all;
+    text-align: left;
+    display: inline-block;
+  }
+
+  .rc-cell {
+    display: inline-block;
+    width: 1ch;
+  }
+
+  .rc-cell.rc-stat {
+    cursor: pointer;
+    font-weight: bold;
+  }
+
+  .rc-cell.rc-stat.rc-chosen {
+    background: #000;
+    color: #fff;
+  }
+
   #cheatBox {
     position: fixed;
     bottom: 6px;
@@ -322,6 +352,14 @@
       You can save manually with the save button, or make an account to save automatically and appear on the global leaderboard. Ending a run records your score and starts you over from the beginning.</p>
 
     </div>
+  </div>
+</div>
+
+<div id="reincarnateOverlay" style="display:none; position:fixed; inset:0; background:#fff; z-index:100; flex-direction:column; align-items:center;">
+  <div style="width:100%; max-width:960px; padding:24px 12px; text-align:center;">
+    <div id="reincarnateStatus" class="hint" style="font-size:13px; margin-bottom:10px;"></div>
+    <div id="reincarnateGrid"></div>
+    <button id="btnReincarnateConfirm" style="margin-top:16px; display:none;">begin new life</button>
   </div>
 </div>
 
@@ -463,6 +501,12 @@
         </div>
         <div class="yy-status" id="valYinYangStatus">BALANCED</div>
         <div class="hint" id="yinYangHint">stay balanced for a production/sales bonus</div>
+
+        <hr class="machinery-divider">
+
+        <div class="row"><span class="label">karma:</span><span class="value" id="valKarma">0</span></div>
+        <div class="hint" id="reincarnateHint">reach 3 tao to end this life and be reborn</div>
+        <button id="btnReincarnate" style="width:100%; margin-top:6px;" disabled>reincarnate</button>
       </div>
     </div>
   </div>
@@ -518,6 +562,7 @@
 <script src="js/repeatbutton.js"></script>
 <script src="js/actions.js"></script>
 <script src="js/cloudsave.js"></script>
+<script src="js/reincarnation.js"></script>
 <script src="js/engine.js"></script>
 
 </body>

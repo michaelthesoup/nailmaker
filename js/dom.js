@@ -33,6 +33,14 @@ var el = {
   btnGuide: document.getElementById("btnGuide"),
   guideOverlay: document.getElementById("guideOverlay"),
   btnGuideClose: document.getElementById("btnGuideClose"),
+
+  valKarma: document.getElementById("valKarma"),
+  btnReincarnate: document.getElementById("btnReincarnate"),
+  reincarnateHint: document.getElementById("reincarnateHint"),
+  reincarnateOverlay: document.getElementById("reincarnateOverlay"),
+  reincarnateGrid: document.getElementById("reincarnateGrid"),
+  reincarnateStatus: document.getElementById("reincarnateStatus"),
+  btnReincarnateConfirm: document.getElementById("btnReincarnateConfirm"),
   leaderboardList: document.getElementById("leaderboardList"),
   leaderboardNote: document.getElementById("leaderboardNote"),
 

@@ -95,6 +95,13 @@ var YINYANG_STATUS_DEADZONE = 0.9; // harmony ratio above this reads as "BALANCE
 // multiplier on top of the live one -- so tao points stack, making
 // every future run of good balance worth more than the last.
 var YINYANG_PD_BONUS_PER_LEVEL = 0.5; // +50% public demand per tao point, permanent
+
+// Reincarnation: once you've banked enough tao, you can end this life
+// and start a new one. Karma is earned from tao at the moment you
+// reincarnate and never goes away, not even across a fresh life --
+// it's not spent, it just permanently raises how many stats you get
+// to rewrite each time you're reborn.
+var KARMA_TAO_THRESHOLD = 3; // tao points per 1 karma, checked at the moment of reincarnating
 var TAO_PERMANENT_BONUS_PER_POINT = 0.5; // +50% nail-maker/breaker rate, permanent, stacking per tao point
 
 // ----------------------------------------------------------------
@@ -217,6 +224,7 @@ function defaultState() {
     yang: 0,
     tao: 0, // tao points -- earned when yin & yang both hit 100 together
     taoBonusStack: 0, // permanent, stacking nail-maker/breaker rate bonus locked in from past tao points
+    karma: 0, // permanent across reincarnations -- carried over explicitly, never wiped by a reset
     harvestAccum: 0,
     profitAccum: 0,
 

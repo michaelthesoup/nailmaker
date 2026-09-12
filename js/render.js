@@ -103,6 +103,16 @@ function render() {
     if (el.yinYangHint) {
       el.yinYangHint.textContent = "harvest more than you use to fill yin, use more than you harvest to fill yang \u2014 fill both for a tao point, locking in today's balance bonus forever (" + Math.round(state.taoBonusStack * 100) + "% permanent so far)";
     }
+
+    el.valKarma.textContent = fmtInt(state.karma);
+    var karmaAvailable = Math.floor(state.tao / KARMA_TAO_THRESHOLD);
+    if (karmaAvailable >= 1) {
+      el.btnReincarnate.disabled = false;
+      el.reincarnateHint.textContent = "end this life for +" + karmaAvailable + " karma (" + (state.karma + karmaAvailable) + " total) and a chance to rewrite " + (state.karma + karmaAvailable) + " part" + ((state.karma + karmaAvailable) === 1 ? "" : "s") + " of your next one";
+    } else {
+      el.btnReincarnate.disabled = true;
+      el.reincarnateHint.textContent = "reach " + KARMA_TAO_THRESHOLD + " tao to end this life and be reborn";
+    }
   }
 
   // ---- progressive reveal: unlock once, never re-hide ----
