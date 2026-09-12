@@ -290,6 +290,39 @@
   <button id="btnSave">save</button>
   <button id="btnLoad">load</button>
   <button id="btnEndRun">end run</button>
+  <button id="btnGuide">guide</button>
+</div>
+
+<div id="guideOverlay" style="display:none; position:fixed; inset:0; background:#fff; z-index:50; align-items:flex-start; justify-content:center; overflow-y:auto;">
+  <div style="width:520px; max-width:90vw; margin:60px 0 60px 0; border:1px solid #000; background:#fff;">
+    <div class="panel-header" style="display:flex; justify-content:space-between; align-items:center;">
+      <span>guide</span>
+      <button id="btnGuideClose">x</button>
+    </div>
+    <div class="panel-body" style="line-height:1.6;">
+
+      <p>This is a game about slowly building a nail business.</p>
+
+      <p><strong>Making nails</strong><br>
+      You start by buying iron and turning it into nails with the make nail button. Iron costs money, and nails need iron to be made. Once you own nail makers, they do this for you automatically.</p>
+
+      <p><strong>Selling nails</strong><br>
+      Nails sell on their own over time based on price and demand. If you raise the price, fewer people want to buy. If you lower it, more people buy, but you make less per nail. Buying marketing raises demand, and it costs more each time.</p>
+
+      <p><strong>Machinery</strong><br>
+      Nail makers turn iron into nails. Nail breakers mine iron and copper from the map. Factories build new nail makers or nail breakers on their own, and the slider decides which one they lean toward.</p>
+
+      <p><strong>The map</strong><br>
+      Once you own a nail breaker, a map appears showing iron and copper deposits. Your breakers mine them automatically. When a map is fully drained, you can move on to the next one, which holds more resources but takes longer to clear.</p>
+
+      <p><strong>Yin and yang</strong><br>
+      Later on you unlock yin and yang. Yin fills up when you gather more resources than you use. Yang fills up when you use more than you gather. Filling both bars at the same time earns you a tao point, which permanently speeds up your nail makers and breakers.</p>
+
+      <p><strong>Saving your progress</strong><br>
+      You can save manually with the save button, or make an account to save automatically and appear on the global leaderboard. Ending a run records your score and starts you over from the beginning.</p>
+
+    </div>
+  </div>
 </div>
 
 <div class="columns">
@@ -482,6 +515,7 @@
 <script src="js/render.js"></script>
 <script src="js/leaderboard.js"></script>
 <script src="js/auth.js"></script>
+<script src="js/repeatbutton.js"></script>
 <script src="js/actions.js"></script>
 <script src="js/cloudsave.js"></script>
 <script src="js/engine.js"></script>

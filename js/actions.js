@@ -4,12 +4,12 @@
 // Actions
 // ----------------------------------------------------------------
 
-el.btnPriceMinus.addEventListener("click", function () {
+setupRepeatButton(el.btnPriceMinus, function () {
   state.price = Math.max(PRICE_MIN, round2(state.price - PRICE_STEP));
   render();
 });
 
-el.btnPricePlus.addEventListener("click", function () {
+setupRepeatButton(el.btnPricePlus, function () {
   state.price = round2(state.price + PRICE_STEP);
   render();
 });
@@ -134,6 +134,18 @@ el.btnLoad.addEventListener("click", function () {
   } catch (e) {
     flashButton(el.btnLoad, "load failed");
   }
+});
+
+// ----------------------------------------------------------------
+// Guide
+// ----------------------------------------------------------------
+
+el.btnGuide.addEventListener("click", function () {
+  el.guideOverlay.style.display = "flex";
+});
+
+el.btnGuideClose.addEventListener("click", function () {
+  el.guideOverlay.style.display = "none";
 });
 
 // ----------------------------------------------------------------
