@@ -11,6 +11,20 @@ var CLOUD_AUTOSAVE_INTERVAL_MS = 30000; // every 30s while logged in
 var cloudAutosaveTimer = null;
 var suppressNextCloudAutosave = false; // avoid immediately re-saving what we just loaded
 
+// Wipes any way back to the old run: the local save and, if logged in,
+// the cloud save too. Called from "end run" and reincarnation so a
+// player can't just hit "load" to undo either one.
+function deleteAllSaves() {
+  localStorage.removeItem("nailMakerSave");
+
+  var user = currentAuthUser();
+  if (user) {
+    db.collection("saves").doc(user.uid).delete().catch(function (err) {
+      console.error("Failed to delete cloud save", err);
+    });
+  }
+}
+
 function cloudSaveState() {
   var user = currentAuthUser();
   if (!user) return;

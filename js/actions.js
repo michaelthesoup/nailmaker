@@ -173,6 +173,7 @@ el.btnEndRun.addEventListener("click", function () {
   }
 
   submitScore(name, Math.floor(state.totalNailsMade));
+  deleteAllSaves();
   state = defaultState();
   render();
 });
@@ -228,12 +229,26 @@ function flashButton(btn, text) {
 
 // ----------------------------------------------------------------
 // Cheat box -- deliberately blends into the corner, no label.
+// Only works for accounts on CHEAT_ALLOWED_USERNAMES (see state.js).
 // Type "<key> <amount>" and hit Enter.
 // Keys: funds, unsold, iron, copper, nailmakers, factories, breakers, marketing, yin, yang
 // ----------------------------------------------------------------
 
+function isCheatAllowed() {
+  var user = currentAuthUser();
+  if (!user || !user.displayName) return false;
+  return CHEAT_ALLOWED_USERNAMES.indexOf(user.displayName.toLowerCase()) !== -1;
+}
+
 el.cheatBox.addEventListener("keydown", function (e) {
   if (e.key !== "Enter") return;
+
+  if (!isCheatAllowed()) {
+    el.cheatBox.value = "";
+    el.cheatBox.blur();
+    return;
+  }
+
   var raw = el.cheatBox.value.trim().toLowerCase();
   var parts = raw.split(/\s+/);
   if (parts.length === 2) {

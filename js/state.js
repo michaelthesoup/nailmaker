@@ -102,6 +102,11 @@ var YINYANG_PD_BONUS_PER_LEVEL = 0.5; // +50% public demand per tao point, perma
 // it's not spent, it just permanently raises how many stats you get
 // to rewrite each time you're reborn.
 var KARMA_TAO_THRESHOLD = 3; // tao points per 1 karma, checked at the moment of reincarnating
+
+// Usernames allowed to use the cheat box. Checked against the logged-in
+// account's username (case-insensitive) -- guests and anyone not on
+// this list can type in the box all they want, nothing will happen.
+var CHEAT_ALLOWED_USERNAMES = ["nailmaker"];
 var TAO_PERMANENT_BONUS_PER_POINT = 0.5; // +50% nail-maker/breaker rate, permanent, stacking per tao point
 
 // ----------------------------------------------------------------

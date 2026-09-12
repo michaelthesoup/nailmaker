@@ -197,6 +197,7 @@ el.btnReincarnateConfirm.addEventListener("click", function () {
   var chosen = rc.chosenCodes;
   rc = null;
 
+  deleteAllSaves();
   state = defaultState();
   state.karma = karmaCarried;
 
