@@ -30,6 +30,9 @@ var el = {
   btnSave: document.getElementById("btnSave"),
   btnLoad: document.getElementById("btnLoad"),
   btnEndRun: document.getElementById("btnEndRun"),
+  btnGuide: document.getElementById("btnGuide"),
+  guideOverlay: document.getElementById("guideOverlay"),
+  btnGuideClose: document.getElementById("btnGuideClose"),
   leaderboardList: document.getElementById("leaderboardList"),
   leaderboardNote: document.getElementById("leaderboardNote"),
 
