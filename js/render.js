@@ -34,12 +34,8 @@ function render() {
   var gray = Math.round(255 * (state.factoryBalance / 100));
   el.sliderFactoryBalance.style.accentColor = "rgb(" + gray + "," + gray + "," + gray + ")";
 
-  var factoryReady = buyButtonLabel(
-    el.btnBuyFactory,
-    state.factoryCooldownUntil,
-    "buy (" + fmtMoney(factoryBuildCostEffective()) + ")"
-  );
-  el.btnBuyFactory.disabled = !factoryReady || state.funds < factoryBuildCostEffective();
+  el.btnBuyFactory.textContent = "buy (" + fmtMoney(factoryBuildCostEffective()) + ")";
+  el.btnBuyFactory.disabled = state.funds < factoryBuildCostEffective();
 
   // ---- machinery: nail breakers ----
   el.breakerNailsRate.textContent = fmtDecimal(histRatePerSec(state.histBreakerNails));

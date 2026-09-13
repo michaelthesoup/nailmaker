@@ -194,12 +194,22 @@ el.btnReincarnateConfirm.addEventListener("click", function () {
   el.reincarnateOverlay.style.display = "none";
 
   var karmaCarried = state.karma;
+  var unlocksCarried = {
+    unlockedMap: state.unlockedMap,
+    unlockedMachinery: state.unlockedMachinery,
+    unlockedTuning: state.unlockedTuning,
+    unlockedYinYang: state.unlockedYinYang
+  };
   var chosen = rc.chosenCodes;
   rc = null;
 
   deleteAllSaves();
   state = defaultState();
   state.karma = karmaCarried;
+  state.unlockedMap = unlocksCarried.unlockedMap;
+  state.unlockedMachinery = unlocksCarried.unlockedMachinery;
+  state.unlockedTuning = unlocksCarried.unlockedTuning;
+  state.unlockedYinYang = unlocksCarried.unlockedYinYang;
 
   for (var i = 0; i < REAL_STATS.length; i++) {
     var stat = REAL_STATS[i];

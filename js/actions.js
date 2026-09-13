@@ -66,14 +66,12 @@ el.sliderFactoryBalance.addEventListener("input", function () {
 });
 
 el.btnBuyFactory.addEventListener("click", function () {
-  if (Date.now() < state.factoryCooldownUntil) return;
   var cost = factoryBuildCostEffective();
   if (state.funds < cost) return;
 
   state.funds -= cost;
   state.factories += 1;
   state.factoryTimers.push(0);
-  state.factoryCooldownUntil = Date.now() + FACTORY_COOLDOWN_MS;
   render();
 });
 el.btnBuyBreaker.addEventListener("click", function () {
@@ -194,7 +192,6 @@ function migrateLoadedState() {
       state.factoryTimers = state.factoryTimers.slice(0, state.factories);
     }
   }
-  if (typeof state.factoryCooldownUntil !== "number") state.factoryCooldownUntil = 0;
   state.unlockedMap = state.breakers > 0;
   if (!state.mapTotalWeight) {
     state.mapTotalWeight = Math.max(

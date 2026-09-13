@@ -40,7 +40,7 @@ function nailMakerCostEffective() {
 }
 
 function factoryBuildCostEffective() {
-  return FACTORY_BUILD_COST_FUNDS;
+  return FACTORY_BUILD_COST_FUNDS * Math.pow(FACTORY_COST_GROWTH, state.factories);
 }
 
 function breakerBuildCostEffective() {
@@ -57,6 +57,14 @@ function breakerIntakeEffective() {
   return BREAKER_INTAKE_RATE * productionRateBonusMultiplier();
 }
 
+// The most a single deposit can give up in one settle tick (one real
+// second): a percentage of what's left, with a small flat floor so it
+// keeps crawling all the way to zero instead of decaying forever
+// without ever finishing.
+function depositDrainCap(tile) {
+  return Math.min(tile.remaining, Math.max(tile.remaining * DEPOSIT_MAX_DRAIN_FRACTION, DEPOSIT_MIN_DRAIN_FLOOR));
+}
+
 // One nail is one hit on every active deposit. Each hit removes 1g
 // from that deposit and gives the player 1g of that deposit's material.
 // Example: 10 iron deposits + 5 copper deposits = 10g iron + 5g copper
@@ -67,11 +75,13 @@ function processBreakerNails(nailsToUse) {
     return { nailsUsed: 0, ironGot: 0, copperGot: 0 };
   }
 
-  // A nail can only hit each deposit once. Therefore the number of complete
-  // nails we can use is limited by the smallest remaining deposit.
+  // A nail can only hit each deposit once per tick. On top of that,
+  // no deposit can give up more than a percentage of what's left in
+  // it this tick -- that's what keeps a pile of breakers from just
+  // vaporizing a whole deposit in one second.
   var nailsUsed = Math.min(nailsToUse, state.unsold);
   for (var i = 0; i < activeTiles.length; i++) {
-    nailsUsed = Math.min(nailsUsed, activeTiles[i].remaining);
+    nailsUsed = Math.min(nailsUsed, depositDrainCap(activeTiles[i]));
   }
   nailsUsed = Math.max(0, nailsUsed);
 
