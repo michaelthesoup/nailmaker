@@ -77,11 +77,9 @@ el.btnBuyFactory.addEventListener("click", function () {
 el.btnBuyBreaker.addEventListener("click", function () {
   if (Date.now() < state.breakerCooldownUntil) return;
   var cost = breakerBuildCostEffective();
-  if (state.funds < cost || state.ironAmt < BREAKER_BUILD_COST_IRON || state.copperAmt < BREAKER_BUILD_COST_COPPER) return;
+  if (state.funds < cost) return;
 
   state.funds -= cost;
-  state.ironAmt -= BREAKER_BUILD_COST_IRON;
-  state.copperAmt -= BREAKER_BUILD_COST_COPPER;
   state.breakers += 1;
   state.unlockedMap = true;
   state.breakerCooldownUntil = Date.now() + BREAKER_COOLDOWN_MS;

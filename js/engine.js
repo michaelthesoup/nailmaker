@@ -76,6 +76,8 @@ function tick(dt) {
   // balance slider exactly over time, not just on average.
   if (state.factoriesOn) {
     var period = FACTORY_PERIOD_SEC;
+    var cycleIronCost = factoryIronCostEffective();
+    var cycleCopperCost = factoryCopperCostEffective();
     while (state.factoryTimers.length < state.factories) state.factoryTimers.push(0);
     for (var i = 0; i < state.factories; i++) {
       var fTimer = state.factoryTimers[i];
@@ -83,10 +85,10 @@ function tick(dt) {
         fTimer = Math.min(period, fTimer + dt);
       }
       if (fTimer >= period &&
-          state.ironAmt >= FACTORY_IRON_COST &&
-          state.copperAmt >= FACTORY_COPPER_COST) {
-        state.ironAmt -= FACTORY_IRON_COST;
-        state.copperAmt -= FACTORY_COPPER_COST;
+          state.ironAmt >= cycleIronCost &&
+          state.copperAmt >= cycleCopperCost) {
+        state.ironAmt -= cycleIronCost;
+        state.copperAmt -= cycleCopperCost;
         fTimer -= period;
 
         state.factoryAllocAccum += state.factoryBalance / 100;
@@ -98,8 +100,8 @@ function tick(dt) {
           state.unlockedMap = true;
         }
 
-        histPush(state.histFactoryIron, FACTORY_IRON_COST);
-        histPush(state.histFactoryCopper, FACTORY_COPPER_COST);
+        histPush(state.histFactoryIron, cycleIronCost);
+        histPush(state.histFactoryCopper, cycleCopperCost);
         histPush(state.histFactoryOutput, 1);
       }
       state.factoryTimers[i] = fTimer;

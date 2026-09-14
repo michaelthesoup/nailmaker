@@ -30,15 +30,20 @@ var IRON_PER_NAIL = 1; // grams
 // slider (0 = all breakers/black, 100 = all makers/white). The cost
 // per cycle is the same no matter which comes out the other end.
 var FACTORY_BUILD_COST_FUNDS = 1000;
-var FACTORY_COST_GROWTH = 1.8; // each factory you own makes the next one cost this much more
+var FACTORY_COST_GROWTH = 1.4; // each factory you own makes the next one cost this much more
 var FACTORY_PERIOD_SEC = 6;
-var FACTORY_IRON_COST = 100;
-var FACTORY_COPPER_COST = 10;
+// A factory's material cost per cycle depends on which way the balance
+// slider is leaning. Building toward nail breakers (heavier mining
+// equipment) costs a lot more material than building toward nail
+// makers (lighter machines). At dead center, it's the midpoint of the
+// two, i.e. half of each added together.
+var FACTORY_COST_BREAKER_SIDE_IRON = 1000; // grams, at slider = 0 (all breakers)
+var FACTORY_COST_BREAKER_SIDE_COPPER = 1000;
+var FACTORY_COST_MAKER_SIDE_IRON = 100; // grams, at slider = 100 (all nail makers)
+var FACTORY_COST_MAKER_SIDE_COPPER = 100;
 var FACTORY_BALANCE_DEFAULT = 50; // 0-100, nail-maker share
 
 var BREAKER_BUILD_COST_FUNDS = 75;
-var BREAKER_BUILD_COST_IRON = 200; // grams -- breakers are heavier machinery than a nail maker
-var BREAKER_BUILD_COST_COPPER = 50; // grams -- this is the real sink for copper, not just selling it
 var BREAKER_COOLDOWN_MS = 1000; // pacing between buys, like nail makers
 var BREAKER_INTAKE_RATE = 1; // nails/sec consumed per breaker
 

@@ -51,6 +51,22 @@ function factoryBuildCostEffective() {
   return FACTORY_BUILD_COST_FUNDS * Math.pow(FACTORY_COST_GROWTH, state.factories);
 }
 
+// state.factoryBalance is 0 (all breakers) to 100 (all nail makers), so
+// this fraction is how far toward "nail maker" the slider is leaning.
+function factoryMakerFraction() {
+  return state.factoryBalance / 100;
+}
+
+function factoryIronCostEffective() {
+  var f = factoryMakerFraction();
+  return FACTORY_COST_BREAKER_SIDE_IRON * (1 - f) + FACTORY_COST_MAKER_SIDE_IRON * f;
+}
+
+function factoryCopperCostEffective() {
+  var f = factoryMakerFraction();
+  return FACTORY_COST_BREAKER_SIDE_COPPER * (1 - f) + FACTORY_COST_MAKER_SIDE_COPPER * f;
+}
+
 function breakerBuildCostEffective() {
   return BREAKER_BUILD_COST_FUNDS;
 }

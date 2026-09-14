@@ -44,10 +44,9 @@ function render() {
   var breakerReady = buyButtonLabel(
     el.btnBuyBreaker,
     state.breakerCooldownUntil,
-    "buy (" + fmtMoney(breakerBuildCostEffective()) + " + " + fmtWeight(BREAKER_BUILD_COST_IRON) + " Fe + " + fmtWeight(BREAKER_BUILD_COST_COPPER) + " Cu)"
+    "buy (" + fmtMoney(breakerBuildCostEffective()) + ")"
   );
-  el.btnBuyBreaker.disabled = !breakerReady || state.funds < breakerBuildCostEffective() ||
-    state.ironAmt < BREAKER_BUILD_COST_IRON || state.copperAmt < BREAKER_BUILD_COST_COPPER;
+  el.btnBuyBreaker.disabled = !breakerReady || state.funds < breakerBuildCostEffective();
 
   el.btnBuyMarketing.textContent = "buy (" + fmtMoney(priceForMarketing()) + ")";
   el.btnBuyMarketing.disabled = state.funds < priceForMarketing();
