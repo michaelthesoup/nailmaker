@@ -26,8 +26,7 @@ function render() {
   el.mapIndexLabel.textContent = state.mapIndex;
 
   // ---- machinery: factories ----
-  el.factoryIronRate.textContent = fmtWeight(histRatePerSec(state.histFactoryIron));
-  el.factoryCopperRate.textContent = fmtWeight(histRatePerSec(state.histFactoryCopper));
+  el.factoryMaterialUse.textContent = "using " + fmtWeight(histRatePerSec(state.histFactoryIron)) + " iron/s, " + fmtWeight(histRatePerSec(state.histFactoryCopper)) + " copper/s";
   el.factoryOutputRate.textContent = fmtDecimal(histRatePerSec(state.histFactoryOutput) * 60);
 
   el.sliderFactoryBalance.value = state.factoryBalance;
@@ -45,9 +44,10 @@ function render() {
   var breakerReady = buyButtonLabel(
     el.btnBuyBreaker,
     state.breakerCooldownUntil,
-    "buy (" + fmtMoney(breakerBuildCostEffective()) + ")"
+    "buy (" + fmtMoney(breakerBuildCostEffective()) + " + " + fmtWeight(BREAKER_BUILD_COST_IRON) + " Fe + " + fmtWeight(BREAKER_BUILD_COST_COPPER) + " Cu)"
   );
-  el.btnBuyBreaker.disabled = !breakerReady || state.funds < breakerBuildCostEffective();
+  el.btnBuyBreaker.disabled = !breakerReady || state.funds < breakerBuildCostEffective() ||
+    state.ironAmt < BREAKER_BUILD_COST_IRON || state.copperAmt < BREAKER_BUILD_COST_COPPER;
 
   el.btnBuyMarketing.textContent = "buy (" + fmtMoney(priceForMarketing()) + ")";
   el.btnBuyMarketing.disabled = state.funds < priceForMarketing();

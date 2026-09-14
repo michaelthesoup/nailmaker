@@ -62,8 +62,7 @@ var el = {
   btnAutoNextMap: document.getElementById("btnAutoNextMap"),
   cheatBox: document.getElementById("cheatBox"),
 
-  factoryIronRate: document.getElementById("valFactoryIronRate"),
-  factoryCopperRate: document.getElementById("valFactoryCopperRate"),
+  factoryMaterialUse: document.getElementById("valFactoryMaterialUse"),
   factoryOutputRate: document.getElementById("valFactoryOutputRate"),
   sliderFactoryBalance: document.getElementById("sliderFactoryBalance"),
 

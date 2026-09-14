@@ -29,14 +29,16 @@ var IRON_PER_NAIL = 1; // grams
 // either one nail maker or one nail breaker, decided by the balance
 // slider (0 = all breakers/black, 100 = all makers/white). The cost
 // per cycle is the same no matter which comes out the other end.
-var FACTORY_BUILD_COST_FUNDS = 100;
-var FACTORY_COST_GROWTH = 1.8; // each factory you own makes the next one cost this much more
-var FACTORY_PERIOD_SEC = 1;
+var FACTORY_BUILD_COST_FUNDS = 1000;
+var FACTORY_COST_GROWTH = 1.4; // each factory you own makes the next one cost this much more
+var FACTORY_PERIOD_SEC = 6;
 var FACTORY_IRON_COST = 100;
 var FACTORY_COPPER_COST = 10;
 var FACTORY_BALANCE_DEFAULT = 50; // 0-100, nail-maker share
 
-var BREAKER_BUILD_COST_FUNDS = 50;
+var BREAKER_BUILD_COST_FUNDS = 75;
+var BREAKER_BUILD_COST_IRON = 200; // grams -- breakers are heavier machinery than a nail maker
+var BREAKER_BUILD_COST_COPPER = 50; // grams -- this is the real sink for copper, not just selling it
 var BREAKER_COOLDOWN_MS = 1000; // pacing between buys, like nail makers
 var BREAKER_INTAKE_RATE = 1; // nails/sec consumed per breaker
 
@@ -48,15 +50,6 @@ var MINE_IRON_AMOUNT = 1;
 var MINE_COPPER_AMOUNT = 1;
 var DEPOSIT_CAPACITY_BASE = 2000; // grams -- map 1's deposits hold 2kg
 var DEPOSIT_CAPACITY_GROWTH = 1.2; // each map's capacity is × this the last
-
-// A deposit can only give up a percentage of what's left in it per
-// real second, with a small flat floor so it still eventually finishes
-// off completely instead of trickling forever. This caps how fast any
-// single deposit can be drained no matter how many breakers or how
-// much ammo you throw at it -- previously enough breakers could empty
-// a deposit in a single tick.
-var DEPOSIT_MAX_DRAIN_FRACTION = 0.05; // at most 5% of what's left, per second
-var DEPOSIT_MIN_DRAIN_FLOOR = 2; // grams per second, once the % amount gets tiny
 
 // How many seconds of history the "avg/s" and machinery-analytics
 // readouts are averaged over. Bigger = steadier, more readable
