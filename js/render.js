@@ -23,7 +23,11 @@ function render() {
   el.breakers.textContent = state.breakers;
   var theoreticalNailsPerSec = state.nailMakers * nailMakerRateEffective();
   var theoreticalSoldPerSec = avgNailsSoldPerSec();
-  el.avgRev.textContent = fmtMoney(theoreticalSoldPerSec * state.price);
+  // Demand alone can say "the market would take 62 nails/sec," but if
+  // production can't actually make that many, sustained revenue can't
+  // reach that either -- so revenue is capped at whichever is smaller.
+  var sustainableSoldPerSec = Math.min(theoreticalSoldPerSec, theoreticalNailsPerSec);
+  el.avgRev.textContent = fmtMoney(sustainableSoldPerSec * state.price);
   el.avgNails.textContent = fmtDecimal(theoreticalNailsPerSec);
   el.mapIndexLabel.textContent = state.mapIndex;
 
