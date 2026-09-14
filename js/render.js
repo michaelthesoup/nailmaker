@@ -98,9 +98,11 @@ function render() {
     if (ratio >= YINYANG_STATUS_DEADZONE) {
       el.yinYangStatus.textContent = "BALANCED \u2014 +" + totalBonusPct + "% maker/breaker speed";
     } else if (diff > 0) {
-      el.yinYangStatus.textContent = "YANG-LEANING \u2014 +" + totalBonusPct + "% maker/breaker speed";
+      var breakerCorrectivePct = Math.round(correctiveBreakerBonus() * 100);
+      el.yinYangStatus.textContent = "YANG-LEANING \u2014 +" + totalBonusPct + "% maker/breaker speed, +" + breakerCorrectivePct + "% extra for breakers to catch up";
     } else {
-      el.yinYangStatus.textContent = "YIN-LEANING \u2014 +" + totalBonusPct + "% maker/breaker speed";
+      var makerCorrectivePct = Math.round(correctiveMakerBonus() * 100);
+      el.yinYangStatus.textContent = "YIN-LEANING \u2014 +" + totalBonusPct + "% maker/breaker speed, +" + makerCorrectivePct + "% extra for makers to catch up";
     }
 
     if (el.yinYangHint) {
@@ -110,8 +112,10 @@ function render() {
     el.valKarma.textContent = fmtInt(state.karma);
     var karmaAvailable = Math.floor(state.tao / KARMA_TAO_THRESHOLD);
     if (karmaAvailable >= 1) {
+      var projectedTotal = state.karma + karmaAvailable;
+      var projectedTier = karmaTierFor(projectedTotal);
       el.btnReincarnate.disabled = false;
-      el.reincarnateHint.textContent = "end this life for +" + karmaAvailable + " karma (" + (state.karma + karmaAvailable) + " total) and a chance to rewrite " + (state.karma + karmaAvailable) + " part" + ((state.karma + karmaAvailable) === 1 ? "" : "s") + " of your next one";
+      el.reincarnateHint.textContent = "reincarnate for +" + karmaAvailable + " karma (" + projectedTotal + " total) \u2014 your next life begins with " + projectedTier.label;
     } else {
       el.btnReincarnate.disabled = true;
       el.reincarnateHint.textContent = "reach " + KARMA_TAO_THRESHOLD + " tao to end this life and be reborn";

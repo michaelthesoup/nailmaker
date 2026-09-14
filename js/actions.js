@@ -150,9 +150,13 @@ el.btnGuideClose.addEventListener("click", function () {
 // ----------------------------------------------------------------
 
 el.btnEndRun.addEventListener("click", function () {
+  var karmaWarning = state.karma > 0
+    ? "\n\nYour " + fmtInt(state.karma) + " karma will be lost. You'll start over with nothing, exactly like a brand new player. This is a dead end -- if you want your karma to carry forward and improve your next life, reincarnate instead."
+    : "";
   var confirmed = window.confirm(
-    "End this run and start over from scratch?\n\n" +
-    "Your final nail count (" + fmtInt(state.totalNailsMade) + ") will be saved to the leaderboard below. This can't be undone."
+    "End this life for good?\n\n" +
+    "Your final nail count (" + fmtInt(state.totalNailsMade) + ") will be saved to the leaderboard below." +
+    karmaWarning
   );
   if (!confirmed) return;
 
@@ -171,7 +175,11 @@ el.btnEndRun.addEventListener("click", function () {
 
   submitScore(name, Math.floor(state.totalNailsMade));
   deleteAllSaves();
+
+  var nirvanaCarried = state.nirvanaAchieved; // a real achievement -- survives even this
   state = defaultState();
+  state.nirvanaAchieved = nirvanaCarried;
+
   render();
 });
 

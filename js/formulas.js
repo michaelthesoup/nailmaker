@@ -72,12 +72,12 @@ function breakerBuildCostEffective() {
 
 function nailMakerRateEffective() {
   if (!state.nailMakersOn) return 0;
-  return NAILMAKER_RATE * productionRateBonusMultiplier();
+  return NAILMAKER_RATE * productionRateBonusMultiplier() * (1 + correctiveMakerBonus());
 }
 
 function breakerIntakeEffective() {
   if (!state.breakersOn) return 0;
-  return BREAKER_INTAKE_RATE * productionRateBonusMultiplier();
+  return BREAKER_INTAKE_RATE * productionRateBonusMultiplier() * (1 + correctiveBreakerBonus());
 }
 
 // Theoretical rates, computed straight from current state -- always
@@ -168,6 +168,31 @@ function harmonyRatio() {
   return lo / hi;
 }
 
+// Corrective bonus: whichever side is BEHIND gets its counterpart's
+// production boosted, to help pull things back toward balance instead
+// of leaving the player to fight the drift alone. Yin ahead (too much
+// harvesting sitting idle) boosts nail MAKERS, since more nails made
+// means more iron consumed, which is what actually grows yang. Yang
+// ahead (using more than you're gathering) boosts nail BREAKERS, since
+// more iron mined is what grows yin. This is separate from, and stacks
+// with, the tao bonus below -- that one rewards reaching balance, this
+// one helps you get there.
+var CORRECTIVE_MAX_BONUS = 0.5; // up to +50%, at maximum imbalance (one bar at 100, other at 0)
+
+function correctiveMakerBonus() {
+  if (!state.unlockedYinYang) return 0;
+  var excess = state.yin - state.yang; // positive = yin is ahead
+  if (excess <= 0) return 0;
+  return CORRECTIVE_MAX_BONUS * (excess / YINYANG_MAX);
+}
+
+function correctiveBreakerBonus() {
+  if (!state.unlockedYinYang) return 0;
+  var excess = state.yang - state.yin; // positive = yang is ahead
+  if (excess <= 0) return 0;
+  return CORRECTIVE_MAX_BONUS * (excess / YINYANG_MAX);
+}
+
 // Live balance bonus -- rides the current harmony ratio in real time.
 // This is the part that evaporates if you drift off-balance.
 function liveBalanceBonus() {
@@ -177,6 +202,9 @@ function liveBalanceBonus() {
 // Combined multiplier applied to nail-maker and nail-breaker rates:
 // the permanent stack from past tao points, times (1 + the live
 // bonus). The permanent stack never goes away; the live part does.
+// This part is symmetric -- both machines get the same multiplier --
+// unlike the corrective bonuses above, which only ever help whichever
+// side is behind.
 function productionRateBonusMultiplier() {
   return (1 + state.taoBonusStack) * (1 + liveBalanceBonus());
 }

@@ -103,6 +103,60 @@ var YINYANG_PD_BONUS_PER_LEVEL = 0.5; // +50% public demand per tao point, perma
 // to rewrite each time you're reborn.
 var KARMA_TAO_THRESHOLD = 3; // tao points per 1 karma, checked at the moment of reincarnating
 
+// Reincarnation is a choice between two paths:
+//  - Suicide (the "end run" button): ends everything, karma resets to
+//    zero, you start over exactly like a brand new player. A true dead
+//    end, no benefit, just a clean slate and a score on the leaderboard.
+//  - Reincarnation: your accumulated karma decides how good your next
+//    life's starting position is. The more karma you've built up
+//    across every past life, the richer the tier you land in. Enough
+//    karma eventually reaches Nirvana, which is as close to "beating
+//    the game" as an idle game about balance and rebirth gets.
+// Tiers are checked highest-to-lowest; whichever is the highest tier
+// your TOTAL karma qualifies for is the one that applies.
+var KARMA_TIERS = [
+  {
+    minKarma: 0, label: "a blank slate",
+    apply: function (s) {}
+  },
+  {
+    minKarma: 1, label: "a little extra cash",
+    apply: function (s) { s.funds += 50; }
+  },
+  {
+    minKarma: 3, label: "a healthy nest egg",
+    apply: function (s) { s.funds += 300; }
+  },
+  {
+    minKarma: 6, label: "a head start on machinery",
+    apply: function (s) { s.funds += 300; s.nailMakers += 3; }
+  },
+  {
+    minKarma: 10, label: "an established workshop",
+    apply: function (s) { s.funds += 500; s.nailMakers += 6; s.breakers += 2; }
+  },
+  {
+    minKarma: 15, label: "a name people know",
+    apply: function (s) { s.funds += 500; s.nailMakers += 6; s.breakers += 2; s.marketingLevel += 3; }
+  },
+  {
+    minKarma: 25, label: "an empire already in motion",
+    apply: function (s) { s.funds += 2000; s.nailMakers += 15; s.breakers += 5; s.marketingLevel += 8; }
+  },
+  {
+    minKarma: 50, label: "nirvana", isNirvana: true,
+    apply: function (s) { s.funds += 10000; s.nailMakers += 40; s.breakers += 15; s.marketingLevel += 20; }
+  },
+];
+
+function karmaTierFor(karma) {
+  var best = KARMA_TIERS[0];
+  for (var i = 0; i < KARMA_TIERS.length; i++) {
+    if (karma >= KARMA_TIERS[i].minKarma) best = KARMA_TIERS[i];
+  }
+  return best;
+}
+
 // Usernames allowed to use the cheat box. Checked against the logged-in
 // account's username (case-insensitive) -- guests and anyone not on
 // this list can type in the box all they want, nothing will happen.
@@ -229,6 +283,7 @@ function defaultState() {
     tao: 0, // tao points -- earned when yin & yang both hit 100 together
     taoBonusStack: 0, // permanent, stacking nail-maker/breaker rate bonus locked in from past tao points
     karma: 0, // permanent across reincarnations -- carried over explicitly, never wiped by a reset
+    nirvanaAchieved: false, // a true permanent achievement -- survives even suicide, unlike karma
     harvestAccum: 0,
     profitAccum: 0,
 

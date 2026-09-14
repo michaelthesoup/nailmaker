@@ -1,37 +1,27 @@
 "use strict";
 
 // ----------------------------------------------------------------
-// Reincarnation. Ending a life turns your banked tao into karma
-// (permanent, never spent) and drops you into a wall of characters.
-// Almost all of them are meaningless and keep re-randomizing. A
-// handful are real stats for your next life, written as a short code
-// plus a digit (like "nm3"), and they never flicker -- that stillness
-// is the only clue. Your current karma total is how many of them
-// you're allowed to actually set before starting over.
+// Reincarnation. Ending a life is a choice between two paths:
+//  - Suicide (the "end run" button, in actions.js): karma resets to
+//    zero. A true dead end -- you start over exactly like a brand new
+//    player, no benefit at all, just a score on the leaderboard.
+//  - Reincarnation (this file): your total karma decides how good
+//    your next life's starting position is. The ritual is the same
+//    flickering wall of characters either way -- almost all noise,
+//    resolving into a message once it settles -- but what it reveals
+//    now is your fate, not a puzzle to solve. Enough karma eventually
+//    reaches Nirvana, a permanent achievement.
 // ----------------------------------------------------------------
 
 var RC_GRID_ROWS = 16;
 var RC_GRID_COLS = 24;
 var RC_DECOY_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 var RC_FLICKER_INTERVAL_MS = 150;
-var RC_FLICKER_FRACTION = 0.15; // fraction of decoy cells re-randomized per tick
+var RC_FLICKER_FRACTION = 0.15; // fraction of cells re-randomized per tick
 var RC_REVEAL_START_DELAY_MS = 120;
 var RC_REVEAL_SPEEDUP = 0.92;
 var RC_REVEAL_MIN_DELAY_MS = 4;
-
-// Each real stat is a 2-letter code plus one digit (0-9), applied to a
-// fresh life. More of these can be added later without changing how
-// the ritual works -- the grid just gets a little more interesting.
-var REAL_STATS = [
-  { code: "nm", label: "starting nail makers", apply: function (s, v) { s.nailMakers = v; } },
-  { code: "br", label: "starting nail breakers", apply: function (s, v) { s.breakers = v; } },
-  { code: "fe", label: "starting iron (x100g)", apply: function (s, v) { s.ironAmt += v * 100; } },
-  { code: "cu", label: "starting copper (x100g)", apply: function (s, v) { s.copperAmt += v * 100; } },
-  { code: "$$", label: "starting funds (x10)", apply: function (s, v) { s.funds += v * 10; } },
-  { code: "mk", label: "starting marketing level", apply: function (s, v) { s.marketingLevel = v; } },
-  { code: "tb", label: "starting permanent speed bonus (x10%)", apply: function (s, v) { s.taoBonusStack += v * 0.1; } },
-  { code: "fc", label: "starting factories", apply: function (s, v) { for (var i = 0; i < v; i++) s.factories.push(0); } },
-];
+var RC_SUSPENSE_MS = 2200; // how long the noise flickers before resolving into your fate
 
 var rc = null; // active ritual state while the overlay is open
 
@@ -40,27 +30,23 @@ function startReincarnation() {
   if (karmaAvailable < 1) return;
 
   var newTotalKarma = state.karma + karmaAvailable;
+  var tier = karmaTierFor(newTotalKarma);
   var confirmed = window.confirm(
-    "End this life?\n\n" +
+    "Be reincarnated?\n\n" +
     "You'll gain " + karmaAvailable + " karma (" + newTotalKarma + " total, forever). " +
-    "Everything else about this life is lost. You'll get to rewrite " + newTotalKarma + " part" + (newTotalKarma === 1 ? "" : "s") + " of the next one.\n\n" +
+    "This life ends, but your karma carries forward -- your next life will begin with " + tier.label + ".\n\n" +
     "This can't be undone."
   );
   if (!confirmed) return;
 
   state.karma = newTotalKarma;
-  runReincarnationRitual(newTotalKarma);
+  runReincarnationRitual(tier);
 }
 
-function runReincarnationRitual(pickBudget) {
-  rc = {
-    budget: pickBudget,
-    cells: [], // { el, isStat, statIndex (0,1,2 = which char of the token), code, digit, chosen }
-    chosenCodes: {}, // code -> value
-    flickerTimer: null
-  };
+function runReincarnationRitual(tier) {
+  rc = { tier: tier, cells: [], flickerTimer: null };
 
-  buildGridLayout();
+  buildGridNoise();
   el.reincarnateGrid.innerHTML = "";
   el.reincarnateStatus.textContent = "";
   el.btnReincarnateConfirm.style.display = "none";
@@ -69,46 +55,13 @@ function runReincarnationRitual(pickBudget) {
   revealGrid(0);
 }
 
-// Decides where each real stat token sits in the grid (3 consecutive
-// cells: 2 letters + 1 digit), fills everything else with noise.
-function buildGridLayout() {
+function buildGridNoise() {
   var totalCells = RC_GRID_ROWS * RC_GRID_COLS;
   var chars = new Array(totalCells);
-  var statAt = new Array(totalCells).fill(null); // { code, part } or null
-
   for (var i = 0; i < totalCells; i++) {
     chars[i] = randomDecoyChar();
   }
-
-  var usedStarts = [];
-  function overlaps(start) {
-    for (var i = 0; i < usedStarts.length; i++) {
-      if (Math.abs(usedStarts[i] - start) < 4) return true; // leave a gap between tokens
-    }
-    return false;
-  }
-
-  for (var s = 0; s < REAL_STATS.length; s++) {
-    var stat = REAL_STATS[s];
-    var start;
-    var attempts = 0;
-    do {
-      start = Math.floor(Math.random() * (totalCells - 3));
-      attempts++;
-    } while (overlaps(start) && attempts < 500);
-    usedStarts.push(start);
-
-    var digit = Math.floor(Math.random() * 10);
-    chars[start] = stat.code.charAt(0);
-    chars[start + 1] = stat.code.charAt(1);
-    chars[start + 2] = String(digit);
-    statAt[start] = { code: stat.code, part: 0, digit: digit };
-    statAt[start + 1] = { code: stat.code, part: 1, digit: digit };
-    statAt[start + 2] = { code: stat.code, part: 2, digit: digit };
-  }
-
   rc.chars = chars;
-  rc.statAt = statAt;
 }
 
 function randomDecoyChar() {
@@ -116,30 +69,19 @@ function randomDecoyChar() {
 }
 
 // Reveals cells one at a time, left to right, top to bottom, speeding
-// up as it goes. Once the whole grid is in, the flicker loop starts.
+// up as it goes. Once the whole grid is in, it flickers a while for
+// suspense, then resolves into a message revealing your next life.
 function revealGrid(index) {
   var totalCells = RC_GRID_ROWS * RC_GRID_COLS;
   if (index >= totalCells) {
-    el.reincarnateStatus.textContent = "picks remaining: " + rc.budget;
-    el.btnReincarnateConfirm.style.display = "inline-block";
     startFlicker();
+    setTimeout(resolveRitual, RC_SUSPENSE_MS);
     return;
   }
 
   var span = document.createElement("span");
   span.className = "rc-cell";
   span.textContent = rc.chars[index];
-
-  var statInfo = rc.statAt[index];
-  if (statInfo) {
-    span.className += " rc-stat";
-    span.dataset.code = statInfo.code;
-    span.dataset.part = statInfo.part;
-    span.addEventListener("click", function () {
-      onStatCellClick(statInfo.code);
-    });
-  }
-
   el.reincarnateGrid.appendChild(span);
   rc.cells.push(span);
 
@@ -154,7 +96,6 @@ function revealGrid(index) {
 function startFlicker() {
   rc.flickerTimer = setInterval(function () {
     for (var i = 0; i < rc.cells.length; i++) {
-      if (rc.statAt[i]) continue; // real stat cells never flicker
       if (Math.random() < RC_FLICKER_FRACTION) {
         rc.cells[i].textContent = randomDecoyChar();
       }
@@ -162,62 +103,73 @@ function startFlicker() {
   }, RC_FLICKER_INTERVAL_MS);
 }
 
-function onStatCellClick(code) {
-  var alreadyChosen = rc.chosenCodes.hasOwnProperty(code);
-  if (!alreadyChosen && Object.keys(rc.chosenCodes).length >= rc.budget) {
-    return; // no picks left, and this one hasn't been claimed
-  }
+// The noise settles and the grid clears to reveal your next life.
+function resolveRitual() {
+  clearInterval(rc.flickerTimer);
+  el.reincarnateGrid.innerHTML = "";
 
-  if (!alreadyChosen) {
-    rc.chosenCodes[code] = 0;
-  } else {
-    rc.chosenCodes[code] = (rc.chosenCodes[code] + 1) % 10;
-  }
+  var tier = rc.tier;
+  var heading = tier.isNirvana ? "NIRVANA" : "your next life begins with " + tier.label;
+  var msg = document.createElement("div");
+  msg.style.fontWeight = "bold";
+  msg.style.fontSize = tier.isNirvana ? "28px" : "18px";
+  msg.style.letterSpacing = "1px";
+  msg.textContent = heading;
+  el.reincarnateGrid.appendChild(msg);
 
-  for (var i = 0; i < rc.cells.length; i++) {
-    var info = rc.statAt[i];
-    if (info && info.code === code) {
-      rc.cells[i].classList.add("rc-chosen");
-      if (info.part === 2) rc.cells[i].textContent = String(rc.chosenCodes[code]);
-    }
-  }
-
-  var used = Object.keys(rc.chosenCodes).length;
-  el.reincarnateStatus.textContent = "picks remaining: " + (rc.budget - used) +
-    (used > 0 ? " \u2014 click a chosen code again to change its number" : "");
+  el.reincarnateStatus.textContent = "";
+  el.btnReincarnateConfirm.style.display = "inline-block";
 }
 
 el.btnReincarnate.addEventListener("click", startReincarnation);
 
 el.btnReincarnateConfirm.addEventListener("click", function () {
-  clearInterval(rc.flickerTimer);
+  var tier = rc.tier;
+  rc = null;
   el.reincarnateOverlay.style.display = "none";
 
+  var user = currentAuthUser();
+  var name;
+  if (user) {
+    name = user.displayName || "player";
+  } else {
+    name = window.prompt("Name for the leaderboard:", "");
+    if (name === null) name = "anonymous"; // reincarnation itself isn't cancellable at this point
+    name = name.trim().slice(0, 20) || "anonymous";
+  }
+  submitScore(name, Math.floor(state.totalNailsMade));
+
   var karmaCarried = state.karma;
+  var nirvanaCarried = state.nirvanaAchieved || !!tier.isNirvana;
   var unlocksCarried = {
     unlockedMap: state.unlockedMap,
     unlockedMachinery: state.unlockedMachinery,
     unlockedTuning: state.unlockedTuning,
     unlockedYinYang: state.unlockedYinYang
   };
-  var chosen = rc.chosenCodes;
-  rc = null;
+
+  var justReachedNirvana = tier.isNirvana && !state.nirvanaAchieved;
 
   deleteAllSaves();
   state = defaultState();
   state.karma = karmaCarried;
+  state.nirvanaAchieved = nirvanaCarried;
   state.unlockedMap = unlocksCarried.unlockedMap;
   state.unlockedMachinery = unlocksCarried.unlockedMachinery;
   state.unlockedTuning = unlocksCarried.unlockedTuning;
   state.unlockedYinYang = unlocksCarried.unlockedYinYang;
 
-  for (var i = 0; i < REAL_STATS.length; i++) {
-    var stat = REAL_STATS[i];
-    if (chosen.hasOwnProperty(stat.code)) {
-      stat.apply(state, chosen[stat.code]);
-    }
-  }
+  tier.apply(state);
 
   render();
   if (typeof currentAuthUser === "function" && currentAuthUser()) cloudSaveState();
+
+  if (justReachedNirvana) {
+    window.alert(
+      "NIRVANA.\n\n" +
+      "Across every life you've lived, your karma has finally carried you all the way through. " +
+      "This is as close to beating Nail Maker as the game gets.\n\n" +
+      "You can keep playing -- there's no wall here, just the quiet feeling of having made it."
+    );
+  }
 });
