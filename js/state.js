@@ -31,7 +31,7 @@ var IRON_PER_NAIL = 1; // grams
 // per cycle is the same no matter which comes out the other end.
 var FACTORY_BUILD_COST_FUNDS = 1000;
 var FACTORY_COST_GROWTH = 1.4; // each factory you own makes the next one cost this much more
-var FACTORY_PERIOD_SEC = 6;
+var FACTORY_PERIOD_SEC = 1;
 // A factory's material cost per cycle depends on which way the balance
 // slider is leaning. Building toward nail breakers (heavier mining
 // equipment) costs a lot more material than building toward nail
