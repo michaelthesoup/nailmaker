@@ -26,7 +26,7 @@ function render() {
   el.mapIndexLabel.textContent = state.mapIndex;
 
   // ---- machinery: factories ----
-  el.factoryMaterialUse.textContent = "using " + fmtWeight(histRatePerSec(state.histFactoryIron)) + " iron/s, " + fmtWeight(histRatePerSec(state.histFactoryCopper)) + " copper/s";
+  el.factoryMaterialUse.textContent = "using " + fmtWeight(histRatePerSec(state.histFactoryCopper)) + " copper/s";
   el.factoryOutputRate.textContent = fmtDecimal(histRatePerSec(state.histFactoryOutput) * 60);
 
   el.sliderFactoryBalance.value = state.factoryBalance;

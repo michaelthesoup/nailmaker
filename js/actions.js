@@ -43,7 +43,6 @@ el.btnBuyIron.addEventListener("click", function () {
 el.btnSellCopper.addEventListener("click", function () {
   if (state.copperAmt > 0) {
     state.funds += state.copperAmt * COPPER_SELL_PRICE;
-    state.profitAccum += state.copperAmt;
     state.copperAmt = 0;
     render();
   }

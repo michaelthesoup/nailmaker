@@ -76,7 +76,6 @@ function tick(dt) {
   // balance slider exactly over time, not just on average.
   if (state.factoriesOn) {
     var period = FACTORY_PERIOD_SEC;
-    var cycleIronCost = factoryIronCostEffective();
     var cycleCopperCost = factoryCopperCostEffective();
     while (state.factoryTimers.length < state.factories) state.factoryTimers.push(0);
     for (var i = 0; i < state.factories; i++) {
@@ -84,10 +83,7 @@ function tick(dt) {
       if (fTimer < period) {
         fTimer = Math.min(period, fTimer + dt);
       }
-      if (fTimer >= period &&
-          state.ironAmt >= cycleIronCost &&
-          state.copperAmt >= cycleCopperCost) {
-        state.ironAmt -= cycleIronCost;
+      if (fTimer >= period && state.copperAmt >= cycleCopperCost) {
         state.copperAmt -= cycleCopperCost;
         fTimer -= period;
 
@@ -100,7 +96,6 @@ function tick(dt) {
           state.unlockedMap = true;
         }
 
-        histPush(state.histFactoryIron, cycleIronCost);
         histPush(state.histFactoryCopper, cycleCopperCost);
         histPush(state.histFactoryOutput, 1);
       }
@@ -111,7 +106,6 @@ function tick(dt) {
   // Prune all the rolling-average buffers to the trailing window.
   histPrune(state.histRevenue);
   histPrune(state.histNailsMade);
-  histPrune(state.histFactoryIron);
   histPrune(state.histFactoryCopper);
   histPrune(state.histFactoryOutput);
   histPrune(state.histBreakerNails);

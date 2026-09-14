@@ -37,10 +37,8 @@ var FACTORY_PERIOD_SEC = 6;
 // equipment) costs a lot more material than building toward nail
 // makers (lighter machines). At dead center, it's the midpoint of the
 // two, i.e. half of each added together.
-var FACTORY_COST_BREAKER_SIDE_IRON = 1000; // grams, at slider = 0 (all breakers)
-var FACTORY_COST_BREAKER_SIDE_COPPER = 1000;
-var FACTORY_COST_MAKER_SIDE_IRON = 100; // grams, at slider = 100 (all nail makers)
-var FACTORY_COST_MAKER_SIDE_COPPER = 100;
+var FACTORY_COST_BREAKER_SIDE_COPPER = 1000; // grams, at slider = 0 (all breakers)
+var FACTORY_COST_MAKER_SIDE_COPPER = 100; // grams, at slider = 100 (all nail makers)
 var FACTORY_BALANCE_DEFAULT = 50; // 0-100, nail-maker share
 
 var BREAKER_BUILD_COST_FUNDS = 75;
@@ -253,7 +251,6 @@ function defaultState() {
     // jumpy instant-tick number.
     histRevenue: [],
     histNailsMade: [],
-    histFactoryIron: [],
     histFactoryCopper: [],
     histFactoryOutput: [],
     histBreakerNails: [],

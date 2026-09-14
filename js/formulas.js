@@ -51,15 +51,14 @@ function factoryBuildCostEffective() {
   return FACTORY_BUILD_COST_FUNDS * Math.pow(FACTORY_COST_GROWTH, state.factories);
 }
 
-// state.factoryBalance is 0 (all breakers) to 100 (all nail makers), so
-// this fraction is how far toward "nail maker" the slider is leaning.
+// A factory's material cost per cycle depends on which way the balance
+// slider is leaning. Building toward nail breakers (heavier mining
+// equipment) costs a lot more copper than building toward nail makers
+// (lighter machines). At dead center, it's the midpoint of the two.
+// Iron is never part of this -- iron's job in this game is becoming
+// nails, copper's job is becoming machines.
 function factoryMakerFraction() {
   return state.factoryBalance / 100;
-}
-
-function factoryIronCostEffective() {
-  var f = factoryMakerFraction();
-  return FACTORY_COST_BREAKER_SIDE_IRON * (1 - f) + FACTORY_COST_MAKER_SIDE_IRON * f;
 }
 
 function factoryCopperCostEffective() {
@@ -116,9 +115,9 @@ function processBreakerNails(nailsToUse) {
     var amount = Math.min(nailsUsed, tile.remaining);
     tile.remaining -= amount;
 
-    state.harvestAccum += amount;
     if (tile.type === "i") {
       ironGot += amount;
+      state.harvestAccum += amount; // yin/yang only tracks iron -- the game's about nails, not copper
     } else if (tile.type === "c") {
       copperGot += amount;
     }
