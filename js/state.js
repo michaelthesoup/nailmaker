@@ -31,7 +31,7 @@ var IRON_PER_NAIL = 1; // grams
 // per cycle is the same no matter which comes out the other end.
 var FACTORY_BUILD_COST_FUNDS = 100;
 var FACTORY_COST_GROWTH = 1.8; // each factory you own makes the next one cost this much more
-var FACTORY_PERIOD_SEC = 1;
+var FACTORY_PERIOD_SEC = 0.2;
 var FACTORY_IRON_COST = 100;
 var FACTORY_COPPER_COST = 10;
 var FACTORY_BALANCE_DEFAULT = 50; // 0-100, nail-maker share
