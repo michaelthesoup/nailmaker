@@ -80,6 +80,23 @@ function breakerIntakeEffective() {
   return BREAKER_INTAKE_RATE * productionRateBonusMultiplier();
 }
 
+// Theoretical rates, computed straight from current state -- always
+// instantly accurate to breaker count and how many deposits are
+// currently active, never a lagging or flickering historical average.
+function breakerTheoreticalRates() {
+  var ammoRate = state.breakers * breakerIntakeEffective(); // nails/sec ammo
+  var activeTiles = activeDepositTiles(state.mapTiles);
+  var ironTiles = 0, copperTiles = 0;
+  for (var i = 0; i < activeTiles.length; i++) {
+    if (activeTiles[i].type === "i") ironTiles++; else copperTiles++;
+  }
+  return {
+    ammoRate: ammoRate,
+    ironRate: ammoRate * ironTiles,
+    copperRate: ammoRate * copperTiles
+  };
+}
+
 // One nail is one hit on every active deposit. Each hit removes 1g
 // from that deposit and gives the player 1g of that deposit's material.
 // Example: 10 iron deposits + 5 copper deposits = 10g iron + 5g copper

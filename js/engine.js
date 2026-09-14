@@ -4,6 +4,13 @@
 // Game loop
 // ----------------------------------------------------------------
 
+// How often breakers/selling settle scales with breaker count -- one
+// breaker settles once a second, ten breakers settle ten times a
+// second (each settling a tenth as much), same total output either
+// way, just smoother to watch as it scales up. Floored so it never
+// gets fast enough to cause real performance trouble.
+var SETTLE_INTERVAL_FLOOR_SEC = 0.05; // never settle faster than 20x/sec
+
 function tick(dt) {
   state.simTime += dt;
 
@@ -17,56 +24,46 @@ function tick(dt) {
   state.unsold += actuallyMade;
   state.totalNailsMade += actuallyMade;
   state.profitAccum += actuallyMade * IRON_PER_NAIL;
-  histPush(state.histNailsMade, actuallyMade);
 
-  // Breakers and selling both settle once per real second, in a lump --
-  // not continuously. This is what makes the sawtooth visible: unsold
-  // inventory climbs smoothly every tick from production, then drops
-  // all at once when the second ticks over, based on how many nails
-  // breakers burned as ammo and how many the public bought.
+  // Breakers and selling settle in chunks rather than continuously --
+  // that's what makes the sawtooth visible: unsold inventory climbs
+  // smoothly every tick from production, then drops in a chunk each
+  // time a settle fires, based on how many nails breakers burned as
+  // ammo and how many the public bought.
+  var settleInterval = Math.max(SETTLE_INTERVAL_FLOOR_SEC, 1 / Math.max(1, state.breakers));
   state.settleAccum += dt;
-  while (state.settleAccum >= 1) {
-    state.settleAccum -= 1;
+  while (state.settleAccum >= settleInterval) {
+    state.settleAccum -= settleInterval;
 
     // Breakers get first claim on the inventory that's accumulated
-    // this second. Each nail hits every remaining deposit once, so
+    // this settle. Each nail hits every remaining deposit once, so
     // 10 iron deposits and 5 copper deposits return 10g iron and 5g
     // copper per nail.
     var breakerRate = breakerIntakeEffective();
     if (state.breakers > 0 && breakerRate > 0 && state.unsold > 0 && mapHasDeposits(state.mapTiles)) {
-      // Breakers get first claim on unsold nails. One nail hits every
-      // currently active deposit exactly once.
-      var breakerResult = processBreakerNails(state.breakers * breakerRate);
-      if (breakerResult.nailsUsed > 0) {
-        histPush(state.histBreakerNails, breakerResult.nailsUsed);
-      }
-      if (breakerResult.ironGot > 0) {
-        state.ironAmt += breakerResult.ironGot;
-        histPush(state.histBreakerIron, breakerResult.ironGot);
-      }
-      if (breakerResult.copperGot > 0) {
-        state.copperAmt += breakerResult.copperGot;
-        histPush(state.histBreakerCopper, breakerResult.copperGot);
-      }
+      var breakerResult = processBreakerNails(state.breakers * breakerRate * settleInterval);
+      if (breakerResult.ironGot > 0) state.ironAmt += breakerResult.ironGot;
+      if (breakerResult.copperGot > 0) state.copperAmt += breakerResult.copperGot;
     }
 
     // Selling, Universal-Paperclips style: a deterministic rate
-    // derived from price and marketing, settling once per second
-    // like the original game -- not a continuous trickle. Steeply
-    // super-linear once demand clears 100, which is what makes a
-    // sharp price cut trigger a genuine mass sell-off the very next
-    // second instead of a gentle nudge.
+    // derived from price and marketing. Steeply super-linear once
+    // demand clears 100, which is what makes a sharp price cut
+    // trigger a genuine mass sell-off rather than a gentle nudge.
     var soldPerSec = avgNailsSoldPerSec();
     if (soldPerSec > 0 && state.unsold > 0) {
-      var sold = Math.min(state.unsold, soldPerSec);
+      var sold = Math.min(state.unsold, soldPerSec * settleInterval);
       state.unsold -= sold;
-      var revenue = sold * state.price;
-      state.funds += revenue;
-      histPush(state.histRevenue, revenue);
+      state.funds += sold * state.price;
     }
+  }
 
-    // Yin & Yang: once per real second, whichever of harvesting or
-    // profiting won that second ticks its bar up.
+  // Yin & Yang settles on its own fixed one-second cadence, completely
+  // independent of the breaker-count-based settle speed above -- tao
+  // pacing shouldn't get faster just because your economy got smoother.
+  state.yinYangAccum += dt;
+  while (state.yinYangAccum >= 1) {
+    state.yinYangAccum -= 1;
     settleYinYang();
   }
 
@@ -95,22 +92,10 @@ function tick(dt) {
           state.breakers += 1;
           state.unlockedMap = true;
         }
-
-        histPush(state.histFactoryCopper, cycleCopperCost);
-        histPush(state.histFactoryOutput, 1);
       }
       state.factoryTimers[i] = fTimer;
     }
   }
-
-  // Prune all the rolling-average buffers to the trailing window.
-  histPrune(state.histRevenue);
-  histPrune(state.histNailsMade);
-  histPrune(state.histFactoryCopper);
-  histPrune(state.histFactoryOutput);
-  histPrune(state.histBreakerNails);
-  histPrune(state.histBreakerIron);
-  histPrune(state.histBreakerCopper);
 
   checkYinYangUnlock();
 

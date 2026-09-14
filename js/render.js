@@ -21,13 +21,16 @@ function render() {
   el.nailMakers.textContent = state.nailMakers;
   el.factories.textContent = state.factories;
   el.breakers.textContent = state.breakers;
-  el.avgRev.textContent = fmtMoney(histRatePerSec(state.histRevenue));
-  el.avgNails.textContent = fmtDecimal(histRatePerSec(state.histNailsMade));
+  var theoreticalNailsPerSec = state.nailMakers * nailMakerRateEffective();
+  var theoreticalSoldPerSec = avgNailsSoldPerSec();
+  el.avgRev.textContent = fmtMoney(theoreticalSoldPerSec * state.price);
+  el.avgNails.textContent = fmtDecimal(theoreticalNailsPerSec);
   el.mapIndexLabel.textContent = state.mapIndex;
 
   // ---- machinery: factories ----
-  el.factoryMaterialUse.textContent = "using " + fmtWeight(histRatePerSec(state.histFactoryCopper)) + " copper/s";
-  el.factoryOutputRate.textContent = fmtDecimal(histRatePerSec(state.histFactoryOutput) * 60);
+  var factoryCopperRate = state.factories * (1 / FACTORY_PERIOD_SEC) * factoryCopperCostEffective();
+  el.factoryMaterialUse.textContent = "using " + fmtWeight(factoryCopperRate) + " copper/s";
+  el.factoryOutputRate.textContent = fmtDecimal(state.factories * (1 / FACTORY_PERIOD_SEC) * 60);
 
   el.sliderFactoryBalance.value = state.factoryBalance;
   var gray = Math.round(255 * (state.factoryBalance / 100));
@@ -37,9 +40,10 @@ function render() {
   el.btnBuyFactory.disabled = state.funds < factoryBuildCostEffective();
 
   // ---- machinery: nail breakers ----
-  el.breakerNailsRate.textContent = fmtDecimal(histRatePerSec(state.histBreakerNails));
-  el.breakerIronRate.textContent = fmtWeight(histRatePerSec(state.histBreakerIron));
-  el.breakerCopperRate.textContent = fmtWeight(histRatePerSec(state.histBreakerCopper));
+  var breakerRates = breakerTheoreticalRates();
+  el.breakerNailsRate.textContent = fmtDecimal(breakerRates.ammoRate);
+  el.breakerIronRate.textContent = fmtWeight(breakerRates.ironRate);
+  el.breakerCopperRate.textContent = fmtWeight(breakerRates.copperRate);
 
   var breakerReady = buyButtonLabel(
     el.btnBuyBreaker,

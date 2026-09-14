@@ -54,11 +54,6 @@ var MINE_COPPER_AMOUNT = 1;
 var DEPOSIT_CAPACITY_BASE = 2000; // grams -- map 1's deposits hold 2kg
 var DEPOSIT_CAPACITY_GROWTH = 1.2; // each map's capacity is × this the last
 
-// How many seconds of history the "avg/s" and machinery-analytics
-// readouts are averaged over. Bigger = steadier, more readable
-// numbers; smaller = more responsive to what's happening right now.
-var STATS_WINDOW_SEC = 5;
-
 var TICK_MS = 100;
 
 var MAP_ROWS = 10;
@@ -238,45 +233,18 @@ function defaultState() {
     profitAccum: 0,
 
     // Production ticks every frame (fast, smooth climb). Selling and
-    // breaker nail-consumption only settle once per real second, in a
-    // lump -- like Universal Paperclips, so you can actually watch
-    // inventory climb, then drop, rather than it draining instantly.
+    // breaker nail-consumption settle in chunks rather than
+    // continuously, at a rate that scales with breaker count -- so you
+    // can watch inventory climb then drop, and it stays smooth even at
+    // huge scale instead of always being one lump per second.
     settleAccum: 0,
 
-    simTime: 0, // seconds of game time elapsed, used to window the stats below
+    // Yin & yang settle on their own fixed one-second cadence,
+    // independent of the breaker-scaled settle rate above.
+    yinYangAccum: 0,
 
-    // Rolling history for readable "avg/s" style numbers -- each entry
-    // is [simTime, amount]; amounts are summed and divided by
-    // STATS_WINDOW_SEC to get a smooth per-second rate, instead of a
-    // jumpy instant-tick number.
-    histRevenue: [],
-    histNailsMade: [],
-    histFactoryCopper: [],
-    histFactoryOutput: [],
-    histBreakerNails: [],
-    histBreakerIron: [],
-    histBreakerCopper: [],
+    simTime: 0, // seconds of game time elapsed
   };
 }
 
 var state = defaultState();
-
-// ----------------------------------------------------------------
-// Rolling-average helpers
-// ----------------------------------------------------------------
-
-function histPush(arr, amount) {
-  arr.push([state.simTime, amount]);
-}
-
-function histPrune(arr) {
-  while (arr.length && (state.simTime - arr[0][0]) > STATS_WINDOW_SEC) {
-    arr.shift();
-  }
-}
-
-function histRatePerSec(arr) {
-  var sum = 0;
-  for (var i = 0; i < arr.length; i++) sum += arr[i][1];
-  return sum / STATS_WINDOW_SEC;
-}
