@@ -283,6 +283,12 @@ function defaultState() {
     unlockedMap: false,
     unlockedMachinery: false,
     unlockedTuning: false,
+    guideSeen: {
+      handmade: false,
+      machinery: false,
+      map: false,
+      yinYang: false
+    },
 
     autoNextMap: false,
 

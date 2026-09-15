@@ -211,7 +211,8 @@ el.btnReincarnateConfirm.addEventListener("click", function () {
     unlockedMap: state.unlockedMap,
     unlockedMachinery: state.unlockedMachinery,
     unlockedTuning: state.unlockedTuning,
-    unlockedYinYang: state.unlockedYinYang
+    unlockedYinYang: state.unlockedYinYang,
+    guideSeen: state.guideSeen
   };
   var mapCarried = {
     mapIndex: state.mapIndex,
@@ -234,6 +235,7 @@ el.btnReincarnateConfirm.addEventListener("click", function () {
   state.unlockedMachinery = unlocksCarried.unlockedMachinery;
   state.unlockedTuning = unlocksCarried.unlockedTuning;
   state.unlockedYinYang = unlocksCarried.unlockedYinYang;
+  state.guideSeen = unlocksCarried.guideSeen;
   state.mapIndex = mapCarried.mapIndex;
   state.mapTiles = mapCarried.mapTiles;
   state.mapTotalWeight = mapCarried.mapTotalWeight;

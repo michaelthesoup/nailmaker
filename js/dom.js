@@ -33,6 +33,10 @@ var el = {
   btnGuide: document.getElementById("btnGuide"),
   guideOverlay: document.getElementById("guideOverlay"),
   btnGuideClose: document.getElementById("btnGuideClose"),
+  btnGuideStory: document.getElementById("btnGuideStory"),
+  btnGuideMechanics: document.getElementById("btnGuideMechanics"),
+  guideStorySheet: document.getElementById("guideStorySheet"),
+  guideMechanicsSheet: document.getElementById("guideMechanicsSheet"),
 
   valKarma: document.getElementById("valKarma"),
   btnReincarnate: document.getElementById("btnReincarnate"),

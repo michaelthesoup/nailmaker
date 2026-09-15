@@ -138,12 +138,45 @@ el.btnLoad.addEventListener("click", function () {
 // ----------------------------------------------------------------
 
 el.btnGuide.addEventListener("click", function () {
+  markGuideRead();
+  renderGuide();
   el.guideOverlay.style.display = "flex";
+});
+
+el.btnGuideStory.addEventListener("click", function () {
+  el.guideStorySheet.style.display = "block";
+  el.guideMechanicsSheet.style.display = "none";
+  el.btnGuideStory.classList.add("active");
+  el.btnGuideMechanics.classList.remove("active");
+});
+
+el.btnGuideMechanics.addEventListener("click", function () {
+  el.guideStorySheet.style.display = "none";
+  el.guideMechanicsSheet.style.display = "block";
+  el.btnGuideStory.classList.remove("active");
+  el.btnGuideMechanics.classList.add("active");
 });
 
 el.btnGuideClose.addEventListener("click", function () {
   el.guideOverlay.style.display = "none";
 });
+
+function guideUnlocks() {
+  return {
+    handmade: state.totalNailsMade >= 100,
+    machinery: state.unlockedMachinery,
+    map: state.unlockedMap,
+    yinYang: state.unlockedYinYang
+  };
+}
+
+function markGuideRead() {
+  var unlocked = guideUnlocks();
+  if (!state.guideSeen) state.guideSeen = {};
+  for (var key in unlocked) {
+    if (unlocked[key]) state.guideSeen[key] = true;
+  }
+}
 
 // ----------------------------------------------------------------
 // End Run -- leaderboard storage/rendering itself lives in leaderboard.js

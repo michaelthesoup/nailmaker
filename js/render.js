@@ -137,7 +137,26 @@ function render() {
   el.tuningSection.style.display = state.unlockedTuning ? "" : "none";
   el.yinYangSection.style.display = state.unlockedYinYang ? "" : "none";
 
+  renderGuide();
   renderMap();
+}
+
+function renderGuide() {
+  if (!el.guideOverlay) return;
+  var unlocked = guideUnlocks();
+  if (!state.guideSeen) state.guideSeen = {};
+
+  var sections = document.querySelectorAll("[data-guide-unlock]");
+  for (var i = 0; i < sections.length; i++) {
+    var key = sections[i].getAttribute("data-guide-unlock");
+    sections[i].style.display = unlocked[key] ? "" : "none";
+  }
+
+  var unread = 0;
+  for (var unlockKey in unlocked) {
+    if (unlocked[unlockKey] && !state.guideSeen[unlockKey]) unread++;
+  }
+  el.btnGuide.textContent = unread ? "guide (" + unread + ")" : "guide";
 }
 
 function renderYinYangStatus(label, makerBonusPct, breakerBonusPct) {

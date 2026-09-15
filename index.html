@@ -314,6 +314,25 @@
     border-color: #000;
     opacity: 1;
   }
+
+  .guide-tabs {
+    display: flex;
+    border-bottom: 1px solid #000;
+  }
+
+  .guide-tab {
+    flex: 1;
+    border: 0;
+    border-right: 1px solid #000;
+    background: #fff;
+    text-align: left;
+  }
+
+  .guide-tab:last-child { border-right: 0; }
+  .guide-tab.active { background: #000; color: #fff; }
+  .guide-section { border-top: 1px solid #ddd; padding-top: 10px; }
+  .guide-section:first-child { border-top: 0; padding-top: 0; }
+  .guide-locked { color: #777; }
 </style>
 </head>
 <body>
@@ -333,28 +352,53 @@
       <span>guide</span>
       <button id="btnGuideClose">x</button>
     </div>
+    <div class="guide-tabs">
+      <button id="btnGuideStory" class="guide-tab active">what to do</button>
+      <button id="btnGuideMechanics" class="guide-tab">how it works</button>
+    </div>
     <div class="panel-body" style="line-height:1.6;">
+      <div id="guideStorySheet">
+        <p class="guide-section"><strong>1. Make the first nails</strong><br>
+        Press <em>make nail</em> by hand. Make 100 nails to see what comes next.</p>
 
-      <p>This is a game about slowly building a nail business.</p>
+        <p class="guide-section" data-guide-unlock="handmade"><strong>2. Build a rhythm</strong><br>
+        After 100 nails, you most likely ran out of iron. Buy 100g of iron to keep making nails until the machinery chapter opens at 250 nails. Buy nail makers when you can: they turn iron into nails without another click.</p>
 
-      <p><strong>Making nails</strong><br>
-      You start by buying iron and turning it into nails with the make nail button. Iron costs money, and nails need iron to be made. Once you own nail makers, they do this for you automatically.</p>
+        <p class="guide-section" data-guide-unlock="map"><strong>3. Put the ground to work</strong><br>
+        Buy a nail breaker. It spends nails to mine iron and copper from the map. Keep an eye on the deposits, and move to the next map once the current one is empty.</p>
 
-      <p><strong>Selling nails</strong><br>
-      Nails sell on their own over time based on price and demand. If you raise the price, fewer people want to buy. If you lower it, more people buy, but you make less per nail. Buying marketing raises demand, and it costs more each time.</p>
+        <p class="guide-section" data-guide-unlock="machinery"><strong>4. Tune the workshop</strong><br>
+        Use the tuning switches when you need to pause a system. Factories use copper over time and can be leaned toward makers or breakers.</p>
 
-      <p><strong>Machinery</strong><br>
-      Nail makers turn iron into nails, one nail at a time. Nail breakers mine iron and copper from the map. Factories slowly build new nail makers or nail breakers on their own using copper, and the slider decides which one they lean toward.</p>
+        <p class="guide-section" data-guide-unlock="yinYang"><strong>5. Find balance</strong><br>
+        Once Yin and Yang appear, let the two sides develop. Watch which side is ahead, use the live bonus, and try to fill both bars together.</p>
 
-      <p><strong>The map</strong><br>
-      Once you own a nail breaker, a map appears showing iron and copper deposits. Your breakers mine them automatically. When a map is fully drained, you can move on to the next one, which holds more resources but takes longer to clear.</p>
+        <p class="guide-section" data-guide-unlock="yinYang"><strong>6. Complete a life</strong><br>
+        A full Yin/Yang cycle earns Tao. Tao earns karma when you reincarnate. Reincarnation keeps your long-term progress, but starts the next life with a fresh economy.</p>
 
-      <p><strong>Yin and yang</strong><br>
-      Later on you unlock yin and yang. Yin fills up when you gather more resources than you use. Yang fills up when you use more than you gather. Filling both bars at the same time earns you a tao point, which permanently speeds up your nail makers and breakers.</p>
+        <p class="guide-section" data-guide-unlock="yinYang"><strong>7. Keep the loop going</strong><br>
+        Save locally or sign in for cloud saving and the global leaderboard. End a run for its score, or reincarnate when you want the next life to begin stronger.</p>
+      </div>
 
-      <p><strong>Saving your progress</strong><br>
-      You can save manually with the save button, or make an account to save automatically and appear on the global leaderboard. Ending a run records your score and starts you over from the beginning.</p>
+      <div id="guideMechanicsSheet" style="display:none;">
+        <p class="guide-section"><strong>Making and selling</strong><br>
+        Making one nail consumes 1 g of iron and adds one unsold nail. Unsold nails sell automatically. Price changes demand: higher prices earn more per nail but reduce how many customers buy. Marketing raises demand multiplicatively, and each level costs more than the last.</p>
 
+        <p class="guide-section" data-guide-unlock="machinery"><strong>Machinery</strong><br>
+        Nail makers consume iron and produce nails every second. Nail breakers consume unsold nails as ammunition, then mine every active iron and copper deposit once per nail. Factories complete one unit per cycle, with the balance slider deciding whether that unit is a maker or breaker.</p>
+
+        <p class="guide-section" data-guide-unlock="map"><strong>The map</strong><br>
+        Each map has a fixed pattern of iron and copper deposits. Deposits have more capacity on later maps. A breaker can only mine while it has nails to spend and while deposits remain. The map health readout shows remaining material.</p>
+
+        <p class="guide-section" data-guide-unlock="machinery"><strong>Tuning and rates</strong><br>
+        The switches stop consumption and production for their system. The readouts show theoretical rates, while actual production is limited by available iron, nails, copper, demand, and remaining deposits.</p>
+
+        <p class="guide-section" data-guide-unlock="yinYang"><strong>Yin, Yang, and Tao</strong><br>
+        Yin rises when harvesting is ahead of use. Yang rises when use is ahead of harvesting. Balance gives a live production bonus; the side that is behind receives a corrective bonus. Filling both bars together awards Tao and resets the bars. Tao also increases demand, while Tao's current-life rate bonus does not survive reincarnation.</p>
+
+        <p class="guide-section"><strong>Reincarnation and saving</strong><br>
+        Reincarnation converts Tao into permanent karma and rolls independent starting bonuses for the next life. Karma improves the odds of stronger starts. The map, Yin/Yang progress, unlocks, and long-term progression persist; the economy is rebuilt from the new starting package. Local saves use this browser, while signed-in players also receive cloud autosaves.</p>
+      </div>
     </div>
   </div>
 </div>
