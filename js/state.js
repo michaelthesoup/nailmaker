@@ -102,6 +102,8 @@ var YINYANG_PD_BONUS_PER_LEVEL = 0.5; // +50% public demand per tao point, perma
 // it's not spent, it just permanently raises how many stats you get
 // to rewrite each time you're reborn.
 var KARMA_TAO_THRESHOLD = 3; // tao points per 1 karma, checked at the moment of reincarnating
+var NIRVANA_MIN_KARMA = 50; // below this, Nirvana cannot roll
+var NIRVANA_MAX_KARMA = 300; // at or above this, Nirvana is guaranteed
 
 // Reincarnation is a choice between two paths:
 //  - Suicide (the "end run" button): ends everything, karma resets to
@@ -154,8 +156,14 @@ var KARMA_TIERS = [
     apply: function (s) { s.funds += randInt(1500, 2500); s.nailMakers += randInt(10, 15); s.breakers += randInt(3, 7); s.marketingLevel += randInt(6, 10); }
   },
   {
-    minKarma: 50, label: "nirvana", isNirvana: true,
-    apply: function (s) { s.funds += randInt(8000, 12000); s.nailMakers += randInt(30, 50); s.breakers += randInt(10, 20); s.marketingLevel += randInt(15, 25); }
+    minKarma: NIRVANA_MIN_KARMA, label: "nirvana", isNirvana: true,
+    apply: function (s, karma) {
+      var scale = Math.max(1, karma / NIRVANA_MIN_KARMA);
+      s.funds += Math.round(1495 * scale);
+      s.nailMakers += Math.round(60 * scale);
+      s.breakers += Math.round(20 * scale);
+      s.marketingLevel += Math.round(20 * scale);
+    }
   },
 ];
 
@@ -170,14 +178,20 @@ function karmaTierFor(karma) {
   return best;
 }
 
-// The real roll. Every tier your karma qualifies for is possible, but
-// higher tiers are weighted more heavily the more you qualify for --
-// so more karma clearly improves your odds without ever promising an
-// exact result.
+// The real roll. Nirvana has a bounded chance band: it is impossible below
+// the minimum and guaranteed at the maximum. Below that band, higher tiers
+// are weighted more heavily the more karma you have.
 function pickKarmaTier(karma) {
+  var nirvanaChance = 0;
+  if (karma >= NIRVANA_MAX_KARMA) nirvanaChance = 1;
+  else if (karma >= NIRVANA_MIN_KARMA) {
+    nirvanaChance = (karma - NIRVANA_MIN_KARMA) / (NIRVANA_MAX_KARMA - NIRVANA_MIN_KARMA);
+  }
+  if (Math.random() < nirvanaChance) return KARMA_TIERS[KARMA_TIERS.length - 1];
+
   var eligible = [];
   for (var i = 0; i < KARMA_TIERS.length; i++) {
-    if (karma >= KARMA_TIERS[i].minKarma) eligible.push(KARMA_TIERS[i]);
+    if (!KARMA_TIERS[i].isNirvana && karma >= KARMA_TIERS[i].minKarma) eligible.push(KARMA_TIERS[i]);
   }
   if (eligible.length === 0) eligible = [KARMA_TIERS[0]];
 

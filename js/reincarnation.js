@@ -31,10 +31,13 @@ function startReincarnation() {
 
   var newTotalKarma = state.karma + karmaAvailable;
   var likelyTier = karmaTierFor(newTotalKarma);
+  var likelihood = newTotalKarma >= NIRVANA_MAX_KARMA
+    ? "Nirvana is guaranteed"
+    : "better karma means better odds, with Nirvana becoming possible at " + NIRVANA_MIN_KARMA + " and guaranteed at " + NIRVANA_MAX_KARMA;
   var confirmed = window.confirm(
     "Be reincarnated?\n\n" +
     "You'll gain " + karmaAvailable + " karma (" + newTotalKarma + " total, forever). " +
-    "This life ends, but your karma carries forward -- with that much karma you're most likely looking at something around " + likelyTier.label + ", though it's never guaranteed. Better karma just means better odds.\n\n" +
+    "This life ends, but your karma carries forward -- with that much karma you're most likely looking at something around " + likelyTier.label + ". " + likelihood + ".\n\n" +
     "This can't be undone."
   );
   if (!confirmed) return;
@@ -50,7 +53,7 @@ function runReincarnationRitual(tier) {
   // second re-roll that could disagree with it.
   var scratch = defaultState();
   var before = { funds: scratch.funds, nailMakers: scratch.nailMakers, breakers: scratch.breakers, marketingLevel: scratch.marketingLevel, factories: scratch.factories };
-  tier.apply(scratch);
+  tier.apply(scratch, state.karma);
   var granted = {
     funds: Math.round(scratch.funds - before.funds),
     nailMakers: Math.round(scratch.nailMakers - before.nailMakers),
@@ -132,6 +135,19 @@ function resolveRitual() {
   msg.textContent = heading;
   el.reincarnateGrid.appendChild(msg);
 
+  var bonusHeading = document.createElement("div");
+  bonusHeading.style.marginTop = "16px";
+  bonusHeading.style.fontWeight = "bold";
+  bonusHeading.textContent = "starting bonuses";
+  el.reincarnateGrid.appendChild(bonusHeading);
+
+  var bonusLine = document.createElement("div");
+  bonusLine.style.marginTop = "6px";
+  bonusLine.style.fontFamily = "Arial, Helvetica, sans-serif";
+  bonusLine.style.fontSize = "14px";
+  bonusLine.textContent = buildGrantedText(rc.granted);
+  el.reincarnateGrid.appendChild(bonusLine);
+
   var codeLine = document.createElement("div");
   codeLine.style.marginTop = "10px";
   codeLine.style.fontFamily = "'Courier New', Courier, monospace";
@@ -154,10 +170,21 @@ function buildGrantedCodeSummary(granted) {
   return parts.length ? parts.join("  ") : "nothing this time";
 }
 
+function buildGrantedText(granted) {
+  var parts = [];
+  if (granted.funds) parts.push("+" + fmtMoney(granted.funds) + " starting funds");
+  if (granted.marketingLevel) parts.push("+" + granted.marketingLevel + " marketing");
+  if (granted.nailMakers) parts.push("+" + granted.nailMakers + " nail makers");
+  if (granted.breakers) parts.push("+" + granted.breakers + " nail breakers");
+  if (granted.factories) parts.push("+" + granted.factories + " factories");
+  return parts.length ? parts.join("  |  ") : "no starting bonuses";
+}
+
 el.btnReincarnate.addEventListener("click", startReincarnation);
 
 el.btnReincarnateConfirm.addEventListener("click", function () {
-  var tier = rc.tier;
+  var ritual = rc;
+  var tier = ritual.tier;
   rc = null;
   el.reincarnateOverlay.style.display = "none";
 
@@ -192,11 +219,11 @@ el.btnReincarnateConfirm.addEventListener("click", function () {
   state.unlockedTuning = unlocksCarried.unlockedTuning;
   state.unlockedYinYang = unlocksCarried.unlockedYinYang;
 
-  state.funds += rc.granted.funds;
-  state.nailMakers += rc.granted.nailMakers;
-  state.breakers += rc.granted.breakers;
-  state.marketingLevel += rc.granted.marketingLevel;
-  state.factories += rc.granted.factories;
+  state.funds += ritual.granted.funds;
+  state.nailMakers += ritual.granted.nailMakers;
+  state.breakers += ritual.granted.breakers;
+  state.marketingLevel += ritual.granted.marketingLevel;
+  state.factories += ritual.granted.factories;
 
   render();
   if (typeof currentAuthUser === "function" && currentAuthUser()) cloudSaveState();
