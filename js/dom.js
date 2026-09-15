@@ -61,9 +61,8 @@ var el = {
   mapIndexLabel: document.getElementById("mapIndexLabel"),
   mapHealthText: document.getElementById("mapHealthText"),
   mapHealthFill: document.getElementById("mapHealthFill"),
+  mapDepositCounts: document.getElementById("mapDepositCounts"),
   btnBuyBreaker: document.getElementById("btnBuyBreaker"),
-  btnNextMap: document.getElementById("btnNextMap"),
-  btnAutoNextMap: document.getElementById("btnAutoNextMap"),
   cheatBox: document.getElementById("cheatBox"),
 
   factoryMaterialUse: document.getElementById("valFactoryMaterialUse"),

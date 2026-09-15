@@ -364,10 +364,10 @@
         <p class="guide-section" data-guide-unlock="handmade"><strong>2. Build a rhythm</strong><br>
         After 100 nails, you most likely ran out of iron. Buy 100g of iron to keep making nails until the machinery chapter opens at 250 nails. Buy nail makers when you can: they turn iron into nails without another click.</p>
 
-        <p class="guide-section" data-guide-unlock="map"><strong>3. Put the ground to work</strong><br>
-        Buy a nail breaker. It spends nails to mine iron and copper from the map. Keep an eye on the deposits, and move to the next map once the current one is empty.</p>
+        <p class="guide-section" data-guide-unlock="machinery"><strong>3. Put the ground to work</strong><br>
+        Buy a nail breaker. It spends nails to mine iron and copper from the map. Keep an eye on the deposits; when the current map is empty, the next one begins automatically.</p>
 
-        <p class="guide-section" data-guide-unlock="machinery"><strong>4. Tune the workshop</strong><br>
+        <p class="guide-section" data-guide-unlock="tuning"><strong>4. Tune the workshop</strong><br>
         Use the tuning switches when you need to pause a system. Factories use copper over time and can be leaned toward makers or breakers.</p>
 
         <p class="guide-section" data-guide-unlock="yinYang"><strong>5. Find balance</strong><br>
@@ -388,16 +388,16 @@
         Nail makers consume iron and produce nails every second. Nail breakers consume unsold nails as ammunition, then mine every active iron and copper deposit once per nail. Factories complete one unit per cycle, with the balance slider deciding whether that unit is a maker or breaker.</p>
 
         <p class="guide-section" data-guide-unlock="map"><strong>The map</strong><br>
-        Each map has a fixed pattern of iron and copper deposits. Deposits have more capacity on later maps. A breaker can only mine while it has nails to spend and while deposits remain. The map health readout shows remaining material.</p>
+        Each map has a fixed pattern of iron and copper deposits. Deposits have more capacity on later maps. A breaker can only mine while it has nails to spend and while deposits remain. The map health readout shows remaining material, and the count below it shows the map's iron/copper mix.</p>
 
-        <p class="guide-section" data-guide-unlock="machinery"><strong>Tuning and rates</strong><br>
+        <p class="guide-section" data-guide-unlock="tuning"><strong>Tuning and rates</strong><br>
         The switches stop consumption and production for their system. The readouts show theoretical rates, while actual production is limited by available iron, nails, copper, demand, and remaining deposits.</p>
 
         <p class="guide-section" data-guide-unlock="yinYang"><strong>Yin, Yang, and Tao</strong><br>
         Yin rises when harvesting is ahead of use. Yang rises when use is ahead of harvesting. Balance gives a live production bonus; the side that is behind receives a corrective bonus. Filling both bars together awards Tao and resets the bars. Tao also increases demand, while Tao's current-life rate bonus does not survive reincarnation.</p>
 
         <p class="guide-section"><strong>Reincarnation and saving</strong><br>
-        Reincarnation converts Tao into permanent karma and rolls independent starting bonuses for the next life. Karma improves the odds of stronger starts. The map, Yin/Yang progress, unlocks, and long-term progression persist; the economy is rebuilt from the new starting package. Local saves use this browser, while signed-in players also receive cloud autosaves.</p>
+        Reincarnation converts Tao into permanent karma and rolls independent starting bonuses for the next life. Karma improves the odds of stronger starts. The next life returns to map 1, while Yin/Yang progress, unlocks, and long-term progression persist. Local saves use this browser, while signed-in players also receive cloud autosaves.</p>
       </div>
     </div>
   </div>
@@ -534,10 +534,7 @@
       <div class="map-health-track"><div class="map-health-fill" id="mapHealthFill"></div></div>
     </div>
     </div>
-    <div class="map-controls">
-      <button id="btnAutoNextMap">auto-next map: OFF</button>
-    </div>
-    <button id="btnNextMap">go to next map</button>
+    <div class="hint" id="mapDepositCounts">iron deposits: 0 / copper deposits: 0</div>
     <div class="hint">i/c = iron/copper &nbsp; I/C = worked by breaker &nbsp; . = drained/empty</div>
 
     <div class="panel" id="yinYangSection" style="margin-top:14px; display:none;">

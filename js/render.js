@@ -185,6 +185,15 @@ function renderYinYangStatus(label, makerBonusPct, breakerBonusPct) {
 function renderMap() {
   var activeTiles = activeDepositTiles(state.mapTiles);
   var beingWorked = state.breakers > 0 && state.breakersOn && activeTiles.length > 0;
+  var ironDeposits = 0;
+  var copperDeposits = 0;
+  for (var d = 0; d < MAP_ROWS; d++) {
+    for (var e = 0; e < MAP_COLS; e++) {
+      if (state.mapTiles[d][e].type === "i") ironDeposits++;
+      if (state.mapTiles[d][e].type === "c") copperDeposits++;
+    }
+  }
+  el.mapDepositCounts.textContent = "iron deposits: " + ironDeposits + " / copper deposits: " + copperDeposits;
 
   var lines = [];
   for (var r = 0; r < MAP_ROWS; r++) {
@@ -207,6 +216,4 @@ function renderMap() {
   var pct = total > 0 ? Math.max(0, Math.min(100, (remaining / total) * 100)) : 0;
   el.mapHealthFill.style.width = pct + "%";
 
-  el.btnNextMap.style.display = mapHasDeposits(state.mapTiles) ? "none" : "block";
-  el.btnAutoNextMap.textContent = "auto-next map: " + (state.autoNextMap ? "ON" : "OFF");
 }

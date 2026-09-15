@@ -214,12 +214,6 @@ el.btnReincarnateConfirm.addEventListener("click", function () {
     unlockedYinYang: state.unlockedYinYang,
     guideSeen: state.guideSeen
   };
-  var mapCarried = {
-    mapIndex: state.mapIndex,
-    mapTiles: state.mapTiles,
-    mapTotalWeight: state.mapTotalWeight,
-    autoNextMap: state.autoNextMap
-  };
   var yinYangCarried = {
     yin: state.yin,
     yang: state.yang
@@ -236,10 +230,9 @@ el.btnReincarnateConfirm.addEventListener("click", function () {
   state.unlockedTuning = unlocksCarried.unlockedTuning;
   state.unlockedYinYang = unlocksCarried.unlockedYinYang;
   state.guideSeen = unlocksCarried.guideSeen;
-  state.mapIndex = mapCarried.mapIndex;
-  state.mapTiles = mapCarried.mapTiles;
-  state.mapTotalWeight = mapCarried.mapTotalWeight;
-  state.autoNextMap = mapCarried.autoNextMap;
+  state.mapIndex = 1;
+  state.mapTiles = generateMapTiles(1, ritual.taoAward);
+  state.mapTotalWeight = mapRemainingWeight(state.mapTiles);
   state.yin = yinYangCarried.yin;
   state.yang = yinYangCarried.yang;
   state.tao = ritual.taoAward;

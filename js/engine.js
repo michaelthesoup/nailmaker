@@ -99,7 +99,7 @@ function tick(dt) {
 
   checkYinYangUnlock();
 
-  if (state.autoNextMap && !mapHasDeposits(state.mapTiles)) {
+  if (!mapHasDeposits(state.mapTiles)) {
     goToNextMap(); // calls render() itself
     return;
   }

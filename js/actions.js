@@ -84,12 +84,6 @@ el.btnBuyBreaker.addEventListener("click", function () {
   state.breakerCooldownUntil = Date.now() + BREAKER_COOLDOWN_MS;
   render();
 });
-el.btnNextMap.addEventListener("click", goToNextMap);
-el.btnAutoNextMap.addEventListener("click", function () {
-  state.autoNextMap = !state.autoNextMap;
-  render();
-});
-
 el.btnToggleNailMakers.addEventListener("click", function () {
   state.nailMakersOn = !state.nailMakersOn;
   render();
@@ -106,7 +100,7 @@ el.btnToggleBreakers.addEventListener("click", function () {
 function goToNextMap() {
   if (mapHasDeposits(state.mapTiles)) return;
   state.mapIndex += 1;
-  state.mapTiles = generateMapTiles(state.mapIndex);
+  state.mapTiles = generateMapTiles(state.mapIndex, state.tao);
   state.mapTotalWeight = mapRemainingWeight(state.mapTiles);
   render();
 }
@@ -166,6 +160,7 @@ function guideUnlocks() {
     handmade: state.totalNailsMade >= 100,
     machinery: state.unlockedMachinery,
     map: state.unlockedMap,
+    tuning: state.unlockedTuning,
     yinYang: state.unlockedYinYang
   };
 }
@@ -242,6 +237,7 @@ function migrateLoadedState() {
   delete state.playerRow;
   delete state.playerCol;
   delete state.mineCooldownUntil;
+  delete state.autoNextMap;
   delete state.blueprints;
   delete state.upgradesOwned;
 

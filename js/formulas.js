@@ -71,7 +71,7 @@ function breakerBuildCostEffective() {
 }
 
 function nailMakerRateEffective() {
-  if (!state.nailMakersOn) return 0;
+  if (!state.nailMakersOn || state.ironAmt <= 0) return 0;
   return NAILMAKER_RATE * productionRateBonusMultiplier() * (1 + correctiveMakerBonus());
 }
 

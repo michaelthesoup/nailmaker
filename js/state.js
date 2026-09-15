@@ -58,12 +58,12 @@ var TICK_MS = 100;
 
 var MAP_ROWS = 10;
 var MAP_COLS = 21;
-var DEPOSITS_PER_MAP = 15;
+var DEPOSITS_PER_MAP = 14;
 
 // Progressive UI reveal. Map stays hidden until the first breaker
 // is bought -- before that, there's nothing on it for anything to do.
 var MACHINERY_UNLOCK_NAILS = 250;
-var TUNING_UNLOCK_NAILS = 250;
+var TUNING_UNLOCK_NAILS = 500;
 
 // Yin & Yang: a late-game balance meter. Unlocks once you've ever held
 // a full metric ton of BOTH iron and copper at the same time -- by
@@ -194,8 +194,13 @@ function depositCapacityForMap(mapIndex) {
   return DEPOSIT_CAPACITY_BASE * Math.pow(DEPOSIT_CAPACITY_GROWTH, mapIndex - 1);
 }
 
-function generateMapTiles(mapIndex) {
+function mapBalanceChance(tao) {
+  return 0.7 + 0.3 * (tao / (tao + 20));
+}
+
+function generateMapTiles(mapIndex, tao) {
   var rand = mulberry32(mapIndex * 7919 + 13);
+  tao = Math.max(0, tao || 0);
   var capacity = depositCapacityForMap(mapIndex);
   var tiles = [];
   for (var r = 0; r < MAP_ROWS; r++) {
@@ -206,6 +211,10 @@ function generateMapTiles(mapIndex) {
     tiles.push(row);
   }
 
+  var balanced = rand() < mapBalanceChance(tao);
+  var ironDeposits = balanced ? 7 : 1 + Math.floor(rand() * 13);
+  if (!balanced && ironDeposits === 7) ironDeposits = rand() < 0.5 ? 6 : 8;
+
   var placed = 0;
   var attempts = 0;
   while (placed < DEPOSITS_PER_MAP && attempts < 1000) {
@@ -213,7 +222,7 @@ function generateMapTiles(mapIndex) {
     var r = Math.floor(rand() * MAP_ROWS);
     var c = Math.floor(rand() * MAP_COLS);
     if (tiles[r][c].type !== ".") continue;
-    var type = rand() < 0.5 ? "i" : "c";
+    var type = placed < ironDeposits ? "i" : "c";
     tiles[r][c] = { type: type, remaining: capacity };
     placed++;
   }
@@ -287,10 +296,9 @@ function defaultState() {
       handmade: false,
       machinery: false,
       map: false,
+      tuning: false,
       yinYang: false
     },
-
-    autoNextMap: false,
 
     // Yin & Yang: two 0-100 bars. Each real second, whichever of
     // "harvested" (mined) or "profited" (used) grams was higher that
