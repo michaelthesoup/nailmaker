@@ -164,6 +164,13 @@ function rollStartingBonuses(karma) {
   return { granted: granted, title: title, quality: quality };
 }
 
+// Tao is normally earned by completing a Yin/Yang lap. Reincarnation grants
+// a modest head start, with stronger titles completing more of the cycle.
+function reincarnationTaoAward(result, karma) {
+  if (result.title.isNirvana) return 3;
+  return karma >= 13 ? 2 : 1;
+}
+
 // Usernames allowed to use the cheat box. Checked against the logged-in
 // account's username (case-insensitive) -- guests and anyone not on
 // this list can type in the box all they want, nothing will happen.
@@ -287,8 +294,8 @@ function defaultState() {
     unlockedYinYang: false,
     yin: 0,
     yang: 0,
-    tao: 0, // tao points -- earned when yin & yang both hit 100 together
-    taoBonusStack: 0, // permanent, stacking nail-maker/breaker rate bonus locked in from past tao points
+    tao: 0, // tao points -- earned by Yin/Yang laps or rare reincarnation awards
+    taoBonusStack: 0, // stacking nail-maker/breaker rate bonus for this life
     karma: 0, // permanent across reincarnations -- carried over explicitly, never wiped by a reset
     nirvanaAchieved: false, // a true permanent achievement -- survives even suicide, unlike karma
     harvestAccum: 0,

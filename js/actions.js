@@ -199,7 +199,7 @@ function migrateLoadedState() {
       state.factoryTimers = state.factoryTimers.slice(0, state.factories);
     }
   }
-  state.unlockedMap = state.breakers > 0;
+  state.unlockedMap = state.unlockedMap || state.breakers > 0;
   if (!state.mapTotalWeight) {
     state.mapTotalWeight = Math.max(
       mapRemainingWeight(state.mapTiles),

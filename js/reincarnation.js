@@ -57,8 +57,9 @@ function runReincarnationRitual(result) {
     marketingLevel: Math.round(scratch.marketingLevel - before.marketingLevel),
     factories: Math.round(scratch.factories - before.factories)
   };
+  var taoAward = reincarnationTaoAward(result, state.karma);
 
-  rc = { title: result.title, granted: granted, cells: [], flickerTimer: null };
+  rc = { title: result.title, granted: granted, taoAward: taoAward, cells: [], flickerTimer: null };
 
   buildGridNoise();
   el.reincarnateGrid.innerHTML = "";
@@ -72,14 +73,16 @@ function runReincarnationRitual(result) {
 function buildGridNoise() {
   var totalCells = RC_GRID_ROWS * RC_GRID_COLS;
   var chars = new Array(totalCells);
+  var offset = Math.floor(Math.random() * RC_DECOY_CHARS.length);
   for (var i = 0; i < totalCells; i++) {
-    chars[i] = randomDecoyChar();
+    chars[i] = decoyCharAt(i + offset);
   }
   rc.chars = chars;
+  rc.flickerStep = 0;
 }
 
-function randomDecoyChar() {
-  return RC_DECOY_CHARS.charAt(Math.floor(Math.random() * RC_DECOY_CHARS.length));
+function decoyCharAt(index) {
+  return RC_DECOY_CHARS.charAt(index % RC_DECOY_CHARS.length);
 }
 
 // Reveals cells one at a time, left to right, top to bottom, speeding
@@ -109,9 +112,10 @@ function revealGrid(index) {
 
 function startFlicker() {
   rc.flickerTimer = setInterval(function () {
+    rc.flickerStep += 1;
     for (var i = 0; i < rc.cells.length; i++) {
       if (Math.random() < RC_FLICKER_FRACTION) {
-        rc.cells[i].textContent = randomDecoyChar();
+        rc.cells[i].textContent = decoyCharAt(i + rc.flickerStep);
       }
     }
   }, RC_FLICKER_INTERVAL_MS);
@@ -143,6 +147,13 @@ function resolveRitual() {
   bonusLine.style.fontSize = "14px";
   bonusLine.textContent = buildGrantedText(rc.granted);
   el.reincarnateGrid.appendChild(bonusLine);
+
+  var taoLine = document.createElement("div");
+  taoLine.style.marginTop = "6px";
+  taoLine.style.fontFamily = "Arial, Helvetica, sans-serif";
+  taoLine.style.fontSize = "14px";
+  taoLine.textContent = rc.taoAward ? "+" + rc.taoAward + " tao awarded" : "no tao awarded this life";
+  el.reincarnateGrid.appendChild(taoLine);
 
   var codeLine = document.createElement("div");
   codeLine.style.marginTop = "10px";
@@ -202,6 +213,16 @@ el.btnReincarnateConfirm.addEventListener("click", function () {
     unlockedTuning: state.unlockedTuning,
     unlockedYinYang: state.unlockedYinYang
   };
+  var mapCarried = {
+    mapIndex: state.mapIndex,
+    mapTiles: state.mapTiles,
+    mapTotalWeight: state.mapTotalWeight,
+    autoNextMap: state.autoNextMap
+  };
+  var yinYangCarried = {
+    yin: state.yin,
+    yang: state.yang
+  };
 
   var justReachedNirvana = ritual.title.isNirvana && !state.nirvanaAchieved;
 
@@ -213,6 +234,14 @@ el.btnReincarnateConfirm.addEventListener("click", function () {
   state.unlockedMachinery = unlocksCarried.unlockedMachinery;
   state.unlockedTuning = unlocksCarried.unlockedTuning;
   state.unlockedYinYang = unlocksCarried.unlockedYinYang;
+  state.mapIndex = mapCarried.mapIndex;
+  state.mapTiles = mapCarried.mapTiles;
+  state.mapTotalWeight = mapCarried.mapTotalWeight;
+  state.autoNextMap = mapCarried.autoNextMap;
+  state.yin = yinYangCarried.yin;
+  state.yang = yinYangCarried.yang;
+  state.tao = ritual.taoAward;
+  state.taoBonusStack = 0;
 
   state.funds += ritual.granted.funds;
   state.nailMakers += ritual.granted.nailMakers;
