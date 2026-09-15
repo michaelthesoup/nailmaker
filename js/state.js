@@ -102,23 +102,14 @@ var YINYANG_PD_BONUS_PER_LEVEL = 0.5; // +50% public demand per tao point, perma
 // it's not spent, it just permanently raises how many stats you get
 // to rewrite each time you're reborn.
 var KARMA_TAO_THRESHOLD = 3; // tao points per 1 karma, checked at the moment of reincarnating
-var NIRVANA_MIN_KARMA = 50; // below this, Nirvana cannot roll
-var NIRVANA_MAX_KARMA = 300; // at or above this, Nirvana is guaranteed
 
 // Reincarnation is a choice between two paths:
 //  - Suicide (the "end run" button): ends everything, karma resets to
 //    zero, you start over exactly like a brand new player. A true dead
 //    end, no benefit, just a clean slate and a score on the leaderboard.
-//  - Reincarnation: your accumulated karma decides how good your next
-//    life's starting position is. The more karma you've built up
-//    across every past life, the better your odds of a rich tier, but
-//    it's never a guarantee -- grinding to an exact karma total won't
-//    lock in a specific result, and a lucky low-karma life can still
-//    roll better than expected. Each tier grants a random amount within
-//    its range, so even the same tier feels a little different every
-//    time. Enough karma eventually makes Nirvana reachable, which is as
-//    close to "beating the game" as an idle game about balance and
-//    rebirth gets.
+//  - Reincarnation: karma improves the odds of stronger starting bonuses.
+//    Each bonus rolls independently, so a life can be rich in one area and
+//    modest in another. There are no karma cutoffs or guaranteed results.
 function randRange(min, max) {
   return min + Math.random() * (max - min);
 }
@@ -126,90 +117,51 @@ function randInt(min, max) {
   return Math.floor(randRange(min, max + 1));
 }
 
-var KARMA_TIERS = [
-  {
-    minKarma: 0, label: "a blank slate",
-    apply: function (s) {}
-  },
-  {
-    minKarma: 1, label: "a little extra cash",
-    apply: function (s) { s.funds += randInt(30, 80); }
-  },
-  {
-    minKarma: 3, label: "a healthy nest egg",
-    apply: function (s) { s.funds += randInt(200, 400); }
-  },
-  {
-    minKarma: 6, label: "a head start on machinery",
-    apply: function (s) { s.funds += randInt(200, 400); s.nailMakers += randInt(2, 4); }
-  },
-  {
-    minKarma: 10, label: "an established workshop",
-    apply: function (s) { s.funds += randInt(350, 650); s.nailMakers += randInt(5, 8); s.breakers += randInt(1, 3); }
-  },
-  {
-    minKarma: 15, label: "a name people know",
-    apply: function (s) { s.funds += randInt(350, 650); s.nailMakers += randInt(5, 8); s.breakers += randInt(1, 3); s.marketingLevel += randInt(2, 4); }
-  },
-  {
-    minKarma: 25, label: "an empire already in motion",
-    apply: function (s) { s.funds += randInt(1500, 2500); s.nailMakers += randInt(10, 15); s.breakers += randInt(3, 7); s.marketingLevel += randInt(6, 10); }
-  },
-  {
-    minKarma: NIRVANA_MIN_KARMA, label: "nirvana", isNirvana: true,
-    apply: function (s, karma) {
-      var scale = Math.max(1, karma / NIRVANA_MIN_KARMA);
-      s.funds += Math.round(1495 * scale);
-      s.nailMakers += Math.round(60 * scale);
-      s.breakers += Math.round(20 * scale);
-      s.marketingLevel += Math.round(20 * scale);
-    }
-  },
+var STARTING_BONUS_TIERS = [
+  { funds: [0, 0], nailMakers: [0, 0], breakers: [0, 0], marketingLevel: [0, 0], factories: [0, 0] },
+  { funds: [30, 80], nailMakers: [1, 2], breakers: [0, 1], marketingLevel: [0, 1], factories: [0, 0] },
+  { funds: [150, 350], nailMakers: [3, 6], breakers: [1, 3], marketingLevel: [1, 2], factories: [0, 0] },
+  { funds: [400, 750], nailMakers: [7, 12], breakers: [3, 6], marketingLevel: [2, 4], factories: [0, 1] },
+  { funds: [900, 1600], nailMakers: [14, 22], breakers: [6, 10], marketingLevel: [5, 8], factories: [1, 2] },
+  { funds: [1800, 3200], nailMakers: [25, 40], breakers: [11, 18], marketingLevel: [9, 14], factories: [2, 4] },
 ];
 
-// The highest tier you qualify for -- used only for the rough preview
-// shown before you commit to reincarnating. What you actually get is
-// rolled by pickKarmaTier() below, which doesn't guarantee this one.
-function karmaTierFor(karma) {
-  var best = KARMA_TIERS[0];
-  for (var i = 0; i < KARMA_TIERS.length; i++) {
-    if (karma >= KARMA_TIERS[i].minKarma) best = KARMA_TIERS[i];
-  }
-  return best;
+var STARTING_BONUS_FIELDS = ["funds", "nailMakers", "breakers", "marketingLevel", "factories"];
+var STARTING_TITLES = [
+  { maxQuality: 0, label: "a quiet beginning" },
+  { maxQuality: 4, label: "an encouraging start" },
+  { maxQuality: 8, label: "an established workshop" },
+  { maxQuality: 12, label: "a name people know" },
+  { maxQuality: 17, label: "an empire already in motion" },
+  { maxQuality: Infinity, label: "nirvana", isNirvana: true },
+];
+
+// Karma raises the ceiling smoothly. Every stat can roll below or above the
+// average, but high tiers become more common as karma accumulates.
+function pickStartingBonusTier(karma) {
+  var roll = Math.random() * (karma + 10);
+  return Math.min(STARTING_BONUS_TIERS.length - 1, Math.floor(roll / 10));
 }
 
-// The real roll. Nirvana has a bounded chance band: it is impossible below
-// the minimum and guaranteed at the maximum. Below that band, higher tiers
-// are weighted more heavily the more karma you have.
-function pickKarmaTier(karma) {
-  var nirvanaChance = 0;
-  if (karma >= NIRVANA_MAX_KARMA) nirvanaChance = 1;
-  else if (karma >= NIRVANA_MIN_KARMA) {
-    nirvanaChance = (karma - NIRVANA_MIN_KARMA) / (NIRVANA_MAX_KARMA - NIRVANA_MIN_KARMA);
+function startingTitleForQuality(quality) {
+  for (var i = 0; i < STARTING_TITLES.length; i++) {
+    if (quality <= STARTING_TITLES[i].maxQuality) return STARTING_TITLES[i];
   }
-  if (Math.random() < nirvanaChance) return KARMA_TIERS[KARMA_TIERS.length - 1];
+  return STARTING_TITLES[STARTING_TITLES.length - 1];
+}
 
-  var eligible = [];
-  for (var i = 0; i < KARMA_TIERS.length; i++) {
-    if (!KARMA_TIERS[i].isNirvana && karma >= KARMA_TIERS[i].minKarma) eligible.push(KARMA_TIERS[i]);
+function rollStartingBonuses(karma) {
+  var granted = { funds: 0, nailMakers: 0, breakers: 0, marketingLevel: 0, factories: 0 };
+  var quality = 0;
+  for (var i = 0; i < STARTING_BONUS_FIELDS.length; i++) {
+    var field = STARTING_BONUS_FIELDS[i];
+    var tier = pickStartingBonusTier(karma);
+    var range = STARTING_BONUS_TIERS[tier][field];
+    granted[field] = randInt(range[0], range[1]);
+    quality += tier;
   }
-  if (eligible.length === 0) eligible = [KARMA_TIERS[0]];
-
-  var weights = [];
-  var totalWeight = 0;
-  for (var j = 0; j < eligible.length; j++) {
-    var w = Math.pow(2, j); // each tier up is twice as likely as the one before it
-    weights.push(w);
-    totalWeight += w;
-  }
-
-  var roll = Math.random() * totalWeight;
-  var cumulative = 0;
-  for (var k = 0; k < eligible.length; k++) {
-    cumulative += weights[k];
-    if (roll < cumulative) return eligible[k];
-  }
-  return eligible[eligible.length - 1];
+  var title = startingTitleForQuality(quality);
+  return { granted: granted, title: title, quality: quality };
 }
 
 // Usernames allowed to use the cheat box. Checked against the logged-in

@@ -115,9 +115,8 @@ function render() {
     var karmaAvailable = Math.floor(state.tao / KARMA_TAO_THRESHOLD);
     if (karmaAvailable >= 1) {
       var projectedTotal = state.karma + karmaAvailable;
-      var projectedTier = karmaTierFor(projectedTotal);
       el.btnReincarnate.disabled = false;
-      el.reincarnateHint.textContent = "reincarnate for +" + karmaAvailable + " karma (" + projectedTotal + " total) \u2014 likely around " + projectedTier.label + ", but never guaranteed";
+      el.reincarnateHint.textContent = "reincarnate for +" + karmaAvailable + " karma (" + projectedTotal + " total) \u2014 stronger starting bonuses become more likely as karma grows";
     } else {
       el.btnReincarnate.disabled = true;
       el.reincarnateHint.textContent = "reach " + KARMA_TAO_THRESHOLD + " tao to end this life and be reborn";

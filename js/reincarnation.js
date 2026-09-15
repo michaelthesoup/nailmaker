@@ -30,30 +30,26 @@ function startReincarnation() {
   if (karmaAvailable < 1) return;
 
   var newTotalKarma = state.karma + karmaAvailable;
-  var likelyTier = karmaTierFor(newTotalKarma);
-  var likelihood = newTotalKarma >= NIRVANA_MAX_KARMA
-    ? "Nirvana is guaranteed"
-    : "better karma means better odds, with Nirvana becoming possible at " + NIRVANA_MIN_KARMA + " and guaranteed at " + NIRVANA_MAX_KARMA;
   var confirmed = window.confirm(
     "Be reincarnated?\n\n" +
     "You'll gain " + karmaAvailable + " karma (" + newTotalKarma + " total, forever). " +
-    "This life ends, but your karma carries forward -- with that much karma you're most likely looking at something around " + likelyTier.label + ". " + likelihood + ".\n\n" +
+    "This life ends, but your karma carries forward. It improves the odds of stronger starting bonuses, but every stat is rolled independently and nothing is guaranteed.\n\n" +
     "This can't be undone."
   );
   if (!confirmed) return;
 
   state.karma = newTotalKarma;
-  var tier = pickKarmaTier(newTotalKarma); // the real roll happens now
-  runReincarnationRitual(tier);
+  runReincarnationRitual(rollStartingBonuses(newTotalKarma));
 }
 
-function runReincarnationRitual(tier) {
-  // Roll the actual granted amounts once, right now -- so what gets
-  // shown during the reveal is exactly what gets applied later, not a
-  // second re-roll that could disagree with it.
+function runReincarnationRitual(result) {
   var scratch = defaultState();
   var before = { funds: scratch.funds, nailMakers: scratch.nailMakers, breakers: scratch.breakers, marketingLevel: scratch.marketingLevel, factories: scratch.factories };
-  tier.apply(scratch, state.karma);
+  scratch.funds += result.granted.funds;
+  scratch.nailMakers += result.granted.nailMakers;
+  scratch.breakers += result.granted.breakers;
+  scratch.marketingLevel += result.granted.marketingLevel;
+  scratch.factories += result.granted.factories;
   var granted = {
     funds: Math.round(scratch.funds - before.funds),
     nailMakers: Math.round(scratch.nailMakers - before.nailMakers),
@@ -62,7 +58,7 @@ function runReincarnationRitual(tier) {
     factories: Math.round(scratch.factories - before.factories)
   };
 
-  rc = { tier: tier, granted: granted, cells: [], flickerTimer: null };
+  rc = { title: result.title, granted: granted, cells: [], flickerTimer: null };
 
   buildGridNoise();
   el.reincarnateGrid.innerHTML = "";
@@ -126,11 +122,11 @@ function resolveRitual() {
   clearInterval(rc.flickerTimer);
   el.reincarnateGrid.innerHTML = "";
 
-  var tier = rc.tier;
-  var heading = tier.isNirvana ? "NIRVANA" : "your next life begins with " + tier.label;
+  var title = rc.title;
+  var heading = title.isNirvana ? "NIRVANA" : "your next life begins with " + title.label;
   var msg = document.createElement("div");
   msg.style.fontWeight = "bold";
-  msg.style.fontSize = tier.isNirvana ? "28px" : "18px";
+  msg.style.fontSize = title.isNirvana ? "28px" : "18px";
   msg.style.letterSpacing = "1px";
   msg.textContent = heading;
   el.reincarnateGrid.appendChild(msg);
@@ -184,7 +180,6 @@ el.btnReincarnate.addEventListener("click", startReincarnation);
 
 el.btnReincarnateConfirm.addEventListener("click", function () {
   var ritual = rc;
-  var tier = ritual.tier;
   rc = null;
   el.reincarnateOverlay.style.display = "none";
 
@@ -200,7 +195,7 @@ el.btnReincarnateConfirm.addEventListener("click", function () {
   submitScore(name, Math.floor(state.totalNailsMade));
 
   var karmaCarried = state.karma;
-  var nirvanaCarried = state.nirvanaAchieved || !!tier.isNirvana;
+  var nirvanaCarried = state.nirvanaAchieved || !!ritual.title.isNirvana;
   var unlocksCarried = {
     unlockedMap: state.unlockedMap,
     unlockedMachinery: state.unlockedMachinery,
@@ -208,7 +203,7 @@ el.btnReincarnateConfirm.addEventListener("click", function () {
     unlockedYinYang: state.unlockedYinYang
   };
 
-  var justReachedNirvana = tier.isNirvana && !state.nirvanaAchieved;
+  var justReachedNirvana = ritual.title.isNirvana && !state.nirvanaAchieved;
 
   deleteAllSaves();
   state = defaultState();
