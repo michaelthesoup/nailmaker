@@ -97,14 +97,18 @@ function render() {
 
     var ratio = harmonyRatio();
     var totalBonusPct = Math.round((productionRateBonusMultiplier() - 1) * 100);
+    var makerBonusPct = totalBonusPct;
+    var breakerBonusPct = totalBonusPct;
     if (ratio >= YINYANG_STATUS_DEADZONE) {
-      el.yinYangStatus.textContent = "BALANCED \u2014 +" + totalBonusPct + "%";
+      renderYinYangStatus("BALANCED", makerBonusPct, breakerBonusPct);
     } else if (diff > 0) {
       var breakerCorrectivePct = Math.round(correctiveBreakerBonus() * 100);
-      el.yinYangStatus.textContent = "YANG-LEANING \u2014 +" + totalBonusPct + "% / +" + breakerCorrectivePct + "%";
+      breakerBonusPct += breakerCorrectivePct;
+      renderYinYangStatus("YANG-LEANING", makerBonusPct, breakerBonusPct);
     } else {
       var makerCorrectivePct = Math.round(correctiveMakerBonus() * 100);
-      el.yinYangStatus.textContent = "YIN-LEANING \u2014 +" + totalBonusPct + "% / +" + makerCorrectivePct + "%";
+      makerBonusPct += makerCorrectivePct;
+      renderYinYangStatus("YIN-LEANING", makerBonusPct, breakerBonusPct);
     }
 
     if (el.yinYangHint) {
@@ -134,6 +138,29 @@ function render() {
   el.yinYangSection.style.display = state.unlockedYinYang ? "" : "none";
 
   renderMap();
+}
+
+function renderYinYangStatus(label, makerBonusPct, breakerBonusPct) {
+  el.yinYangStatus.textContent = "";
+
+  var labelNode = document.createElement("span");
+  labelNode.textContent = label + " \u2014 ";
+  el.yinYangStatus.appendChild(labelNode);
+
+  var makerNode = document.createElement("span");
+  makerNode.className = "yy-bonus-makers";
+  makerNode.textContent = "+" + makerBonusPct + "% makers";
+  el.yinYangStatus.appendChild(makerNode);
+
+  var separator = document.createElement("span");
+  separator.className = "yy-bonus-separator";
+  separator.textContent = "/";
+  el.yinYangStatus.appendChild(separator);
+
+  var breakerNode = document.createElement("span");
+  breakerNode.className = "yy-bonus-breakers";
+  breakerNode.textContent = "+" + breakerBonusPct + "% breakers";
+  el.yinYangStatus.appendChild(breakerNode);
 }
 
 function renderMap() {
