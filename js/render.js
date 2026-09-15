@@ -22,6 +22,8 @@ function render() {
   el.factories.textContent = state.factories;
   el.breakers.textContent = state.breakers;
   var theoreticalNailsPerSec = state.nailMakers * nailMakerRateEffective();
+  el.nailMakerNailsRate.textContent = fmtDecimal(theoreticalNailsPerSec);
+  el.nailMakerIronRate.textContent = fmtWeight(theoreticalNailsPerSec * IRON_PER_NAIL);
   var theoreticalSoldPerSec = avgNailsSoldPerSec();
   // Demand alone can say "the market would take 62 nails/sec," but if
   // production can't actually make that many, sustained revenue can't
@@ -96,13 +98,13 @@ function render() {
     var ratio = harmonyRatio();
     var totalBonusPct = Math.round((productionRateBonusMultiplier() - 1) * 100);
     if (ratio >= YINYANG_STATUS_DEADZONE) {
-      el.yinYangStatus.textContent = "BALANCED \u2014 +" + totalBonusPct + "% maker/breaker speed";
+      el.yinYangStatus.textContent = "BALANCED \u2014 +" + totalBonusPct + "%";
     } else if (diff > 0) {
       var breakerCorrectivePct = Math.round(correctiveBreakerBonus() * 100);
-      el.yinYangStatus.textContent = "YANG-LEANING \u2014 +" + totalBonusPct + "% maker/breaker speed, +" + breakerCorrectivePct + "% extra for breakers to catch up";
+      el.yinYangStatus.textContent = "YANG-LEANING \u2014 +" + totalBonusPct + "% / +" + breakerCorrectivePct + "%";
     } else {
       var makerCorrectivePct = Math.round(correctiveMakerBonus() * 100);
-      el.yinYangStatus.textContent = "YIN-LEANING \u2014 +" + totalBonusPct + "% maker/breaker speed, +" + makerCorrectivePct + "% extra for makers to catch up";
+      el.yinYangStatus.textContent = "YIN-LEANING \u2014 +" + totalBonusPct + "% / +" + makerCorrectivePct + "%";
     }
 
     if (el.yinYangHint) {
@@ -115,7 +117,7 @@ function render() {
       var projectedTotal = state.karma + karmaAvailable;
       var projectedTier = karmaTierFor(projectedTotal);
       el.btnReincarnate.disabled = false;
-      el.reincarnateHint.textContent = "reincarnate for +" + karmaAvailable + " karma (" + projectedTotal + " total) \u2014 your next life begins with " + projectedTier.label;
+      el.reincarnateHint.textContent = "reincarnate for +" + karmaAvailable + " karma (" + projectedTotal + " total) \u2014 likely around " + projectedTier.label + ", but never guaranteed";
     } else {
       el.btnReincarnate.disabled = true;
       el.reincarnateHint.textContent = "reach " + KARMA_TAO_THRESHOLD + " tao to end this life and be reborn";

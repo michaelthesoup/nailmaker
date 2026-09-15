@@ -30,21 +30,36 @@ function startReincarnation() {
   if (karmaAvailable < 1) return;
 
   var newTotalKarma = state.karma + karmaAvailable;
-  var tier = karmaTierFor(newTotalKarma);
+  var likelyTier = karmaTierFor(newTotalKarma);
   var confirmed = window.confirm(
     "Be reincarnated?\n\n" +
     "You'll gain " + karmaAvailable + " karma (" + newTotalKarma + " total, forever). " +
-    "This life ends, but your karma carries forward -- your next life will begin with " + tier.label + ".\n\n" +
+    "This life ends, but your karma carries forward -- with that much karma you're most likely looking at something around " + likelyTier.label + ", though it's never guaranteed. Better karma just means better odds.\n\n" +
     "This can't be undone."
   );
   if (!confirmed) return;
 
   state.karma = newTotalKarma;
+  var tier = pickKarmaTier(newTotalKarma); // the real roll happens now
   runReincarnationRitual(tier);
 }
 
 function runReincarnationRitual(tier) {
-  rc = { tier: tier, cells: [], flickerTimer: null };
+  // Roll the actual granted amounts once, right now -- so what gets
+  // shown during the reveal is exactly what gets applied later, not a
+  // second re-roll that could disagree with it.
+  var scratch = defaultState();
+  var before = { funds: scratch.funds, nailMakers: scratch.nailMakers, breakers: scratch.breakers, marketingLevel: scratch.marketingLevel, factories: scratch.factories };
+  tier.apply(scratch);
+  var granted = {
+    funds: Math.round(scratch.funds - before.funds),
+    nailMakers: Math.round(scratch.nailMakers - before.nailMakers),
+    breakers: Math.round(scratch.breakers - before.breakers),
+    marketingLevel: Math.round(scratch.marketingLevel - before.marketingLevel),
+    factories: Math.round(scratch.factories - before.factories)
+  };
+
+  rc = { tier: tier, granted: granted, cells: [], flickerTimer: null };
 
   buildGridNoise();
   el.reincarnateGrid.innerHTML = "";
@@ -117,8 +132,26 @@ function resolveRitual() {
   msg.textContent = heading;
   el.reincarnateGrid.appendChild(msg);
 
+  var codeLine = document.createElement("div");
+  codeLine.style.marginTop = "10px";
+  codeLine.style.fontFamily = "'Courier New', Courier, monospace";
+  codeLine.style.fontSize = "14px";
+  codeLine.style.letterSpacing = "2px";
+  codeLine.textContent = buildGrantedCodeSummary(rc.granted);
+  el.reincarnateGrid.appendChild(codeLine);
+
   el.reincarnateStatus.textContent = "";
   el.btnReincarnateConfirm.style.display = "inline-block";
+}
+
+function buildGrantedCodeSummary(granted) {
+  var parts = [];
+  if (granted.funds) parts.push("$" + (granted.funds > 0 ? "+" : "") + granted.funds);
+  if (granted.nailMakers) parts.push("nm" + (granted.nailMakers > 0 ? "+" : "") + granted.nailMakers);
+  if (granted.breakers) parts.push("br" + (granted.breakers > 0 ? "+" : "") + granted.breakers);
+  if (granted.marketingLevel) parts.push("mk" + (granted.marketingLevel > 0 ? "+" : "") + granted.marketingLevel);
+  if (granted.factories) parts.push("fc" + (granted.factories > 0 ? "+" : "") + granted.factories);
+  return parts.length ? parts.join("  ") : "nothing this time";
 }
 
 el.btnReincarnate.addEventListener("click", startReincarnation);
@@ -159,7 +192,11 @@ el.btnReincarnateConfirm.addEventListener("click", function () {
   state.unlockedTuning = unlocksCarried.unlockedTuning;
   state.unlockedYinYang = unlocksCarried.unlockedYinYang;
 
-  tier.apply(state);
+  state.funds += rc.granted.funds;
+  state.nailMakers += rc.granted.nailMakers;
+  state.breakers += rc.granted.breakers;
+  state.marketingLevel += rc.granted.marketingLevel;
+  state.factories += rc.granted.factories;
 
   render();
   if (typeof currentAuthUser === "function" && currentAuthUser()) cloudSaveState();

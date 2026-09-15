@@ -330,7 +330,7 @@
       Nails sell on their own over time based on price and demand. If you raise the price, fewer people want to buy. If you lower it, more people buy, but you make less per nail. Buying marketing raises demand, and it costs more each time.</p>
 
       <p><strong>Machinery</strong><br>
-      Nail makers turn iron into nails. Nail breakers mine iron and copper from the map. Factories build new nail makers or nail breakers on their own, and the slider decides which one they lean toward.</p>
+      Nail makers turn iron into nails, one nail at a time. Nail breakers mine iron and copper from the map. Factories slowly build new nail makers or nail breakers on their own using copper, and the slider decides which one they lean toward.</p>
 
       <p><strong>The map</strong><br>
       Once you own a nail breaker, a map appears showing iron and copper deposits. Your breakers mine them automatically. When a map is fully drained, you can move on to the next one, which holds more resources but takes longer to clear.</p>
@@ -404,6 +404,10 @@
             <span class="label">nail makers:</span>
             <span class="value" id="valNailMakers">0</span>
             <button id="btnBuyNailMaker">buy nail maker</button>
+          </div>
+          <div class="hint">
+            consuming: <span id="valNailMakerIronRate">0 g</span> iron/s &middot;
+            producing: <span id="valNailMakerNailsRate">0.0</span> nails/s
           </div>
 
           <div class="row">

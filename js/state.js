@@ -109,11 +109,21 @@ var KARMA_TAO_THRESHOLD = 3; // tao points per 1 karma, checked at the moment of
 //    end, no benefit, just a clean slate and a score on the leaderboard.
 //  - Reincarnation: your accumulated karma decides how good your next
 //    life's starting position is. The more karma you've built up
-//    across every past life, the richer the tier you land in. Enough
-//    karma eventually reaches Nirvana, which is as close to "beating
-//    the game" as an idle game about balance and rebirth gets.
-// Tiers are checked highest-to-lowest; whichever is the highest tier
-// your TOTAL karma qualifies for is the one that applies.
+//    across every past life, the better your odds of a rich tier, but
+//    it's never a guarantee -- grinding to an exact karma total won't
+//    lock in a specific result, and a lucky low-karma life can still
+//    roll better than expected. Each tier grants a random amount within
+//    its range, so even the same tier feels a little different every
+//    time. Enough karma eventually makes Nirvana reachable, which is as
+//    close to "beating the game" as an idle game about balance and
+//    rebirth gets.
+function randRange(min, max) {
+  return min + Math.random() * (max - min);
+}
+function randInt(min, max) {
+  return Math.floor(randRange(min, max + 1));
+}
+
 var KARMA_TIERS = [
   {
     minKarma: 0, label: "a blank slate",
@@ -121,40 +131,71 @@ var KARMA_TIERS = [
   },
   {
     minKarma: 1, label: "a little extra cash",
-    apply: function (s) { s.funds += 50; }
+    apply: function (s) { s.funds += randInt(30, 80); }
   },
   {
     minKarma: 3, label: "a healthy nest egg",
-    apply: function (s) { s.funds += 300; }
+    apply: function (s) { s.funds += randInt(200, 400); }
   },
   {
     minKarma: 6, label: "a head start on machinery",
-    apply: function (s) { s.funds += 300; s.nailMakers += 3; }
+    apply: function (s) { s.funds += randInt(200, 400); s.nailMakers += randInt(2, 4); }
   },
   {
     minKarma: 10, label: "an established workshop",
-    apply: function (s) { s.funds += 500; s.nailMakers += 6; s.breakers += 2; }
+    apply: function (s) { s.funds += randInt(350, 650); s.nailMakers += randInt(5, 8); s.breakers += randInt(1, 3); }
   },
   {
     minKarma: 15, label: "a name people know",
-    apply: function (s) { s.funds += 500; s.nailMakers += 6; s.breakers += 2; s.marketingLevel += 3; }
+    apply: function (s) { s.funds += randInt(350, 650); s.nailMakers += randInt(5, 8); s.breakers += randInt(1, 3); s.marketingLevel += randInt(2, 4); }
   },
   {
     minKarma: 25, label: "an empire already in motion",
-    apply: function (s) { s.funds += 2000; s.nailMakers += 15; s.breakers += 5; s.marketingLevel += 8; }
+    apply: function (s) { s.funds += randInt(1500, 2500); s.nailMakers += randInt(10, 15); s.breakers += randInt(3, 7); s.marketingLevel += randInt(6, 10); }
   },
   {
     minKarma: 50, label: "nirvana", isNirvana: true,
-    apply: function (s) { s.funds += 10000; s.nailMakers += 40; s.breakers += 15; s.marketingLevel += 20; }
+    apply: function (s) { s.funds += randInt(8000, 12000); s.nailMakers += randInt(30, 50); s.breakers += randInt(10, 20); s.marketingLevel += randInt(15, 25); }
   },
 ];
 
+// The highest tier you qualify for -- used only for the rough preview
+// shown before you commit to reincarnating. What you actually get is
+// rolled by pickKarmaTier() below, which doesn't guarantee this one.
 function karmaTierFor(karma) {
   var best = KARMA_TIERS[0];
   for (var i = 0; i < KARMA_TIERS.length; i++) {
     if (karma >= KARMA_TIERS[i].minKarma) best = KARMA_TIERS[i];
   }
   return best;
+}
+
+// The real roll. Every tier your karma qualifies for is possible, but
+// higher tiers are weighted more heavily the more you qualify for --
+// so more karma clearly improves your odds without ever promising an
+// exact result.
+function pickKarmaTier(karma) {
+  var eligible = [];
+  for (var i = 0; i < KARMA_TIERS.length; i++) {
+    if (karma >= KARMA_TIERS[i].minKarma) eligible.push(KARMA_TIERS[i]);
+  }
+  if (eligible.length === 0) eligible = [KARMA_TIERS[0]];
+
+  var weights = [];
+  var totalWeight = 0;
+  for (var j = 0; j < eligible.length; j++) {
+    var w = Math.pow(2, j); // each tier up is twice as likely as the one before it
+    weights.push(w);
+    totalWeight += w;
+  }
+
+  var roll = Math.random() * totalWeight;
+  var cumulative = 0;
+  for (var k = 0; k < eligible.length; k++) {
+    cumulative += weights[k];
+    if (roll < cumulative) return eligible[k];
+  }
+  return eligible[eligible.length - 1];
 }
 
 // Usernames allowed to use the cheat box. Checked against the logged-in

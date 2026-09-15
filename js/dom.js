@@ -66,6 +66,8 @@ var el = {
   factoryOutputRate: document.getElementById("valFactoryOutputRate"),
   sliderFactoryBalance: document.getElementById("sliderFactoryBalance"),
 
+  nailMakerIronRate: document.getElementById("valNailMakerIronRate"),
+  nailMakerNailsRate: document.getElementById("valNailMakerNailsRate"),
   breakerNailsRate: document.getElementById("valBreakerNailsRate"),
   breakerIronRate: document.getElementById("valBreakerIronRate"),
   breakerCopperRate: document.getElementById("valBreakerCopperRate"),
