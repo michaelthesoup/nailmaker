@@ -174,7 +174,7 @@ function reincarnationTaoAward(result, karma) {
 // Usernames allowed to use the cheat box. Checked against the logged-in
 // account's username (case-insensitive) -- guests and anyone not on
 // this list can type in the box all they want, nothing will happen.
-var CHEAT_ALLOWED_USERNAMES = ["nailmaker"];
+var CHEAT_ALLOWED_USERNAMES = ["nailmaker", "mining"];
 var TAO_PERMANENT_BONUS_PER_POINT = 0.5; // +50% nail-maker/breaker rate, permanent, stacking per tao point
 
 // ----------------------------------------------------------------
