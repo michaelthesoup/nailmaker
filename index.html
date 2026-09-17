@@ -26,7 +26,8 @@
     display: flex;
     gap: 12px;
     align-items: flex-start;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    overflow-x: auto;
   }
 
   .row {
@@ -125,6 +126,11 @@
     padding: 8px;
     background: #fff;
     width: fit-content;
+  }
+
+  #mapMaterials {
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
   }
 
   .map-controls {
@@ -394,7 +400,7 @@
         The switches stop consumption and production for their system. The readouts show theoretical rates, while actual production is limited by available iron, nails, copper, demand, and remaining deposits.</p>
 
         <p class="guide-section" data-guide-unlock="yinYang"><strong>Yin, Yang, and Tao</strong><br>
-        Yin rises when harvesting is ahead of use. Yang rises when use is ahead of harvesting. Balance gives a live production bonus; the side that is behind receives a corrective bonus. Filling both bars together awards Tao and resets the bars. Tao also increases demand, while Tao's current-life rate bonus does not survive reincarnation.</p>
+        Yin rises when harvesting is ahead of use. Yang rises when use is ahead of harvesting. Balance gives a live production bonus. Filling both bars together awards Tao and resets the bars. Tao also increases demand, while Tao's current-life rate bonus does not survive reincarnation.</p>
 
         <p class="guide-section"><strong>Reincarnation and saving</strong><br>
         Reincarnation converts Tao into permanent karma and rolls independent starting bonuses for the next life. Karma improves the odds of stronger starts. The map, Yin/Yang progress, unlocks, and long-term progression persist; the economy is rebuilt from the new starting package. Local saves use this browser, while signed-in players also receive cloud autosaves.</p>
@@ -488,11 +494,11 @@
 
           <div class="balance-slider-wrap">
             <div class="balance-slider-labels">
-              <span>&#9679; nail breakers</span>
-              <span>nail makers &#9675;</span>
+              <span>&#9679; nail breaker leaning</span>
+              <span>nail maker leaning &#9675;</span>
             </div>
             <input type="range" id="sliderFactoryBalance" min="0" max="100" step="5" value="50">
-            <div class="hint" id="valFactoryMaterialUse" style="text-align:center; margin-top:4px;">using 0 g iron/s, 0 g copper/s</div>
+            <div class="hint" id="valFactoryMaterialUse" style="text-align:center; margin-top:4px;">consuming 0 g copper/s</div>
           </div>
 
           <div class="hint">
@@ -533,11 +539,8 @@
       <div class="map-health-text" id="mapHealthText">0 / 0</div>
       <div class="map-health-track"><div class="map-health-fill" id="mapHealthFill"></div></div>
     </div>
+    <div class="hint" id="mapMaterials">iron: 0 g &middot; copper: 0 g</div>
     </div>
-    <div class="map-controls">
-      <button id="btnAutoNextMap">auto-next map: OFF</button>
-    </div>
-    <button id="btnNextMap">go to next map</button>
     <div class="hint">i/c = iron/copper &nbsp; I/C = worked by breaker &nbsp; . = drained/empty</div>
 
     <div class="panel" id="yinYangSection" style="margin-top:14px; display:none;">
@@ -553,6 +556,11 @@
         </div>
         <div class="yy-status" id="valYinYangStatus">BALANCED</div>
         <div class="hint" id="yinYangHint">stay balanced for a production/sales bonus</div>
+
+        <div class="row" style="margin-top:8px;">
+          <span class="label">yin/yang speed:</span>
+          <button id="btnYinYangSpeed">increase (<span id="valYinYangSpeedCost">1 tao</span>)</button>
+        </div>
 
         <hr class="machinery-divider">
 
@@ -608,6 +616,7 @@
 <script src="js/state.js"></script>
 <script src="js/formulas.js"></script>
 <script src="js/dom.js"></script>
+<script src="js/audio.js"></script>
 <script src="js/render.js"></script>
 <script src="js/leaderboard.js"></script>
 <script src="js/auth.js"></script>

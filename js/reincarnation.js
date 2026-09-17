@@ -243,7 +243,6 @@ el.btnReincarnateConfirm.addEventListener("click", function () {
   state.yin = yinYangCarried.yin;
   state.yang = yinYangCarried.yang;
   state.tao = ritual.taoAward;
-  state.taoBonusStack = 0;
 
   state.funds += ritual.granted.funds;
   state.nailMakers += ritual.granted.nailMakers;

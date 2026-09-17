@@ -72,12 +72,12 @@ function breakerBuildCostEffective() {
 
 function nailMakerRateEffective() {
   if (!state.nailMakersOn) return 0;
-  return NAILMAKER_RATE * productionRateBonusMultiplier() * (1 + correctiveMakerBonus());
+  return NAILMAKER_RATE * productionRateBonusMultiplier();
 }
 
 function breakerIntakeEffective() {
   if (!state.breakersOn) return 0;
-  return BREAKER_INTAKE_RATE * productionRateBonusMultiplier() * (1 + correctiveBreakerBonus());
+  return BREAKER_INTAKE_RATE * productionRateBonusMultiplier();
 }
 
 // Theoretical rates, computed straight from current state -- always
@@ -157,9 +157,7 @@ function checkYinYangUnlock() {
 }
 
 // How close yin and yang are, as a ratio (0 = one bar totally idle
-// while the other has moved, 1 = dead even). Used purely for the
-// balance bonus -- separate from the win condition, which needs both
-// bars to actually reach 100, not just be proportionally close.
+// while the other has moved, 1 = dead even). Used only for the status label.
 function harmonyRatio() {
   if (!state.unlockedYinYang) return 0;
   var lo = Math.min(state.yin, state.yang);
@@ -168,49 +166,33 @@ function harmonyRatio() {
   return lo / hi;
 }
 
-// Corrective bonus: whichever side is BEHIND gets its counterpart's
-// production boosted, to help pull things back toward balance instead
-// of leaving the player to fight the drift alone. Yin ahead (too much
-// harvesting sitting idle) boosts nail MAKERS, since more nails made
-// means more iron consumed, which is what actually grows yang. Yang
-// ahead (using more than you're gathering) boosts nail BREAKERS, since
-// more iron mined is what grows yin. This is separate from, and stacks
-// with, the tao bonus below -- that one rewards reaching balance, this
-// one helps you get there.
-var CORRECTIVE_MAX_BONUS = 0.5; // up to +50%, at maximum imbalance (one bar at 100, other at 0)
-
-function correctiveMakerBonus() {
-  if (!state.unlockedYinYang) return 0;
-  var excess = state.yin - state.yang; // positive = yin is ahead
-  if (excess <= 0) return 0;
-  return CORRECTIVE_MAX_BONUS * (excess / YINYANG_MAX);
-}
-
-function correctiveBreakerBonus() {
-  if (!state.unlockedYinYang) return 0;
-  var excess = state.yang - state.yin; // positive = yang is ahead
-  if (excess <= 0) return 0;
-  return CORRECTIVE_MAX_BONUS * (excess / YINYANG_MAX);
-}
-
-// Live balance bonus -- rides the current harmony ratio in real time.
-// This is the part that evaporates if you drift off-balance.
-function liveBalanceBonus() {
-  return HARMONY_MAX_BONUS * harmonyRatio();
-}
-
-// Combined multiplier applied to nail-maker and nail-breaker rates:
-// the permanent stack from past tao points, times (1 + the live
-// bonus). The permanent stack never goes away; the live part does.
-// This part is symmetric -- both machines get the same multiplier --
-// unlike the corrective bonuses above, which only ever help whichever
-// side is behind.
+// Held Tao directly controls this bonus. Spending Tao therefore removes
+// the corresponding rate bonus immediately.
 function productionRateBonusMultiplier() {
-  return (1 + state.taoBonusStack) * (1 + liveBalanceBonus());
+  return 1 + state.tao * TAO_RATE_BONUS_PER_POINT;
+}
+
+function yinYangSpeedCost() {
+  return YINYANG_SPEED_COST_BASE * Math.pow(2, state.yinYangSpeedLevel || 0);
+}
+
+function yinYangTickAmount() {
+  return YINYANG_TICK_AMOUNT;
+}
+
+function yinYangTickInterval() {
+  return 1 / Math.pow(1.2, state.yinYangSpeedLevel || 0);
+}
+
+function yinYangStatusLabel() {
+  if (!state.unlockedYinYang) return "BALANCED";
+  var diff = state.yang - state.yin;
+  if (state.yin === state.yang || harmonyRatio() >= YINYANG_STATUS_DEADZONE) return "BALANCED";
+  return diff > 0 ? "YANG-LEANING" : "YIN-LEANING";
 }
 
 // Permanent public-demand multiplier from past tao points -- this
-// (like the tao bonus stack) never resets.
+// This is based on currently held Tao, so spending Tao reduces it.
 function yinYangPDMultiplier() {
   return 1 + YINYANG_PD_BONUS_PER_LEVEL * state.tao;
 }
@@ -219,20 +201,17 @@ function yinYangPDMultiplier() {
 // Compares grams harvested vs. grams profited since the last check:
 // whichever was ahead ticks its bar up by one, capped at 100. If both
 // bars are sitting at 100 together, that's a tao point: bump public
-// demand permanently, lock in whatever the live balance bonus was at
-// that exact moment as a permanent stacking addition to production
-// rate, then reset both bars to start the next lap.
+// demand and rate bonuses, then reset both bars to start the next lap.
 function settleYinYang() {
   if (state.unlockedYinYang) {
     if (state.harvestAccum > state.profitAccum) {
-      state.yin = Math.min(YINYANG_MAX, state.yin + YINYANG_TICK_AMOUNT);
+      state.yin = Math.min(YINYANG_MAX, state.yin + yinYangTickAmount());
     } else if (state.profitAccum > state.harvestAccum) {
-      state.yang = Math.min(YINYANG_MAX, state.yang + YINYANG_TICK_AMOUNT);
+      state.yang = Math.min(YINYANG_MAX, state.yang + yinYangTickAmount());
     }
 
     if (state.yin >= YINYANG_MAX && state.yang >= YINYANG_MAX) {
       state.tao += 1;
-      state.taoBonusStack += TAO_PERMANENT_BONUS_PER_POINT;
       state.yin = 0;
       state.yang = 0;
     }

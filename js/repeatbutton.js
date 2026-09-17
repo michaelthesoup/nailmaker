@@ -9,9 +9,9 @@
 
 function setupRepeatButton(btn, action) {
   var repeatTimeout = null;
-  var currentDelay = 400; // how long to wait before the first repeat
-  var minDelay = 40; // fastest it will ever repeat
-  var speedUpFactor = 0.85; // each repeat gets a bit faster than the last
+  var currentDelay = 90; // brief pause before the first repeat
+  var minDelay = 25; // fastest it will ever repeat
+  var speedUpFactor = 0.7; // get fast quickly while the button is held
   var held = false;
 
   function scheduleNext() {
@@ -31,7 +31,7 @@ function setupRepeatButton(btn, action) {
     if (btn.disabled) return;
     held = true;
     action(); // do the first step right away
-    currentDelay = 400;
+    currentDelay = 90;
     scheduleNext();
   }
 

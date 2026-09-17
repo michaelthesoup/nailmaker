@@ -58,12 +58,12 @@ function tick(dt) {
     }
   }
 
-  // Yin & Yang settles on its own fixed one-second cadence, completely
-  // independent of the breaker-count-based settle speed above -- tao
-  // pacing shouldn't get faster just because your economy got smoother.
+  // Yin & Yang settles on its own cadence. Tao speed upgrades shorten the
+  // interval while each settlement still advances a bar by one.
   state.yinYangAccum += dt;
-  while (state.yinYangAccum >= 1) {
-    state.yinYangAccum -= 1;
+  var yinYangInterval = yinYangTickInterval();
+  while (state.yinYangAccum >= yinYangInterval) {
+    state.yinYangAccum -= yinYangInterval;
     settleYinYang();
   }
 
@@ -99,7 +99,7 @@ function tick(dt) {
 
   checkYinYangUnlock();
 
-  if (state.autoNextMap && !mapHasDeposits(state.mapTiles)) {
+  if (!mapHasDeposits(state.mapTiles)) {
     goToNextMap(); // calls render() itself
     return;
   }

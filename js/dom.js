@@ -61,9 +61,8 @@ var el = {
   mapIndexLabel: document.getElementById("mapIndexLabel"),
   mapHealthText: document.getElementById("mapHealthText"),
   mapHealthFill: document.getElementById("mapHealthFill"),
+  mapMaterials: document.getElementById("mapMaterials"),
   btnBuyBreaker: document.getElementById("btnBuyBreaker"),
-  btnNextMap: document.getElementById("btnNextMap"),
-  btnAutoNextMap: document.getElementById("btnAutoNextMap"),
   cheatBox: document.getElementById("cheatBox"),
 
   factoryMaterialUse: document.getElementById("valFactoryMaterialUse"),
@@ -91,6 +90,8 @@ var el = {
   sliderYinYang: document.getElementById("sliderYinYang"),
   yinYangStatus: document.getElementById("valYinYangStatus"),
   yinYangHint: document.getElementById("yinYangHint"),
+  btnYinYangSpeed: document.getElementById("btnYinYangSpeed"),
+  yinYangSpeedCost: document.getElementById("valYinYangSpeedCost"),
 };
 
 // ----------------------------------------------------------------

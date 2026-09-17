@@ -14,6 +14,14 @@ setupRepeatButton(el.btnPricePlus, function () {
   render();
 });
 
+el.btnYinYangSpeed.addEventListener("click", function () {
+  var cost = yinYangSpeedCost();
+  if (state.tao < cost) return;
+  state.tao -= cost;
+  state.yinYangSpeedLevel = (state.yinYangSpeedLevel || 0) + 1;
+  render();
+});
+
 el.btnMakeNail.addEventListener("click", function () {
   if (state.ironAmt >= IRON_PER_NAIL) {
     state.ironAmt -= IRON_PER_NAIL;
@@ -84,12 +92,6 @@ el.btnBuyBreaker.addEventListener("click", function () {
   state.breakerCooldownUntil = Date.now() + BREAKER_COOLDOWN_MS;
   render();
 });
-el.btnNextMap.addEventListener("click", goToNextMap);
-el.btnAutoNextMap.addEventListener("click", function () {
-  state.autoNextMap = !state.autoNextMap;
-  render();
-});
-
 el.btnToggleNailMakers.addEventListener("click", function () {
   state.nailMakersOn = !state.nailMakersOn;
   render();
@@ -250,9 +252,7 @@ function migrateLoadedState() {
   if (typeof state.tao !== "number") {
     state.tao = typeof state.yinYangLevel === "number" ? state.yinYangLevel : 0;
   }
-  if (typeof state.taoBonusStack !== "number") {
-    state.taoBonusStack = state.tao * TAO_PERMANENT_BONUS_PER_POINT;
-  }
+  delete state.taoBonusStack;
   delete state.yinYangLevel;
 }
 

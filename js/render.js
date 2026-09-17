@@ -35,7 +35,7 @@ function render() {
 
   // ---- machinery: factories ----
   var factoryCopperRate = state.factories * (1 / FACTORY_PERIOD_SEC) * factoryCopperCostEffective();
-  el.factoryMaterialUse.textContent = "using " + fmtWeight(factoryCopperRate) + " copper/s";
+  el.factoryMaterialUse.textContent = "consuming " + fmtWeight(factoryCopperRate) + " copper/s";
   el.factoryOutputRate.textContent = fmtDecimal(state.factories * (1 / FACTORY_PERIOD_SEC) * 60);
 
   el.sliderFactoryBalance.value = state.factoryBalance;
@@ -95,24 +95,13 @@ function render() {
     var yyGray = Math.round(255 * (pos / 100));
     el.sliderYinYang.style.accentColor = "rgb(" + yyGray + "," + yyGray + "," + yyGray + ")";
 
-    var ratio = harmonyRatio();
-    var totalBonusPct = Math.round((productionRateBonusMultiplier() - 1) * 100);
-    var makerBonusPct = totalBonusPct;
-    var breakerBonusPct = totalBonusPct;
-    if (ratio >= YINYANG_STATUS_DEADZONE) {
-      renderYinYangStatus("BALANCED", makerBonusPct, breakerBonusPct);
-    } else if (diff > 0) {
-      var breakerCorrectivePct = Math.round(correctiveBreakerBonus() * 100);
-      breakerBonusPct += breakerCorrectivePct;
-      renderYinYangStatus("YANG-LEANING", makerBonusPct, breakerBonusPct);
-    } else {
-      var makerCorrectivePct = Math.round(correctiveMakerBonus() * 100);
-      makerBonusPct += makerCorrectivePct;
-      renderYinYangStatus("YIN-LEANING", makerBonusPct, breakerBonusPct);
-    }
+    renderYinYangStatus(yinYangStatusLabel());
+
+    el.yinYangSpeedCost.textContent = yinYangSpeedCost() + " tao";
+    el.btnYinYangSpeed.disabled = state.tao < yinYangSpeedCost();
 
     if (el.yinYangHint) {
-      el.yinYangHint.textContent = "harvest more than you use to fill yin, use more than you harvest to fill yang \u2014 fill both for a tao point, locking in today's balance bonus forever (" + Math.round(state.taoBonusStack * 100) + "% permanent so far)";
+      el.yinYangHint.textContent = "harvest more than you use to fill yin, use more than you harvest to fill yang \u2014 fill both to earn Tao. Each held Tao gives makers and breakers +" + Math.round(TAO_RATE_BONUS_PER_POINT * 100) + "% rate and +" + Math.round(YINYANG_PD_BONUS_PER_LEVEL * 100) + "% demand.";
     }
 
     el.valKarma.textContent = fmtInt(state.karma);
@@ -159,27 +148,8 @@ function renderGuide() {
   el.btnGuide.textContent = unread ? "guide (" + unread + ")" : "guide";
 }
 
-function renderYinYangStatus(label, makerBonusPct, breakerBonusPct) {
-  el.yinYangStatus.textContent = "";
-
-  var labelNode = document.createElement("span");
-  labelNode.textContent = label + " \u2014 ";
-  el.yinYangStatus.appendChild(labelNode);
-
-  var makerNode = document.createElement("span");
-  makerNode.className = "yy-bonus-makers";
-  makerNode.textContent = "+" + makerBonusPct + "% makers";
-  el.yinYangStatus.appendChild(makerNode);
-
-  var separator = document.createElement("span");
-  separator.className = "yy-bonus-separator";
-  separator.textContent = "/";
-  el.yinYangStatus.appendChild(separator);
-
-  var breakerNode = document.createElement("span");
-  breakerNode.className = "yy-bonus-breakers";
-  breakerNode.textContent = "+" + breakerBonusPct + "% breakers";
-  el.yinYangStatus.appendChild(breakerNode);
+function renderYinYangStatus(label) {
+  el.yinYangStatus.textContent = label;
 }
 
 function renderMap() {
@@ -203,10 +173,18 @@ function renderMap() {
 
   var remaining = mapRemainingWeight(state.mapTiles);
   var total = state.mapTotalWeight || remaining;
+  var ironRemaining = 0;
+  var copperRemaining = 0;
+  for (var materialRow = 0; materialRow < MAP_ROWS; materialRow++) {
+    for (var materialCol = 0; materialCol < MAP_COLS; materialCol++) {
+      var materialTile = state.mapTiles[materialRow][materialCol];
+      if (materialTile.type === "i") ironRemaining += materialTile.remaining;
+      if (materialTile.type === "c") copperRemaining += materialTile.remaining;
+    }
+  }
   el.mapHealthText.textContent = fmtWeight(remaining) + " / " + fmtWeight(total);
+  el.mapMaterials.textContent = "iron: " + fmtWeight(ironRemaining) + " | copper: " + fmtWeight(copperRemaining);
   var pct = total > 0 ? Math.max(0, Math.min(100, (remaining / total) * 100)) : 0;
   el.mapHealthFill.style.width = pct + "%";
 
-  el.btnNextMap.style.display = mapHasDeposits(state.mapTiles) ? "none" : "block";
-  el.btnAutoNextMap.textContent = "auto-next map: " + (state.autoNextMap ? "ON" : "OFF");
 }

@@ -79,14 +79,9 @@ var YINYANG_UNLOCK_GRAMS = 1000000; // 1 metric ton
 // you're using more than you're pulling. A simple, discrete, always-
 // readable +1/sec race between two 0-100 bars.
 var YINYANG_TICK_AMOUNT = 1;
+var YINYANG_SPEED_COST_BASE = 1;
 var YINYANG_MAX = 100;
 
-// Balance is rewarded, never punished: being close to balanced grants
-// up to this much of a LIVE bonus to nail-maker and nail-breaker speed
-// -- it rides the current harmony ratio in real time and evaporates if
-// you drift off-balance. It's never a penalty, just something you can
-// lose the benefit of.
-var HARMONY_MAX_BONUS = 1; // up to +100% at perfect balance
 var YINYANG_STATUS_DEADZONE = 0.9; // harmony ratio above this reads as "BALANCED"
 
 // When both bars fill at once, you earn a tao point: a permanent boost
@@ -94,7 +89,7 @@ var YINYANG_STATUS_DEADZONE = 0.9; // harmony ratio above this reads as "BALANCE
 // bonus was at that exact moment gets locked in forever as a permanent
 // multiplier on top of the live one -- so tao points stack, making
 // every future run of good balance worth more than the last.
-var YINYANG_PD_BONUS_PER_LEVEL = 0.5; // +50% public demand per tao point, permanent
+var YINYANG_PD_BONUS_PER_LEVEL = 0.1; // +10% public demand per held tao point
 
 // Reincarnation: once you've banked enough tao, you can end this life
 // and start a new one. Karma is earned from tao at the moment you
@@ -175,7 +170,7 @@ function reincarnationTaoAward(result, karma) {
 // account's username (case-insensitive) -- guests and anyone not on
 // this list can type in the box all they want, nothing will happen.
 var CHEAT_ALLOWED_USERNAMES = ["nailmaker", "mining"];
-var TAO_PERMANENT_BONUS_PER_POINT = 0.5; // +50% nail-maker/breaker rate, permanent, stacking per tao point
+var TAO_RATE_BONUS_PER_POINT = 0.5; // +50% nail-maker/breaker rate per held tao point
 
 // ----------------------------------------------------------------
 // Map generation
@@ -301,7 +296,7 @@ function defaultState() {
     yin: 0,
     yang: 0,
     tao: 0, // tao points -- earned by Yin/Yang laps or rare reincarnation awards
-    taoBonusStack: 0, // stacking nail-maker/breaker rate bonus for this life
+    yinYangSpeedLevel: 0, // each level makes Yin/Yang settle 20% faster
     karma: 0, // permanent across reincarnations -- carried over explicitly, never wiped by a reset
     nirvanaAchieved: false, // a true permanent achievement -- survives even suicide, unlike karma
     harvestAccum: 0,
