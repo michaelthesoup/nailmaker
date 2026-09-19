@@ -120,14 +120,18 @@ function render() {
   if (!state.unlockedMap && state.breakers > 0) state.unlockedMap = true;
   if (!state.unlockedMachinery && state.totalNailsMade >= MACHINERY_UNLOCK_NAILS) state.unlockedMachinery = true;
   if (!state.unlockedTuning && state.totalNailsMade >= TUNING_UNLOCK_NAILS) state.unlockedTuning = true;
+  if (!state.unlockedMarket && state.totalNailsMade >= MARKET_UNLOCK_NAILS) state.unlockedMarket = true;
 
   el.mapSection.style.display = state.unlockedMap ? "" : "none";
   el.machinerySection.style.display = state.unlockedMachinery ? "" : "none";
   el.tuningSection.style.display = state.unlockedTuning ? "" : "none";
+  if (el.marketSection) el.marketSection.style.display = state.unlockedMarket ? "" : "none";
   el.yinYangSection.style.display = state.unlockedYinYang ? "" : "none";
+  if (el.swarmSection) el.swarmSection.style.display = state.unlockedYinYang ? "" : "none";
 
   renderGuide();
   renderMap();
+  if (typeof renderMarket === "function") renderMarket();
 }
 
 function renderGuide() {

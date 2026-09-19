@@ -529,6 +529,29 @@
       </div>
     </div>
 
+    <div class="panel" id="marketSection" style="margin-top:14px; display:none;">
+      <div class="panel-header">stock market</div>
+      <div class="panel-body">
+        <div class="hint">one global stock, one shared price -- every player sees the same number, and it keeps moving whether you're here or not.</div>
+        <div class="row"><span class="label">iron &amp; nail co. (INC):</span><span class="value" id="valStockPrice">$0.00</span></div>
+        <div class="row"><span class="label">your shares:</span><span class="value" id="valStockShares">0.0000</span></div>
+        <div class="row"><span class="label">holding value:</span><span class="value" id="valStockValue">$0.00</span></div>
+        <div class="row"><span class="label">gain/loss:</span><span class="value" id="valStockGainLoss">$0.00</span></div>
+
+        <div class="stepper" style="margin-top:8px;">
+          <span class="label" style="margin-right:auto;">invest ($):</span>
+          <button id="btnStockAmountMinus">-</button>
+          <span class="value" id="valStockAmount">$10.00</span>
+          <button id="btnStockAmountPlus">+</button>
+        </div>
+        <div class="row">
+          <button id="btnStockBuy" style="width:48%;">buy</button>
+          <button id="btnStockSellAll" style="width:48%;">sell all shares</button>
+        </div>
+        <div class="hint" id="stockHint"></div>
+      </div>
+    </div>
+
   </div>
 
   <div id="mapSection" style="display:none;">
@@ -543,7 +566,8 @@
     </div>
     <div class="hint">i/c = iron/copper &nbsp; I/C = worked by breaker &nbsp; . = drained/empty</div>
 
-    <div class="panel" id="yinYangSection" style="margin-top:14px; display:none;">
+    <div style="display:flex; gap:14px; align-items:flex-start; margin-top:14px;">
+    <div class="panel" id="yinYangSection" style="margin-top:0; display:none; flex:1;">
       <div class="panel-header">yin &amp; yang</div>
       <div class="panel-body">
         <div class="row"><span class="label">yin (breaking):</span><span class="value" id="valYin">0.0</span></div>
@@ -568,6 +592,16 @@
         <div class="hint" id="reincarnateHint">reach 3 tao to end this life and be reborn</div>
         <button id="btnReincarnate" style="width:100%; margin-top:6px;" disabled>reincarnate</button>
       </div>
+    </div>
+
+    <div class="panel" id="swarmSection" style="margin-top:0; display:none; width:220px; flex:none;">
+      <div class="panel-header">the foundry swarm</div>
+      <div class="panel-body">
+        <canvas id="swarmCanvas" width="192" height="160" style="width:100%; height:160px; display:block; background:#fff; border:1px solid #000;"></canvas>
+        <div class="hint" id="swarmRatio" style="margin-top:6px; text-align:center;">0 makers / 0 breakers</div>
+        <div class="hint" id="swarmCostHint" style="text-align:center;">click a dot to farm the opposite type</div>
+      </div>
+    </div>
     </div>
   </div>
 
@@ -618,11 +652,13 @@
 <script src="js/dom.js"></script>
 <script src="js/audio.js"></script>
 <script src="js/render.js"></script>
+<script src="js/swarm.js"></script>
 <script src="js/leaderboard.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/repeatbutton.js"></script>
 <script src="js/actions.js"></script>
 <script src="js/cloudsave.js"></script>
+<script src="js/market.js"></script>
 <script src="js/reincarnation.js"></script>
 <script src="js/engine.js"></script>
 

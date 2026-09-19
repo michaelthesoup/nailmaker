@@ -92,6 +92,23 @@ var el = {
   yinYangHint: document.getElementById("yinYangHint"),
   btnYinYangSpeed: document.getElementById("btnYinYangSpeed"),
   yinYangSpeedCost: document.getElementById("valYinYangSpeedCost"),
+
+  swarmSection: document.getElementById("swarmSection"),
+  swarmCanvas: document.getElementById("swarmCanvas"),
+  swarmRatio: document.getElementById("swarmRatio"),
+  swarmCostHint: document.getElementById("swarmCostHint"),
+
+  marketSection: document.getElementById("marketSection"),
+  stockPrice: document.getElementById("valStockPrice"),
+  stockShares: document.getElementById("valStockShares"),
+  stockValue: document.getElementById("valStockValue"),
+  stockGainLoss: document.getElementById("valStockGainLoss"),
+  stockAmount: document.getElementById("valStockAmount"),
+  btnStockAmountMinus: document.getElementById("btnStockAmountMinus"),
+  btnStockAmountPlus: document.getElementById("btnStockAmountPlus"),
+  btnStockBuy: document.getElementById("btnStockBuy"),
+  btnStockSellAll: document.getElementById("btnStockSellAll"),
+  stockHint: document.getElementById("stockHint"),
 };
 
 // ----------------------------------------------------------------

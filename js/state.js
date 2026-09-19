@@ -64,6 +64,7 @@ var DEPOSITS_PER_MAP = 15;
 // is bought -- before that, there's nothing on it for anything to do.
 var MACHINERY_UNLOCK_NAILS = 250;
 var TUNING_UNLOCK_NAILS = 250;
+var MARKET_UNLOCK_NAILS = 150;
 
 // Yin & Yang: a late-game balance meter. Unlocks once you've ever held
 // a full metric ton of BOTH iron and copper at the same time -- by
@@ -173,6 +174,29 @@ var CHEAT_ALLOWED_USERNAMES = ["nailmaker", "mining"];
 var TAO_RATE_BONUS_PER_POINT = 0.5; // +50% nail-maker/breaker rate per held tao point
 
 // ----------------------------------------------------------------
+// Stock market. One global stock, one shared price, the same for
+// every player -- including guests -- and it keeps moving even while
+// nobody is around to watch it. That last part is the tricky bit: with
+// no backend server ticking in the background, the price can't just be
+// "whatever the last person set it to a while ago." Instead the price
+// at any moment is a pure function of real-world time: history is
+// divided into fixed-length buckets, and each bucket's price is the
+// previous bucket's price nudged by a RANDOM step -- but seeded by the
+// bucket's own index, so every player's browser computes the exact
+// same "random" step for that bucket. That's what makes it global
+// without needing a server: nobody has to broadcast the price, every
+// client independently arrives at the same number just by knowing
+// what time it is. See market.js for the actual walk/caching logic.
+// ----------------------------------------------------------------
+
+var MARKET_GENESIS_MS = Date.UTC(2026, 0, 1); // fixed epoch, same for everyone
+var MARKET_BUCKET_MS = 5 * 60 * 1000; // one price step every 5 real minutes
+var MARKET_START_PRICE = 10.00;
+var MARKET_MIN_PRICE = 0.05;
+var MARKET_VOLATILITY = 0.035; // max fractional move per bucket, either direction
+var MARKET_SEED_SALT = 913379; // arbitrary, just decorrelates this walk from map generation's seeds
+
+// ----------------------------------------------------------------
 // Map generation
 // ----------------------------------------------------------------
 
@@ -275,9 +299,16 @@ function defaultState() {
     factoriesOn: true,
     breakersOn: true,
 
+    // Stock holdings are per-life, same as funds -- they reset on
+    // suicide/reincarnation. The PRICE itself is global (see market.js)
+    // and is never part of player state at all.
+    stockShares: 0,
+    stockCostBasis: 0, // total funds ever put into current holdings, for gain/loss display
+
     unlockedMap: false,
     unlockedMachinery: false,
     unlockedTuning: false,
+    unlockedMarket: false,
     guideSeen: {
       handmade: false,
       machinery: false,
