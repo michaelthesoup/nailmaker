@@ -149,8 +149,10 @@ function fmtDecimal(n, places) {
 }
 
 function fmtWeight(grams) {
-  if (grams >= 1000000000000) return fmtAbbrev(grams / 1000000) + " t"; // past a million tons, name the tons
-  if (grams >= 1000000) return (grams / 1000000).toFixed(2) + " t";
+  if (grams >= 1e15) return fmtAbbrev(grams / 1e6) + " t"; // beyond gigatons, just name the tonnage
+  if (grams >= 1e12) return (grams / 1e12).toFixed(2) + " Gt";
+  if (grams >= 1e9) return (grams / 1e9).toFixed(2) + " Mt";
+  if (grams >= 1e6) return (grams / 1e6).toFixed(2) + " t";
   if (grams >= 1000) return (grams / 1000).toFixed(2) + " kg";
   return fmtInt(grams) + " g";
 }

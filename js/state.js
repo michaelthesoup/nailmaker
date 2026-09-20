@@ -124,16 +124,47 @@ function randInt(min, max) {
   return Math.floor(randRange(min, max + 1));
 }
 
-var STARTING_BONUS_TIERS = [
-  { funds: [0, 0], nailMakers: [0, 0], breakers: [0, 0], marketingLevel: [0, 0], factories: [0, 0] },
-  { funds: [30, 80], nailMakers: [1, 2], breakers: [0, 1], marketingLevel: [0, 1], factories: [0, 0] },
-  { funds: [150, 350], nailMakers: [3, 6], breakers: [1, 3], marketingLevel: [1, 2], factories: [0, 0] },
-  { funds: [400, 750], nailMakers: [7, 12], breakers: [3, 6], marketingLevel: [2, 4], factories: [0, 1] },
-  { funds: [900, 1600], nailMakers: [14, 22], breakers: [6, 10], marketingLevel: [5, 8], factories: [1, 2] },
-  { funds: [1800, 3200], nailMakers: [25, 40], breakers: [11, 18], marketingLevel: [9, 14], factories: [2, 4] },
-];
+// ----------------------------------------------------------------
+// Starting bonuses on reincarnation. Each field belongs to a tier with
+// its own karma threshold. Below threshold, a field mostly rolls 0,
+// with only a small "if you're lucky" chance at a token amount.
+// Above threshold, the amount grows smoothly with karma via
+// coeff * (karma - threshold)^exponent, then gets randomized +/-40%
+// so nothing is ever guaranteed. Higher tiers never replace lower
+// ones -- a high-karma player still rolls big Tier 1 numbers AND
+// starts getting real Tier 3/4 rewards on top.
+//
+// IMPORTANT: ironAmt and copperAmt MUST stay in this field list.
+// reincarnation.js reads result.granted.ironAmt/copperAmt directly --
+// if either field is missing here, that arithmetic silently produces
+// NaN, which then corrupts iron/copper/unsold for the rest of the run.
+// ----------------------------------------------------------------
 
-var STARTING_BONUS_FIELDS = ["funds", "nailMakers", "breakers", "marketingLevel", "factories"];
+var STARTING_BONUS_FIELD_CONFIG = {
+  // Tier 1 (low) -- always rolls something, even at 1-2 karma.
+  // Coefficients calibrated so karma ~32 lands around: funds ~$2M,
+  // iron ~5 tonnes, copper ~2 tonnes.
+  funds:          { threshold: 0,  coeff: 17457.6, exponent: 1.368, luckyMin: 500,  luckyMax: 1500, luckyChance: 1.0 },
+  ironAmt:        { threshold: 0,  coeff: 35083.3, exponent: 1.431, luckyMin: 5000, luckyMax: 20000, luckyChance: 1.0 },
+  copperAmt:      { threshold: 0,  coeff: 7442.5,  exponent: 1.614, luckyMin: 2000, luckyMax: 8000, luckyChance: 1.0 },
+  // Tier 2 (low-mid) -- starts around karma 2, reliable by ~10.
+  // Coefficient calibrated so karma ~32 lands around 1,300 makers.
+  nailMakers:     { threshold: 2,  coeff: 43.33,   exponent: 1.0,   luckyMin: 1,   luckyMax: 1,   luckyChance: 0.15 },
+  // Tier 4 (high) -- starts around karma 10-15, reliable by ~30.
+  // marketingLevel calibrated so karma ~32 lands around level 18.
+  // factories has no explicit target given -- this is an estimate,
+  // tune it if 15ish factories at karma 32 feels off.
+  marketingLevel: { threshold: 10, coeff: 0.818,   exponent: 1.0,   luckyMin: 1,   luckyMax: 2,   luckyChance: 0.15 },
+  factories:      { threshold: 15, coeff: 0.882,   exponent: 1.0,   luckyMin: 1,   luckyMax: 1,   luckyChance: 0.10 }
+};
+
+// Nail breakers are NOT in the generic config above -- they're
+// deliberately computed to structurally balance against whatever
+// nailMakers amount just got rolled (see rollStartingBonuses below
+// and the map-sizing logic in reincarnation.js), rather than being an
+// independent random roll like everything else.
+var STARTING_BONUS_FIELDS = ["funds", "ironAmt", "copperAmt", "nailMakers", "marketingLevel", "factories"];
+
 var STARTING_TITLES = [
   { maxQuality: 0, label: "a quiet beginning" },
   { maxQuality: 4, label: "an encouraging start" },
@@ -143,11 +174,13 @@ var STARTING_TITLES = [
   { maxQuality: Infinity, label: "nirvana", isNirvana: true },
 ];
 
-// Karma raises the ceiling smoothly. Every stat can roll below or above the
-// average, but high tiers become more common as karma accumulates.
+// Used ONLY for quality/title pacing now (see rollStartingBonuses
+// below) -- kept exactly as it always worked so nirvana pacing doesn't
+// shift just because the actual granted-amount formulas were reworked.
+var STARTING_BONUS_QUALITY_TIER_COUNT = 6;
 function pickStartingBonusTier(karma) {
   var roll = Math.random() * (karma + 10);
-  return Math.min(STARTING_BONUS_TIERS.length - 1, Math.floor(roll / 10));
+  return Math.min(STARTING_BONUS_QUALITY_TIER_COUNT - 1, Math.floor(roll / 10));
 }
 
 function startingTitleForQuality(quality) {
@@ -157,16 +190,41 @@ function startingTitleForQuality(quality) {
   return STARTING_TITLES[STARTING_TITLES.length - 1];
 }
 
+// Rolls one field's amount for a given karma. Below threshold, the
+// main formula doesn't run at all -- only a small, rare chance at a
+// token "lucky" amount. This always returns a real number, never
+// undefined, which is what the NaN bug above depended on not happening.
+function rollFieldAmount(config, karma) {
+  var scale = Math.max(0, karma - config.threshold);
+  if (scale <= 0) {
+    if (Math.random() < config.luckyChance) {
+      return randInt(config.luckyMin, config.luckyMax);
+    }
+    return 0;
+  }
+  var midpoint = config.coeff * Math.pow(scale, config.exponent);
+  return Math.max(0, randRange(midpoint * 0.6, midpoint * 1.4));
+}
+
 function rollStartingBonuses(karma) {
-  var granted = { funds: 0, nailMakers: 0, breakers: 0, marketingLevel: 0, factories: 0 };
-  var quality = 0;
+  var granted = {};
   for (var i = 0; i < STARTING_BONUS_FIELDS.length; i++) {
     var field = STARTING_BONUS_FIELDS[i];
-    var tier = pickStartingBonusTier(karma);
-    var range = STARTING_BONUS_TIERS[tier][field];
-    granted[field] = randInt(range[0], range[1]);
-    quality += tier;
+    var config = STARTING_BONUS_FIELD_CONFIG[field];
+    var amount = rollFieldAmount(config, karma);
+    granted[field] = (field === "funds" || field === "ironAmt" || field === "copperAmt")
+      ? Math.round(amount * 100) / 100
+      : Math.round(amount);
   }
+
+  // Quality/title: an independent roll from the original distribution,
+  // unrelated to the field formulas above -- purely decides flavor
+  // title and nirvana pacing.
+  var quality = 0;
+  for (var q = 0; q < 5; q++) {
+    quality += pickStartingBonusTier(karma);
+  }
+
   var title = startingTitleForQuality(quality);
   return { granted: granted, title: title, quality: quality };
 }

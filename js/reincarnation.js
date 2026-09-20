@@ -44,22 +44,69 @@ function startReincarnation() {
 
 function runReincarnationRitual(result) {
   var scratch = defaultState();
-  var before = { funds: scratch.funds, nailMakers: scratch.nailMakers, breakers: scratch.breakers, marketingLevel: scratch.marketingLevel, factories: scratch.factories };
+  var before = {
+    funds: scratch.funds, ironAmt: scratch.ironAmt, copperAmt: scratch.copperAmt,
+    nailMakers: scratch.nailMakers, marketingLevel: scratch.marketingLevel, factories: scratch.factories
+  };
   scratch.funds += result.granted.funds;
+  scratch.ironAmt += result.granted.ironAmt;
+  scratch.copperAmt += result.granted.copperAmt;
   scratch.nailMakers += result.granted.nailMakers;
-  scratch.breakers += result.granted.breakers;
   scratch.marketingLevel += result.granted.marketingLevel;
   scratch.factories += result.granted.factories;
   var granted = {
-    funds: Math.round(scratch.funds - before.funds),
+    funds: Math.round((scratch.funds - before.funds) * 100) / 100,
+    ironAmt: Math.round(scratch.ironAmt - before.ironAmt),
+    copperAmt: Math.round(scratch.copperAmt - before.copperAmt),
     nailMakers: Math.round(scratch.nailMakers - before.nailMakers),
-    breakers: Math.round(scratch.breakers - before.breakers),
     marketingLevel: Math.round(scratch.marketingLevel - before.marketingLevel),
     factories: Math.round(scratch.factories - before.factories)
   };
+
   var taoAward = reincarnationTaoAward(result, state.karma);
 
-  rc = { title: result.title, granted: granted, taoAward: taoAward, cells: [], flickerTimer: null };
+  // Nail breakers are NOT an independent roll -- they're sized to
+  // structurally balance the granted nail makers, using the same
+  // demand/supply math the rest of the game already runs on (see
+  // ironDemandRate()/ironSupplyRate() in formulas.js). This also picks
+  // a fresh map sized so those breakers take roughly a minute of
+  // active mining to clear it, instead of dropping the player onto a
+  // tiny map 1 or carrying over whatever map they happened to die on.
+  var newLifeMultiplier = 1 + taoAward * TAO_RATE_BONUS_PER_POINT; // mirrors productionRateBonusMultiplier() for the tao the NEW life starts with
+  var newLifeMakerRate = NAILMAKER_RATE * newLifeMultiplier;
+  var newLifeBreakerRate = BREAKER_INTAKE_RATE * newLifeMultiplier;
+  var ironDemand = granted.nailMakers * newLifeMakerRate * IRON_PER_NAIL;
+
+  // Pass 1: rough breaker estimate using an EXPECTED iron-tile count
+  // (maps are ~50/50 iron/copper, so about half of DEPOSITS_PER_MAP) --
+  // just enough to pick a map size in the right ballpark.
+  var expectedIronTiles = DEPOSITS_PER_MAP / 2;
+  var roughBreakers = Math.max(1, Math.round(ironDemand / (newLifeBreakerRate * expectedIronTiles)));
+
+  var desiredClearSeconds = 60;
+  var desiredCapacity = desiredClearSeconds * roughBreakers * newLifeBreakerRate;
+  var newMapIndex = Math.max(1, Math.round(1 + Math.log(Math.max(1, desiredCapacity / DEPOSIT_CAPACITY_BASE)) / Math.log(DEPOSIT_CAPACITY_GROWTH)));
+  var newMapTiles = generateMapTiles(newMapIndex);
+
+  // Pass 2: refine breakers using the REAL iron-tile count of the map
+  // we actually generated, for an exact match instead of an estimate.
+  var realIronTiles = 0;
+  for (var mr = 0; mr < MAP_ROWS; mr++) {
+    for (var mc = 0; mc < MAP_COLS; mc++) {
+      if (newMapTiles[mr][mc].type === "i") realIronTiles++;
+    }
+  }
+  granted.breakers = Math.max(1, Math.round(ironDemand / (newLifeBreakerRate * Math.max(1, realIronTiles))));
+
+  rc = {
+    title: result.title,
+    granted: granted,
+    taoAward: taoAward,
+    newMapIndex: newMapIndex,
+    newMapTiles: newMapTiles,
+    cells: [],
+    flickerTimer: null
+  };
 
   buildGridNoise();
   el.reincarnateGrid.innerHTML = "";
@@ -170,6 +217,8 @@ function resolveRitual() {
 function buildGrantedCodeSummary(granted) {
   var parts = [];
   if (granted.funds) parts.push("$" + (granted.funds > 0 ? "+" : "") + granted.funds);
+  if (granted.ironAmt) parts.push("ir" + (granted.ironAmt > 0 ? "+" : "") + granted.ironAmt);
+  if (granted.copperAmt) parts.push("cu" + (granted.copperAmt > 0 ? "+" : "") + granted.copperAmt);
   if (granted.nailMakers) parts.push("nm" + (granted.nailMakers > 0 ? "+" : "") + granted.nailMakers);
   if (granted.breakers) parts.push("br" + (granted.breakers > 0 ? "+" : "") + granted.breakers);
   if (granted.marketingLevel) parts.push("mk" + (granted.marketingLevel > 0 ? "+" : "") + granted.marketingLevel);
@@ -180,6 +229,8 @@ function buildGrantedCodeSummary(granted) {
 function buildGrantedText(granted) {
   var parts = [];
   if (granted.funds) parts.push("+" + fmtMoney(granted.funds) + " starting funds");
+  if (granted.ironAmt) parts.push("+" + fmtWeight(granted.ironAmt) + " iron");
+  if (granted.copperAmt) parts.push("+" + fmtWeight(granted.copperAmt) + " copper");
   if (granted.marketingLevel) parts.push("+" + granted.marketingLevel + " marketing");
   if (granted.nailMakers) parts.push("+" + granted.nailMakers + " nail makers");
   if (granted.breakers) parts.push("+" + granted.breakers + " nail breakers");
@@ -214,12 +265,7 @@ el.btnReincarnateConfirm.addEventListener("click", function () {
     unlockedYinYang: state.unlockedYinYang,
     guideSeen: state.guideSeen
   };
-  var mapCarried = {
-    mapIndex: state.mapIndex,
-    mapTiles: state.mapTiles,
-    mapTotalWeight: state.mapTotalWeight,
-    autoNextMap: state.autoNextMap
-  };
+  var autoNextMapCarried = state.autoNextMap; // a preference toggle, unrelated to which map is loaded
   var yinYangCarried = {
     yin: state.yin,
     yang: state.yang
@@ -236,15 +282,17 @@ el.btnReincarnateConfirm.addEventListener("click", function () {
   state.unlockedTuning = unlocksCarried.unlockedTuning;
   state.unlockedYinYang = unlocksCarried.unlockedYinYang;
   state.guideSeen = unlocksCarried.guideSeen;
-  state.mapIndex = mapCarried.mapIndex;
-  state.mapTiles = mapCarried.mapTiles;
-  state.mapTotalWeight = mapCarried.mapTotalWeight;
-  state.autoNextMap = mapCarried.autoNextMap;
+  state.mapIndex = ritual.newMapIndex;
+  state.mapTiles = ritual.newMapTiles;
+  state.mapTotalWeight = mapRemainingWeight(ritual.newMapTiles);
+  state.autoNextMap = autoNextMapCarried;
   state.yin = yinYangCarried.yin;
   state.yang = yinYangCarried.yang;
   state.tao = ritual.taoAward;
 
   state.funds += ritual.granted.funds;
+  state.ironAmt += ritual.granted.ironAmt;
+  state.copperAmt += ritual.granted.copperAmt;
   state.nailMakers += ritual.granted.nailMakers;
   state.breakers += ritual.granted.breakers;
   state.marketingLevel += ritual.granted.marketingLevel;
