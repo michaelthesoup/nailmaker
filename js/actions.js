@@ -81,6 +81,15 @@ el.btnBuyFactory.addEventListener("click", function () {
   state.factoryTimers.push(0);
   render();
 });
+el.btnBuyFactorySquared.addEventListener("click", function () {
+  var cost = factorySquaredBuildCostEffective();
+  if (state.funds < cost) return;
+
+  state.funds -= cost;
+  state.factorySquared += 1;
+  state.factorySquaredTimers.push(0);
+  render();
+});
 el.btnBuyBreaker.addEventListener("click", function () {
   if (Date.now() < state.breakerCooldownUntil) return;
   var cost = breakerBuildCostEffective();
@@ -235,6 +244,12 @@ function migrateLoadedState() {
     }
   }
   state.unlockedMap = state.unlockedMap || state.breakers > 0;
+  if (!Array.isArray(state.factorySquaredTimers)) state.factorySquaredTimers = [];
+  state.factorySquared = Math.max(0, Math.floor(state.factorySquared || 0));
+  while (state.factorySquaredTimers.length < state.factorySquared) state.factorySquaredTimers.push(0);
+  if (state.factorySquaredTimers.length > state.factorySquared) {
+    state.factorySquaredTimers = state.factorySquaredTimers.slice(0, state.factorySquared);
+  }
   if (!state.mapTotalWeight) {
     state.mapTotalWeight = Math.max(
       mapRemainingWeight(state.mapTiles),

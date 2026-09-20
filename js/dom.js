@@ -69,6 +69,12 @@ var el = {
   factoryOutputRate: document.getElementById("valFactoryOutputRate"),
   sliderFactoryBalance: document.getElementById("sliderFactoryBalance"),
 
+  factorySquaredSection: document.getElementById("factorySquaredSection"),
+  factorySquaredCount: document.getElementById("valFactorySquaredCount"),
+  factorySquaredMaterialUse: document.getElementById("valFactorySquaredMaterialUse"),
+  factorySquaredOutputRate: document.getElementById("valFactorySquaredOutputRate"),
+  btnBuyFactorySquared: document.getElementById("btnBuyFactorySquared"),
+
   nailMakerIronRate: document.getElementById("valNailMakerIronRate"),
   nailMakerNailsRate: document.getElementById("valNailMakerNailsRate"),
   breakerNailsRate: document.getElementById("valBreakerNailsRate"),
@@ -95,20 +101,9 @@ var el = {
 
   swarmSection: document.getElementById("swarmSection"),
   swarmCanvas: document.getElementById("swarmCanvas"),
-  swarmRatio: document.getElementById("swarmRatio"),
+  swarmIronRates: document.getElementById("swarmIronRates"),
+  swarmUnitCounts: document.getElementById("swarmUnitCounts"),
   swarmCostHint: document.getElementById("swarmCostHint"),
-
-  marketSection: document.getElementById("marketSection"),
-  stockPrice: document.getElementById("valStockPrice"),
-  stockShares: document.getElementById("valStockShares"),
-  stockValue: document.getElementById("valStockValue"),
-  stockGainLoss: document.getElementById("valStockGainLoss"),
-  stockAmount: document.getElementById("valStockAmount"),
-  btnStockAmountMinus: document.getElementById("btnStockAmountMinus"),
-  btnStockAmountPlus: document.getElementById("btnStockAmountPlus"),
-  btnStockBuy: document.getElementById("btnStockBuy"),
-  btnStockSellAll: document.getElementById("btnStockSellAll"),
-  stockHint: document.getElementById("stockHint"),
 };
 
 // ----------------------------------------------------------------

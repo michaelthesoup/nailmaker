@@ -51,6 +51,10 @@ function factoryBuildCostEffective() {
   return FACTORY_BUILD_COST_FUNDS * Math.pow(FACTORY_COST_GROWTH, state.factories);
 }
 
+function factorySquaredBuildCostEffective() {
+  return FACTORY_SQUARED_BUILD_COST_FUNDS * Math.pow(FACTORY_SQUARED_COST_GROWTH, state.factorySquared);
+}
+
 // A factory's material cost per cycle depends on which way the balance
 // slider is leaning. Building toward nail breakers (heavier mining
 // equipment) costs a lot more copper than building toward nail makers
@@ -134,7 +138,6 @@ function processBreakerNails(nailsToUse) {
 
     if (tile.type === "i") {
       ironGot += amount;
-      state.harvestAccum += amount; // yin/yang only tracks iron -- the game's about nails, not copper
     } else if (tile.type === "c") {
       copperGot += amount;
     }
@@ -143,6 +146,70 @@ function processBreakerNails(nailsToUse) {
   state.unsold -= nailsUsed;
 
   return { nailsUsed: nailsUsed, ironGot: ironGot, copperGot: copperGot };
+}
+
+// ----------------------------------------------------------------
+// Structural iron balance. This is the REAL signal the swarm and
+// yin/yang both key off -- not moment-to-moment actual flow (which
+// self-throttles the instant the iron buffer runs dry, making it
+// useless as a balance signal), but the underlying capacity your
+// current build represents: how much iron your nail makers COULD
+// consume, versus how much your breakers COULD extract. That only
+// changes when you actually change your build or the map does.
+// ----------------------------------------------------------------
+
+function ironDemandRate() {
+  return state.nailMakers * nailMakerRateEffective() * IRON_PER_NAIL;
+}
+
+function ironSupplyRate() {
+  return breakerTheoreticalRates().ironRate;
+}
+
+// -1 (all supply, yin-leaning/breaking-heavy) .. 0 (balanced) ..
+// +1 (all demand, yang-leaning/making-heavy)
+function ironStructuralImbalance() {
+  var demand = ironDemandRate();
+  var supply = ironSupplyRate();
+  var total = demand + supply;
+  if (total <= 0) return 0;
+  return (demand - supply) / total;
+}
+
+var YINYANG_BALANCE_TOLERANCE = 0.05; // within this of dead-even counts as "balanced" for tick purposes
+
+function activeIronTileCount() {
+  var activeTiles = activeDepositTiles(state.mapTiles);
+  var count = 0;
+  for (var i = 0; i < activeTiles.length; i++) {
+    if (activeTiles[i].type === "i") count++;
+  }
+  return count;
+}
+
+// How many ADDITIONAL nail makers would close a supply surplus (too
+// many breakers relative to what your makers can consume) -- 0 if
+// there's no surplus. This is the real target the swarm grants toward,
+// not an arbitrary percentage.
+function ironDeficitMakers() {
+  var demand = ironDemandRate();
+  var supply = ironSupplyRate();
+  if (supply <= demand) return 0;
+  var perMakerDemand = nailMakerRateEffective() * IRON_PER_NAIL;
+  if (perMakerDemand <= 0) return 0;
+  return (supply - demand) / perMakerDemand;
+}
+
+// How many ADDITIONAL breakers would close a demand surplus (too many
+// makers relative to what your breakers can feed) -- 0 if none.
+function ironDeficitBreakers() {
+  var demand = ironDemandRate();
+  var supply = ironSupplyRate();
+  if (demand <= supply) return 0;
+  var ironTiles = activeIronTileCount();
+  var perBreakerSupply = breakerIntakeEffective() * ironTiles;
+  if (perBreakerSupply <= 0) return 0;
+  return (demand - supply) / perBreakerSupply;
 }
 
 // ----------------------------------------------------------------
@@ -198,16 +265,26 @@ function yinYangPDMultiplier() {
 }
 
 // Called once per real second (from the settle loop in tick()).
-// Compares grams harvested vs. grams profited since the last check:
-// whichever was ahead ticks its bar up by one, capped at 100. If both
-// bars are sitting at 100 together, that's a tao point: bump public
-// demand and rate bonuses, then reset both bars to start the next lap.
+// Uses the STRUCTURAL demand/supply balance, not moment-to-moment
+// actual flow -- see ironStructuralImbalance() above. When your build
+// is genuinely balanced (within tolerance), BOTH bars tick up together,
+// since exact production/consumption parity is the ideal state, not
+// a tie that goes nowhere. Otherwise, whichever side your build is
+// skewed toward ticks up alone. If both bars are sitting at 100
+// together, that's a tao point.
 function settleYinYang() {
   if (state.unlockedYinYang) {
-    if (state.harvestAccum > state.profitAccum) {
+    var imbalance = ironStructuralImbalance();
+
+    if (Math.abs(imbalance) <= YINYANG_BALANCE_TOLERANCE) {
       state.yin = Math.min(YINYANG_MAX, state.yin + yinYangTickAmount());
-    } else if (state.profitAccum > state.harvestAccum) {
       state.yang = Math.min(YINYANG_MAX, state.yang + yinYangTickAmount());
+    } else if (imbalance > 0) {
+      // demand (making) outpaces supply (breaking) -- yang-leaning
+      state.yang = Math.min(YINYANG_MAX, state.yang + yinYangTickAmount());
+    } else {
+      // supply (breaking) outpaces demand (making) -- yin-leaning
+      state.yin = Math.min(YINYANG_MAX, state.yin + yinYangTickAmount());
     }
 
     if (state.yin >= YINYANG_MAX && state.yang >= YINYANG_MAX) {
@@ -216,7 +293,4 @@ function settleYinYang() {
       state.yang = 0;
     }
   }
-
-  state.harvestAccum = 0;
-  state.profitAccum = 0;
 }

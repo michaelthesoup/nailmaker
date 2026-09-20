@@ -44,6 +44,16 @@ function render() {
 
   el.btnBuyFactory.textContent = "buy (" + fmtMoney(factoryBuildCostEffective()) + ")";
   el.btnBuyFactory.disabled = state.funds < factoryBuildCostEffective();
+  el.btnBuyFactory.style.display = state.factorySquared > 0 ? "none" : "";
+
+  if (el.factorySquaredCount) {
+    el.factorySquaredCount.textContent = state.factorySquared;
+    var fsCopperRate = state.factorySquared * (1 / FACTORY_SQUARED_PERIOD_SEC) * FACTORY_SQUARED_COPPER_COST;
+    el.factorySquaredMaterialUse.textContent = "consuming " + fmtWeight(fsCopperRate) + " copper/s";
+    el.factorySquaredOutputRate.textContent = fmtDecimal(state.factorySquared * (1 / FACTORY_SQUARED_PERIOD_SEC) * 60) + " factories/min";
+    el.btnBuyFactorySquared.textContent = "buy (" + fmtMoney(factorySquaredBuildCostEffective()) + ")";
+    el.btnBuyFactorySquared.disabled = state.funds < factorySquaredBuildCostEffective();
+  }
 
   // ---- machinery: nail breakers ----
   var breakerRates = breakerTheoreticalRates();
@@ -119,19 +129,18 @@ function render() {
   // ---- progressive reveal: unlock once, never re-hide ----
   if (!state.unlockedMap && state.breakers > 0) state.unlockedMap = true;
   if (!state.unlockedMachinery && state.totalNailsMade >= MACHINERY_UNLOCK_NAILS) state.unlockedMachinery = true;
+  if (!state.unlockedFactorySquared && state.nailMakers >= FACTORY_SQUARED_UNLOCK_MAKERS && state.breakers >= FACTORY_SQUARED_UNLOCK_BREAKERS) state.unlockedFactorySquared = true;
   if (!state.unlockedTuning && state.totalNailsMade >= TUNING_UNLOCK_NAILS) state.unlockedTuning = true;
-  if (!state.unlockedMarket && state.totalNailsMade >= MARKET_UNLOCK_NAILS) state.unlockedMarket = true;
 
   el.mapSection.style.display = state.unlockedMap ? "" : "none";
   el.machinerySection.style.display = state.unlockedMachinery ? "" : "none";
+  if (el.factorySquaredSection) el.factorySquaredSection.style.display = state.unlockedFactorySquared ? "" : "none";
   el.tuningSection.style.display = state.unlockedTuning ? "" : "none";
-  if (el.marketSection) el.marketSection.style.display = state.unlockedMarket ? "" : "none";
   el.yinYangSection.style.display = state.unlockedYinYang ? "" : "none";
   if (el.swarmSection) el.swarmSection.style.display = state.unlockedYinYang ? "" : "none";
 
   renderGuide();
   renderMap();
-  if (typeof renderMarket === "function") renderMarket();
 }
 
 function renderGuide() {

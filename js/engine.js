@@ -23,7 +23,6 @@ function tick(dt) {
   state.ironAmt -= actuallyMade * IRON_PER_NAIL;
   state.unsold += actuallyMade;
   state.totalNailsMade += actuallyMade;
-  state.profitAccum += actuallyMade * IRON_PER_NAIL;
 
   // Breakers and selling settle in chunks rather than continuously --
   // that's what makes the sawtooth visible: unsold inventory climbs
@@ -98,6 +97,29 @@ function tick(dt) {
   }
 
   checkYinYangUnlock();
+
+  // Factory Squared: each owned unit produces one regular factory per
+  // cycle, at a real copper cost -- same graceful "skip if you can't
+  // afford it this cycle" behavior as regular factories, so it just
+  // pauses rather than erroring if copper runs short.
+  if (state.unlockedFactorySquared) {
+    var fsPeriod = FACTORY_SQUARED_PERIOD_SEC;
+    var fsCopperCost = FACTORY_SQUARED_COPPER_COST;
+    while (state.factorySquaredTimers.length < state.factorySquared) state.factorySquaredTimers.push(0);
+    for (var k = 0; k < state.factorySquared; k++) {
+      var fsTimer = state.factorySquaredTimers[k];
+      if (fsTimer < fsPeriod) {
+        fsTimer = Math.min(fsPeriod, fsTimer + dt);
+      }
+      if (fsTimer >= fsPeriod && state.copperAmt >= fsCopperCost) {
+        state.copperAmt -= fsCopperCost;
+        fsTimer -= fsPeriod;
+        state.factories += 1;
+        state.factoryTimers.push(0); // keep the regular factory timer array in sync
+      }
+      state.factorySquaredTimers[k] = fsTimer;
+    }
+  }
 
   if (!mapHasDeposits(state.mapTiles)) {
     goToNextMap(); // calls render() itself

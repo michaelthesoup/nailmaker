@@ -13,6 +13,9 @@ function setupRepeatButton(btn, action) {
   var minDelay = 25; // fastest it will ever repeat
   var speedUpFactor = 0.7; // get fast quickly while the button is held
   var held = false;
+  var heldSince = 0;
+  var FAST_MULTIPLIER_AFTER_MS = 5000; // after holding this long, each tick fires 3x instead of 1x
+  var FAST_MULTIPLIER_COUNT = 3;
 
   function scheduleNext() {
     repeatTimeout = setTimeout(function () {
@@ -20,7 +23,9 @@ function setupRepeatButton(btn, action) {
         stop();
         return;
       }
-      action();
+      var heldFor = Date.now() - heldSince;
+      var steps = heldFor >= FAST_MULTIPLIER_AFTER_MS ? FAST_MULTIPLIER_COUNT : 1;
+      for (var i = 0; i < steps; i++) action();
       currentDelay = Math.max(minDelay, currentDelay * speedUpFactor);
       scheduleNext();
     }, currentDelay);
@@ -30,6 +35,7 @@ function setupRepeatButton(btn, action) {
     if (e.button !== undefined && e.button !== 0) return; // left click / primary touch only
     if (btn.disabled) return;
     held = true;
+    heldSince = Date.now();
     action(); // do the first step right away
     currentDelay = 90;
     scheduleNext();

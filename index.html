@@ -509,6 +509,24 @@
       </div>
     </div>
 
+    <div class="panel" id="factorySquaredSection" style="margin-top:14px; display:none;">
+      <div class="panel-header">factory&sup2;</div>
+      <div class="panel-body">
+        <div class="hint" style="margin-top:0;">a factory that builds factories. unlocked once your economy is big enough to feed it.</div>
+
+        <div class="row">
+          <span class="label">factory&sup2;:</span>
+          <span class="value" id="valFactorySquaredCount">0</span>
+          <button id="btnBuyFactorySquared">buy factory&sup2;</button>
+        </div>
+
+        <div class="hint" id="valFactorySquaredMaterialUse">consuming 0 g copper/s</div>
+        <div class="hint">
+          producing: <span id="valFactorySquaredOutputRate">0.0 factories/min</span>
+        </div>
+      </div>
+    </div>
+
     <div class="panel" id="tuningSection" style="display:none;">
       <div class="panel-header">tuning</div>
       <div class="panel-body">
@@ -526,29 +544,6 @@
           <span class="label">nail breakers</span>
           <button id="btnToggleBreakers">ON</button>
         </div>
-      </div>
-    </div>
-
-    <div class="panel" id="marketSection" style="margin-top:14px; display:none;">
-      <div class="panel-header">stock market</div>
-      <div class="panel-body">
-        <div class="hint">one global stock, one shared price -- every player sees the same number, and it keeps moving whether you're here or not.</div>
-        <div class="row"><span class="label">iron &amp; nail co. (INC):</span><span class="value" id="valStockPrice">$0.00</span></div>
-        <div class="row"><span class="label">your shares:</span><span class="value" id="valStockShares">0.0000</span></div>
-        <div class="row"><span class="label">holding value:</span><span class="value" id="valStockValue">$0.00</span></div>
-        <div class="row"><span class="label">gain/loss:</span><span class="value" id="valStockGainLoss">$0.00</span></div>
-
-        <div class="stepper" style="margin-top:8px;">
-          <span class="label" style="margin-right:auto;">invest ($):</span>
-          <button id="btnStockAmountMinus">-</button>
-          <span class="value" id="valStockAmount">$10.00</span>
-          <button id="btnStockAmountPlus">+</button>
-        </div>
-        <div class="row">
-          <button id="btnStockBuy" style="width:48%;">buy</button>
-          <button id="btnStockSellAll" style="width:48%;">sell all shares</button>
-        </div>
-        <div class="hint" id="stockHint"></div>
       </div>
     </div>
 
@@ -598,8 +593,9 @@
       <div class="panel-header">the foundry swarm</div>
       <div class="panel-body">
         <canvas id="swarmCanvas" width="192" height="160" style="width:100%; height:160px; display:block; background:#fff; border:1px solid #000;"></canvas>
-        <div class="hint" id="swarmRatio" style="margin-top:6px; text-align:center;">0 makers / 0 breakers</div>
-        <div class="hint" id="swarmCostHint" style="text-align:center;">click a dot to farm the opposite type</div>
+        <div class="hint" id="swarmIronRates" style="text-align:center; margin-top:6px;">iron: 0 g/s made &middot; 0 g/s used</div>
+        <div class="hint" id="swarmUnitCounts" style="text-align:center;">0 makers &middot; 0 breakers</div>
+        <div class="hint" id="swarmCostHint" style="text-align:center;">click a dot to flip it -- costs funds</div>
       </div>
     </div>
     </div>
@@ -658,7 +654,6 @@
 <script src="js/repeatbutton.js"></script>
 <script src="js/actions.js"></script>
 <script src="js/cloudsave.js"></script>
-<script src="js/market.js"></script>
 <script src="js/reincarnation.js"></script>
 <script src="js/engine.js"></script>
 
