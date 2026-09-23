@@ -53,7 +53,7 @@ var BREAKER_INTAKE_RATE = 1; // nails/sec consumed per breaker
 var FACTORY_SQUARED_UNLOCK_MAKERS = 100000;
 var FACTORY_SQUARED_UNLOCK_BREAKERS = 100000;
 var FACTORY_SQUARED_BUILD_COST_FUNDS = 1000000000; // $1 billion
-var FACTORY_SQUARED_COST_GROWTH = 1.5; // each factory-squared you own makes the next one cost this much more -- otherwise a fixed price would eventually buy infinite factories for pocket change
+var FACTORY_SQUARED_COST_GROWTH = 1.1; // each factory-squared you own makes the next one cost this much more -- otherwise a fixed price would eventually buy infinite factories for pocket change
 var FACTORY_SQUARED_PERIOD_SEC = 1; // produces one factory per cycle, per owned factory-squared
 var FACTORY_SQUARED_COPPER_COST = 10000000; // 10 tonnes of copper, in grams, per production cycle
 
