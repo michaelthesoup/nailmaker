@@ -31,6 +31,7 @@ var el = {
   btnLoad: document.getElementById("btnLoad"),
   btnEndRun: document.getElementById("btnEndRun"),
   btnGuide: document.getElementById("btnGuide"),
+  btnDarkMode: document.getElementById("btnDarkMode"),
   guideOverlay: document.getElementById("guideOverlay"),
   btnGuideClose: document.getElementById("btnGuideClose"),
   btnGuideStory: document.getElementById("btnGuideStory"),

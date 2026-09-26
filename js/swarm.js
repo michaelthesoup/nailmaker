@@ -35,7 +35,6 @@ var SWARM_MIN_SPEED_MULT = 0.15; // speed multiplier at maximum real imbalance (
 var SWARM_MAX_SPEED_MULT = 1.0; // speed multiplier at perfect real balance (fast)
 var SWARM_GRANT_PROGRESS_FRACTION = 0.25; // each click closes this fraction of the REAL remaining gap
 var SWARM_FALLBACK_FARM_RATE = 0.1; // used only when clicking the "wrong" direction (no real gap that way)
-var SWARM_GRANT_COST_FRACTION = 0.6; // fraction of the granted units' normal build cost, paid per unit
 var SWARM_CLICK_COOLDOWN_MS = 250;
 
 var swarmDots = []; // { x, y, vx, vy, side: 'maker' | 'breaker' } -- side is resynced live every frame
@@ -174,9 +173,13 @@ function swarmBatchSize(clickedSide) {
   }
 }
 
+// Cost is simply what that many units would normally cost to build --
+// no discount, no markup, no escalation. Clicking a maker (white) dot
+// grants breakers, so the cost is breakerBuildCostEffective() times
+// the batch size, and vice versa.
 function swarmGrantCost(clickedSide, batchSize) {
   var grantedUnitCost = clickedSide === "maker" ? breakerBuildCostEffective() : nailMakerCostEffective();
-  return round2(grantedUnitCost * SWARM_GRANT_COST_FRACTION * batchSize);
+  return round2(grantedUnitCost * batchSize);
 }
 
 function swarmHandleClick(mx, my) {

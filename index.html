@@ -8,9 +8,20 @@
 <title>Nail Maker</title>
 <style>
   * { box-sizing: border-box; }
+
+  :root {
+    --paper: #ffffff; /* background */
+    --ink: #000000;   /* text, borders -- same value on purpose, this theme never distinguished them */
+  }
+
+  html[data-theme="dark"] {
+    --paper: #16161a;
+    --ink: #e8e8e8;
+  }
+
   body {
-    background: #ffffff;
-    color: #000000;
+    background: var(--paper);
+    color: var(--ink);
     font-family: Arial, Helvetica, sans-serif;
     font-size: 13px;
     margin: 20px;
@@ -37,20 +48,20 @@
     padding: 3px 0;
   }
 
-  .label { color: #000; }
-  .value { color: #000; font-variant-numeric: tabular-nums; }
+  .label { color: var(--ink); }
+  .value { color: var(--ink); font-variant-numeric: tabular-nums; }
 
   .panel {
-    border: 1px solid #000;
-    background: #fff;
+    border: 1px solid var(--ink);
+    background: var(--paper);
     margin-bottom: 14px;
     width: 320px;
   }
 
   .panel-header {
-    border-bottom: 1px solid #000;
+    border-bottom: 1px solid var(--ink);
     padding: 4px 8px;
-    background: #fff;
+    background: var(--paper);
     font-weight: bold;
   }
 
@@ -59,9 +70,9 @@
   }
 
   button {
-    background: #fff;
-    border: 1px solid #000;
-    color: #000;
+    background: var(--paper);
+    border: 1px solid var(--ink);
+    color: var(--ink);
     font-family: Arial, Helvetica, sans-serif;
     font-size: 12px;
     padding: 4px 8px;
@@ -69,7 +80,7 @@
   }
 
   button:hover:not(:disabled) {
-    background: #f2f2f2;
+    background: color-mix(in srgb, var(--paper) 85%, var(--ink) 15%);
   }
 
   button:disabled {
@@ -100,7 +111,7 @@
   .stepper .value {
     width: 70px;
     text-align: center;
-    border: 1px solid #000;
+    border: 1px solid var(--ink);
     padding: 2px 0;
   }
 
@@ -122,9 +133,9 @@
     line-height: 1.15;
     letter-spacing: 2px;
     white-space: pre;
-    border: 1px solid #000;
+    border: 1px solid var(--ink);
     padding: 8px;
-    background: #fff;
+    background: var(--paper);
     width: fit-content;
   }
 
@@ -172,7 +183,7 @@
      gray in between. The slider's own accent color shifts to match via
      JS, so its color literally shows you the current balance. */
   .balance-slider-wrap {
-    border: 1px solid #000;
+    border: 1px solid var(--ink);
     padding: 6px 8px;
     margin: 6px 0;
   }
@@ -215,15 +226,15 @@
   }
 
   .map-health-track {
-    border: 1px solid #000;
+    border: 1px solid var(--ink);
     height: 12px;
-    background: #fff;
+    background: var(--paper);
     overflow: hidden;
   }
 
   .map-health-fill {
     height: 100%;
-    background: #000;
+    background: var(--ink);
     width: 0%;
   }
 
@@ -232,16 +243,16 @@
      black/white balance bar make it feel like a different kind of
      system than everything else, since it is one. */
   #yinYangSection .panel-header {
-    background: #fff;
-    color: #000;
-    border-bottom: 1px solid #000;
+    background: var(--paper);
+    color: var(--ink);
+    border-bottom: 1px solid var(--ink);
   }
 
   .yy-bar-wrap {
-    border: 1px solid #000;
+    border: 1px solid var(--ink);
     padding: 6px 8px;
     margin: 8px 0 4px 0;
-    background: linear-gradient(to right, #000 0%, #808080 50%, #fff 100%);
+    background: linear-gradient(to right, var(--ink) 0%, #808080 50%, var(--paper) 100%);
   }
 
   .yy-bar-labels {
@@ -251,8 +262,8 @@
     margin-bottom: 4px;
   }
 
-  .yy-bar-labels span:first-child { color: #fff; text-shadow: 0 0 2px #000; }
-  .yy-bar-labels span:last-child { color: #000; text-shadow: 0 0 2px #fff; }
+  .yy-bar-labels span:first-child { color: var(--paper); text-shadow: 0 0 2px var(--ink); }
+  .yy-bar-labels span:last-child { color: var(--ink); text-shadow: 0 0 2px var(--paper); }
 
   #sliderYinYang {
     width: 100%;
@@ -267,12 +278,12 @@
   }
 
   .yy-bonus-makers {
-    color: #000;
+    color: var(--ink);
     padding: 1px 3px;
   }
 
   .yy-bonus-breakers {
-    color: #000;
+    color: var(--ink);
     padding: 1px 3px;
   }
 
@@ -311,35 +322,43 @@
     border: 1px solid #ddd;
     color: #ccc;
     padding: 2px 4px;
-    background: #fff;
+    background: var(--paper);
     opacity: 0.35;
   }
 
   #cheatBox:focus {
-    color: #000;
-    border-color: #000;
+    color: var(--ink);
+    border-color: var(--ink);
     opacity: 1;
   }
 
   .guide-tabs {
     display: flex;
-    border-bottom: 1px solid #000;
+    border-bottom: 1px solid var(--ink);
   }
 
   .guide-tab {
     flex: 1;
     border: 0;
-    border-right: 1px solid #000;
-    background: #fff;
+    border-right: 1px solid var(--ink);
+    background: var(--paper);
     text-align: left;
   }
 
   .guide-tab:last-child { border-right: 0; }
-  .guide-tab.active { background: #000; color: #fff; }
+  .guide-tab.active { background: var(--ink); color: var(--paper); }
   .guide-section { border-top: 1px solid #ddd; padding-top: 10px; }
   .guide-section:first-child { border-top: 0; padding-top: 0; }
   .guide-locked { color: #777; }
 </style>
+<script>
+  (function () {
+    try {
+      var saved = localStorage.getItem("nailMakerTheme");
+      if (saved === "dark") document.documentElement.setAttribute("data-theme", "dark");
+    } catch (e) { /* localStorage unavailable -- just default to light, harmless */ }
+  })();
+</script>
 </head>
 <body>
 
@@ -352,8 +371,10 @@
   <button id="btnGuide">guide</button>
 </div>
 
-<div id="guideOverlay" style="display:none; position:fixed; inset:0; background:#fff; z-index:50; align-items:flex-start; justify-content:center; overflow-y:auto;">
-  <div style="width:520px; max-width:90vw; margin:60px 0 60px 0; border:1px solid #000; background:#fff;">
+<button id="btnDarkMode" style="position:fixed; bottom:12px; left:12px; font-size:10px; padding:2px 6px; opacity:0.7; z-index:5;">dark mode</button>
+
+<div id="guideOverlay" style="display:none; position:fixed; inset:0; background:var(--paper); z-index:50; align-items:flex-start; justify-content:center; overflow-y:auto;">
+  <div style="width:520px; max-width:90vw; margin:60px 0 60px 0; border:1px solid var(--ink); background:var(--paper);">
     <div class="panel-header" style="display:flex; justify-content:space-between; align-items:center;">
       <span>guide</span>
       <button id="btnGuideClose">x</button>
@@ -409,7 +430,7 @@
   </div>
 </div>
 
-<div id="reincarnateOverlay" style="display:none; position:fixed; inset:0; background:#fff; z-index:100; flex-direction:column; align-items:center;">
+<div id="reincarnateOverlay" style="display:none; position:fixed; inset:0; background:var(--paper); z-index:100; flex-direction:column; align-items:center;">
   <div style="width:100%; max-width:960px; padding:24px 12px; text-align:center;">
     <div id="reincarnateStatus" class="hint" style="font-size:13px; margin-bottom:10px;"></div>
     <div id="reincarnateGrid"></div>
@@ -551,7 +572,7 @@
 
   <div id="mapSection" style="display:none;">
     <div class="map-readout">
-    <div class="panel-header" style="width:100%; border:1px solid #000; border-bottom:none;">extraction &mdash; map <span id="mapIndexLabel">1</span></div>
+    <div class="panel-header" style="width:100%; border:1px solid var(--ink); border-bottom:none;">extraction &mdash; map <span id="mapIndexLabel">1</span></div>
     <div id="mapDisplay"></div>
     <div class="map-health">
       <div class="map-health-text" id="mapHealthText">0 / 0</div>
@@ -592,7 +613,7 @@
     <div class="panel" id="swarmSection" style="margin-top:0; display:none; width:220px; flex:none;">
       <div class="panel-header">the foundry swarm</div>
       <div class="panel-body">
-        <canvas id="swarmCanvas" width="192" height="160" style="width:100%; height:160px; display:block; background:#fff; border:1px solid #000;"></canvas>
+        <canvas id="swarmCanvas" width="192" height="160" style="width:100%; height:160px; display:block; background:var(--paper); border:1px solid var(--ink);"></canvas>
         <div class="hint" id="swarmIronRates" style="text-align:center; margin-top:6px;">iron: 0 g/s made &middot; 0 g/s used</div>
         <div class="hint" id="swarmUnitCounts" style="text-align:center;">0 makers &middot; 0 breakers</div>
         <div class="hint" id="swarmCostHint" style="text-align:center;">click a dot to flip it -- costs funds</div>
@@ -612,8 +633,8 @@
 
 <button id="btnAuthToggle" style="position:fixed; bottom:20px; right:20px; z-index:20;">log in / sign up</button>
 
-<div id="authOverlay" style="display:none; position:fixed; inset:0; background:#fff; z-index:50; align-items:flex-start; justify-content:center;">
-  <div style="width:320px; margin-top:100px; border:1px solid #000; background:#fff;">
+<div id="authOverlay" style="display:none; position:fixed; inset:0; background:var(--paper); z-index:50; align-items:flex-start; justify-content:center;">
+  <div style="width:320px; margin-top:100px; border:1px solid var(--ink); background:var(--paper);">
     <div class="panel-header" style="display:flex; justify-content:space-between; align-items:center;">
       <span id="authTitle">log in</span>
       <button id="btnAuthClose">x</button>
@@ -622,10 +643,10 @@
       <div id="authError" style="color:#c00; font-size:11px; min-height:14px; margin-bottom:6px;"></div>
 
       <div class="label" style="margin-bottom:2px;">username:</div>
-      <input type="text" id="authUsername" style="width:100%; border:1px solid #000; padding:5px; margin-bottom:10px; font-family:inherit; font-size:13px;" autocomplete="username">
+      <input type="text" id="authUsername" style="width:100%; border:1px solid var(--ink); padding:5px; margin-bottom:10px; font-family:inherit; font-size:13px;" autocomplete="username">
 
       <div class="label" style="margin-bottom:2px;">password:</div>
-      <input type="password" id="authPassword" style="width:100%; border:1px solid #000; padding:5px; margin-bottom:10px; font-family:inherit; font-size:13px;" autocomplete="current-password">
+      <input type="password" id="authPassword" style="width:100%; border:1px solid var(--ink); padding:5px; margin-bottom:10px; font-family:inherit; font-size:13px;" autocomplete="current-password">
 
       <button id="btnAuthSubmit" style="width:100%;">log in</button>
 
@@ -646,6 +667,7 @@
 <script src="js/state.js"></script>
 <script src="js/formulas.js"></script>
 <script src="js/dom.js"></script>
+<script src="js/theme.js"></script>
 <script src="js/audio.js"></script>
 <script src="js/render.js"></script>
 <script src="js/swarm.js"></script>
