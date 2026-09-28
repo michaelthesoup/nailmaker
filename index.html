@@ -622,22 +622,13 @@
     </div>
 
     <div class="panel" id="citySection" style="display:none; width:auto; margin-top:14px;">
-      <div class="panel-header">the city &mdash; no. <span id="cityIndexLabel">1</span></div>
+      <div class="panel-header">the skyline</div>
       <div class="panel-body">
-        <canvas id="cityCanvas" width="640" height="220" style="width:100%; height:220px; display:block; background:var(--paper); border:1px solid var(--ink);"></canvas>
-        <div class="row" style="margin-top:8px;"><span class="label">dead:</span><span class="value" id="valCityDead">0</span></div>
-        <div class="row"><span class="label">displaced:</span><span class="value" id="valCityDisplaced">0</span></div>
-        <div class="hint" id="cityBuffs"></div>
-
-        <hr class="machinery-divider">
-
-        <div id="cityActions"></div>
-
-        <hr class="machinery-divider">
-
-        <div class="row"><span class="label">nailbombs detonated:</span><span class="value" id="valNailbombs">0</span></div>
-        <button id="btnNailbomb" style="width:100%; margin-top:6px;">detonate nailbomb</button>
-        <div class="hint" id="cityBombHint"></div>
+        <canvas id="cityCanvas" width="640" height="200" style="width:100%; height:200px; display:block; background:var(--paper); border:1px solid var(--ink); cursor:crosshair;"></canvas>
+        <div class="hint" id="cityBuffs" style="text-align:center; margin-top:6px;"></div>
+        <div class="row"><span class="label">nailbombs detonated:</span><span class="value" id="valCityBombCount">0</span></div>
+        <button id="btnCityBomb" style="width:100%; margin-top:6px;">click a building to target it</button>
+        <div class="hint">nailbombs permanently destroy the makers, breakers, or factories they hit, in exchange for a temporary marketing boost -- they get more expensive and more destructive each time.</div>
       </div>
     </div>
   </div>

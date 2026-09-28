@@ -328,10 +328,7 @@ el.cheatBox.addEventListener("keydown", function (e) {
         case "yylevel": state.tao = Math.max(0, Math.floor(amount)); break;
         case "tao": state.tao = Math.max(0, Math.floor(amount)); break;
         case "totalnails": state.totalNailsMade = Math.max(0, amount); break;
-        case "nailbombs":
-          state.nailbombs = Math.max(0, Math.floor(amount));
-          state.accelFloor = Math.min(ACCEL_FLOOR_MAX, state.nailbombs * ACCEL_FLOOR_PER_NAILBOMB);
-          break;
+        case "citybombs": state.cityBombs = Math.max(0, Math.floor(amount)); break;
       }
       render();
     }

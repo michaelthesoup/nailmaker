@@ -319,68 +319,66 @@ function mapRemainingWeight(tiles) {
 // ----------------------------------------------------------------
 
 // ----------------------------------------------------------------
-// The city, acceleration, and nailbombs (foundation -- all numbers here
-// are first-pass starting points to playtest, not final tuning).
+// The skyline. A row of buildings standing in for the player's real
+// nail makers, breakers, and factories -- how much of the skyline
+// each type takes up always matches the player's real ratio of them.
+// The more of one thing the player has relative to the rest, the more
+// of the skyline it is, which is what makes "too many breakers" (or
+// makers, or factories) something the player can actually see.
 //
-// The city is a row of buildings. Each has two independent conditions:
-//   d = physical integrity (1 intact .. 0 rubble)  -- hurt by ACTIONS
-//   m = market life (1 lit .. 0 dark windows)      -- hurt by NAILBOMBS
-// Acceleration is never shown as a number; it reads through the city
-// and through the buffs it grants. It has two parts:
-//   pulse -- per-lever spikes from actions, decaying back to zero
-//   floor -- raised permanently by each nailbomb, never decays
+// A bomb targets one building; it and its neighbors take real damage
+// that falls off with distance, converted straight into a permanent
+// reduction of the player's real makers/breakers/factories -- there is
+// no separate "city state" to track, the skyline is only ever a
+// picture of the numbers the game already has. In exchange, a bomb
+// gives a temporary marketing boost that decays -- see cityFeverMult()
+// in formulas.js. Every number below is a first pass, meant to be
+// tuned once this is actually played.
 // ----------------------------------------------------------------
 
-var CITY_UNLOCK_NAILS = 100000;
-var CITY_BUILDING_COUNT = 24;
-var CITY_POP_GROWTH = 1.6; // each new city holds this many times more people
-var CITY_MARKET_FLOOR = 0.4; // a fully dead market still gives this share of normal demand
-var CITY_HOLLOW_THRESHOLD = 0.1; // average physical OR market health below this = time to move on
-var CITY_DAMAGE_DRAIN_RATE = 0.04; // fraction of queued damage dealt per second
-var CITY_DAMAGE_DRAIN_MIN = 0.01; // building-equivalents per second, so queued damage always finishes
-var CITY_PASSIVE_DAMAGE_PER_SEC = 0.05; // extra queued damage/sec at maximum floor
-var CITY_DEAD_FRACTION = 0.06; // of people lost to physical damage
-var CITY_DISPLACED_FRACTION = 0.4;
+var CITY_UNLOCK_MARKETING_LEVEL = 15; // the skyline appears once marketing reaches this level
+var CITY_TOTAL_SLOTS = 22; // buildings drawn across the whole skyline
+var CITY_MAX_PER_TYPE = 9; // a type never gets more buildings than this, no matter how far it outweighs the rest -- it just buckets harder instead
+var CITY_REBUILD_INTERVAL_SEC = 0.5; // the skyline only re-reads the player's real counts this often, and only reshuffles a type's layout if its building count actually changed -- otherwise constant small production ticks (a factory finishing a cycle, etc.) would make the whole skyline flicker every frame
 
-var ACCEL_PULSE_HALFLIFE_SEC = 45;
-var ACCEL_FLOOR_PER_NAILBOMB = 0.08;
-var ACCEL_FLOOR_MAX = 0.8;
-var ACCEL_MAX_FACTORY_DISCOUNT = 0.5;
-var ACCEL_MAX_MARKETING_DISCOUNT = 0.6;
-var ACCEL_MAX_DEMAND_BONUS = 1.0; // +100% public demand at full buff
+// Cost and destructiveness both grow every time a bomb goes off, using
+// the same growth rate (CITY_BOMB_COST_GROWTH) so the marketing payoff
+// keeps pace with the escalating price -- see CITY_FEVER_EXP_GROWTH
+// below, which reuses this same number on purpose.
+var CITY_BOMB_BASE_NAILS = 50000; // unsold nails consumed by the first bomb
+var CITY_BOMB_COST_GROWTH = 2.3; // each bomb afterward costs this much more
+var CITY_BOMB_BASE_RADIUS = 1; // buildings on either side of the target also take damage, at this radius...
+var CITY_BOMB_RADIUS_GROWTH = 0.6; // ...growing by this much per bomb already detonated
+var CITY_BOMB_BASE_POWER = 0.5; // fraction of a building's units destroyed at ground zero...
+var CITY_BOMB_POWER_GROWTH = 0.18; // ...growing by this much per bomb already detonated
 
-var NAILBOMB_BASE_NAILS = 100000; // unsold nails consumed by the first one
-var NAILBOMB_COST_GROWTH = 4;
-var NAILBOMB_MARKET_DAMAGE = 0.25; // taken by every building's market per nailbomb
-var NAILBOMB_REVENUE_MULT = 1.5; // permanent, per nailbomb -- nails sell for more...
-var NAILBOMB_COST_MULT = 1.35; // ...but machines, marketing, and actions cost more (slightly slower)
+// Fever (the temporary marketing boost) grows EXPONENTIALLY alongside
+// the bomb's own cost, not linearly -- both the ceiling it can reach
+// and how much a single bomb adds to it scale by CITY_FEVER_EXP_GROWTH
+// per bomb already detonated, the same rate the cost itself grows by.
+// A bomb that's 2.3x more expensive than the last also buys roughly
+// 2.3x more marketing.
+var CITY_FEVER_EXP_GROWTH = CITY_BOMB_COST_GROWTH;
+var CITY_FEVER_MAX_BASE = 3; // fever's ceiling before any bombs -- grows by CITY_FEVER_EXP_GROWTH per bomb detonated
+var CITY_FEVER_PER_BOMB_BASE = 0.6; // fever a single bomb adds before any bombs -- grows the same way
+var CITY_FEVER_HALFLIFE_SEC = 20; // fever decays back toward zero with this half-life if you stop bombing
+var CITY_FEVER_DEMAND_PER_POINT = 0.35; // +35% public demand per point of fever, up to the (growing) cap above
 
-// Actions: cost funds, queue slow damage to the city (building-
-// equivalents), and spike ONE buff lever that then decays. Each hits a
-// different lever on purpose -- no overlapping bonus stacks.
-var CITY_ACTIONS = [
-  { id: "bribe",  label: "bribe an inspector", baseCost: 40000,   unlockNails: 100000,  lever: "marketing", spike: 0.5, damage: 0.4, effect: "marketing costs" },
-  { id: "strike", label: "fund a strike",      baseCost: 250000,  unlockNails: 500000,  lever: "factory",   spike: 0.5, damage: 1.0, effect: "factory costs" },
-  { id: "riot",   label: "start a riot",       baseCost: 2000000, unlockNails: 2000000, lever: "demand",    spike: 0.5, damage: 3.0, effect: "public demand" }
-];
-
-function generateCityBuildings(cityIndex) {
-  var rand = mulberry32(cityIndex * 104729 + 7);
-  var list = [];
-  for (var i = 0; i < CITY_BUILDING_COUNT; i++) {
-    var h = Math.round(45 + rand() * 120);
-    var w = Math.round(18 + rand() * 12);
-    list.push({
-      seed: Math.floor(rand() * 100000),
-      h: h,
-      w: w,
-      pop: Math.round(h * 4 * Math.pow(CITY_POP_GROWTH, cityIndex - 1)),
-      d: 1,
-      m: 1
-    });
-  }
-  return list;
-}
+// Pedestrians walking the skyline's ground floor -- purely visual
+// (their count and movement are not saved), except for the panic
+// meter they drive, which is real state and feeds public demand.
+// A bomb sends the whole street into a panic that fades fast (a
+// people-scale reaction, much quicker than the fever's marketing-scale
+// decay), and panic buying is worth a short, sharp demand spike on
+// top of the fever bonus -- the same "public demand" lever, not a
+// second bonus system.
+var CITY_PED_COUNT = 16;
+var CITY_PED_WALK_SPEED = 0.25; // px/frame, calm
+var CITY_PED_PANIC_SPEED_MULT = 3.5; // how much faster a panicking pedestrian moves
+var CITY_PED_PANIC_DURATION_SEC = 4; // how long an individual pedestrian keeps sprinting after a bomb
+var CITY_PANIC_PER_BOMB = 1; // panic meter jumps to this fraction of max on every bomb, regardless of size
+var CITY_PANIC_HALFLIFE_SEC = 5; // panic fades fast -- it's a street-level reaction, not a lasting market shift
+var CITY_PANIC_DEMAND_MAX = 0.5; // +50% public demand at maximum panic, decaying with it
 
 function defaultState() {
   var tiles = generateMapTiles(1);
@@ -451,16 +449,13 @@ function defaultState() {
 
     simTime: 0, // seconds of game time elapsed
 
-    // The city / acceleration / nailbombs layer (see tunables above).
+    // The skyline (see tunables above). Buildings themselves are never
+    // stored -- they're computed fresh from nailMakers/breakers/factories
+    // whenever the panel draws, so there's nothing here to desync.
     unlockedCity: false,
-    cityIndex: 1,
-    cityBuildings: generateCityBuildings(1),
-    cityPending: 0, // physical damage queued up, dealt out slowly over time
-    cityDead: 0,
-    cityDisplaced: 0,
-    accelPulse: { factory: 0, marketing: 0, demand: 0 },
-    accelFloor: 0,
-    nailbombs: 0,
+    cityBombs: 0,
+    cityFever: 0, // decaying marketing boost from recent bombs -- see cityFeverMult()
+    cityPanic: 0, // decaying street-panic boost from a recent bomb -- fast, short-lived, see cityFeverMult()
   };
 }
 

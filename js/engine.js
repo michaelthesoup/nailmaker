@@ -54,7 +54,7 @@ function tick(dt) {
     if (soldPerSec > 0 && state.unsold > 0) {
       var sold = Math.min(state.unsold, soldPerSec * settleInterval);
       state.unsold -= sold;
-      state.funds += sold * state.price * inflationRevenueMult();
+      state.funds += sold * state.price;
     }
   }
 
