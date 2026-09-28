@@ -263,6 +263,7 @@ el.btnReincarnateConfirm.addEventListener("click", function () {
     unlockedMachinery: state.unlockedMachinery,
     unlockedTuning: state.unlockedTuning,
     unlockedYinYang: state.unlockedYinYang,
+    unlockedCity: state.unlockedCity,
     guideSeen: state.guideSeen
   };
   var autoNextMapCarried = state.autoNextMap; // a preference toggle, unrelated to which map is loaded
@@ -281,6 +282,7 @@ el.btnReincarnateConfirm.addEventListener("click", function () {
   state.unlockedMachinery = unlocksCarried.unlockedMachinery;
   state.unlockedTuning = unlocksCarried.unlockedTuning;
   state.unlockedYinYang = unlocksCarried.unlockedYinYang;
+  state.unlockedCity = unlocksCarried.unlockedCity;
   state.guideSeen = unlocksCarried.guideSeen;
   state.mapIndex = ritual.newMapIndex;
   state.mapTiles = ritual.newMapTiles;

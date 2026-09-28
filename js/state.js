@@ -318,6 +318,70 @@ function mapRemainingWeight(tiles) {
 // State
 // ----------------------------------------------------------------
 
+// ----------------------------------------------------------------
+// The city, acceleration, and nailbombs (foundation -- all numbers here
+// are first-pass starting points to playtest, not final tuning).
+//
+// The city is a row of buildings. Each has two independent conditions:
+//   d = physical integrity (1 intact .. 0 rubble)  -- hurt by ACTIONS
+//   m = market life (1 lit .. 0 dark windows)      -- hurt by NAILBOMBS
+// Acceleration is never shown as a number; it reads through the city
+// and through the buffs it grants. It has two parts:
+//   pulse -- per-lever spikes from actions, decaying back to zero
+//   floor -- raised permanently by each nailbomb, never decays
+// ----------------------------------------------------------------
+
+var CITY_UNLOCK_NAILS = 100000;
+var CITY_BUILDING_COUNT = 24;
+var CITY_POP_GROWTH = 1.6; // each new city holds this many times more people
+var CITY_MARKET_FLOOR = 0.4; // a fully dead market still gives this share of normal demand
+var CITY_HOLLOW_THRESHOLD = 0.1; // average physical OR market health below this = time to move on
+var CITY_DAMAGE_DRAIN_RATE = 0.04; // fraction of queued damage dealt per second
+var CITY_DAMAGE_DRAIN_MIN = 0.01; // building-equivalents per second, so queued damage always finishes
+var CITY_PASSIVE_DAMAGE_PER_SEC = 0.05; // extra queued damage/sec at maximum floor
+var CITY_DEAD_FRACTION = 0.06; // of people lost to physical damage
+var CITY_DISPLACED_FRACTION = 0.4;
+
+var ACCEL_PULSE_HALFLIFE_SEC = 45;
+var ACCEL_FLOOR_PER_NAILBOMB = 0.08;
+var ACCEL_FLOOR_MAX = 0.8;
+var ACCEL_MAX_FACTORY_DISCOUNT = 0.5;
+var ACCEL_MAX_MARKETING_DISCOUNT = 0.6;
+var ACCEL_MAX_DEMAND_BONUS = 1.0; // +100% public demand at full buff
+
+var NAILBOMB_BASE_NAILS = 100000; // unsold nails consumed by the first one
+var NAILBOMB_COST_GROWTH = 4;
+var NAILBOMB_MARKET_DAMAGE = 0.25; // taken by every building's market per nailbomb
+var NAILBOMB_REVENUE_MULT = 1.5; // permanent, per nailbomb -- nails sell for more...
+var NAILBOMB_COST_MULT = 1.35; // ...but machines, marketing, and actions cost more (slightly slower)
+
+// Actions: cost funds, queue slow damage to the city (building-
+// equivalents), and spike ONE buff lever that then decays. Each hits a
+// different lever on purpose -- no overlapping bonus stacks.
+var CITY_ACTIONS = [
+  { id: "bribe",  label: "bribe an inspector", baseCost: 40000,   unlockNails: 100000,  lever: "marketing", spike: 0.5, damage: 0.4, effect: "marketing costs" },
+  { id: "strike", label: "fund a strike",      baseCost: 250000,  unlockNails: 500000,  lever: "factory",   spike: 0.5, damage: 1.0, effect: "factory costs" },
+  { id: "riot",   label: "start a riot",       baseCost: 2000000, unlockNails: 2000000, lever: "demand",    spike: 0.5, damage: 3.0, effect: "public demand" }
+];
+
+function generateCityBuildings(cityIndex) {
+  var rand = mulberry32(cityIndex * 104729 + 7);
+  var list = [];
+  for (var i = 0; i < CITY_BUILDING_COUNT; i++) {
+    var h = Math.round(45 + rand() * 120);
+    var w = Math.round(18 + rand() * 12);
+    list.push({
+      seed: Math.floor(rand() * 100000),
+      h: h,
+      w: w,
+      pop: Math.round(h * 4 * Math.pow(CITY_POP_GROWTH, cityIndex - 1)),
+      d: 1,
+      m: 1
+    });
+  }
+  return list;
+}
+
 function defaultState() {
   var tiles = generateMapTiles(1);
   return {
@@ -386,6 +450,17 @@ function defaultState() {
     yinYangAccum: 0,
 
     simTime: 0, // seconds of game time elapsed
+
+    // The city / acceleration / nailbombs layer (see tunables above).
+    unlockedCity: false,
+    cityIndex: 1,
+    cityBuildings: generateCityBuildings(1),
+    cityPending: 0, // physical damage queued up, dealt out slowly over time
+    cityDead: 0,
+    cityDisplaced: 0,
+    accelPulse: { factory: 0, marketing: 0, demand: 0 },
+    accelFloor: 0,
+    nailbombs: 0,
   };
 }
 

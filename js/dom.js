@@ -105,6 +105,17 @@ var el = {
   swarmIronRates: document.getElementById("swarmIronRates"),
   swarmUnitCounts: document.getElementById("swarmUnitCounts"),
   swarmCostHint: document.getElementById("swarmCostHint"),
+
+  citySection: document.getElementById("citySection"),
+  cityCanvas: document.getElementById("cityCanvas"),
+  cityIndexLabel: document.getElementById("cityIndexLabel"),
+  cityDead: document.getElementById("valCityDead"),
+  cityDisplaced: document.getElementById("valCityDisplaced"),
+  cityBuffs: document.getElementById("cityBuffs"),
+  cityActions: document.getElementById("cityActions"),
+  cityNailbombs: document.getElementById("valNailbombs"),
+  btnNailbomb: document.getElementById("btnNailbomb"),
+  cityBombHint: document.getElementById("cityBombHint"),
 };
 
 // ----------------------------------------------------------------

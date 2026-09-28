@@ -13,6 +13,7 @@ var SETTLE_INTERVAL_FLOOR_SEC = 0.05; // never settle faster than 20x/sec
 
 function tick(dt) {
   state.simTime += dt;
+  cityTick(dt);
 
   // Production: nail makers turn iron into unsold nails. The "nail
   // makers: ON/OFF" tuning toggle folds into nailMakerRateEffective().
@@ -53,7 +54,7 @@ function tick(dt) {
     if (soldPerSec > 0 && state.unsold > 0) {
       var sold = Math.min(state.unsold, soldPerSec * settleInterval);
       state.unsold -= sold;
-      state.funds += sold * state.price;
+      state.funds += sold * state.price * inflationRevenueMult();
     }
   }
 

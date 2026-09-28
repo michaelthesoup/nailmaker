@@ -30,7 +30,7 @@ var PRICE_DEMAND_SENSITIVITY = 1;
 
 function publicDemandPD() {
   if (state.price <= 0) return 0;
-  return marketingMultiplier() * Math.pow(0.8 / state.price, PRICE_DEMAND_SENSITIVITY) * yinYangPDMultiplier();
+  return marketingMultiplier() * Math.pow(0.8 / state.price, PRICE_DEMAND_SENSITIVITY) * yinYangPDMultiplier() * accelDemandMult() * cityMarketMult();
 }
 
 function avgNailsSoldPerSec() {
@@ -40,19 +40,19 @@ function avgNailsSoldPerSec() {
 }
 
 function priceForMarketing() {
-  return MARKETING_BASE_COST * Math.pow(MARKETING_GROWTH, state.marketingLevel);
+  return MARKETING_BASE_COST * Math.pow(MARKETING_GROWTH, state.marketingLevel) * accelMarketingCostMult() * inflationCostMult();
 }
 
 function nailMakerCostEffective() {
-  return NAILMAKER_COST;
+  return NAILMAKER_COST * inflationCostMult();
 }
 
 function factoryBuildCostEffective() {
-  return FACTORY_BUILD_COST_FUNDS * Math.pow(FACTORY_COST_GROWTH, state.factories);
+  return FACTORY_BUILD_COST_FUNDS * Math.pow(FACTORY_COST_GROWTH, state.factories) * accelFactoryCostMult() * inflationCostMult();
 }
 
 function factorySquaredBuildCostEffective() {
-  return FACTORY_SQUARED_BUILD_COST_FUNDS * Math.pow(FACTORY_SQUARED_COST_GROWTH, state.factorySquared);
+  return FACTORY_SQUARED_BUILD_COST_FUNDS * Math.pow(FACTORY_SQUARED_COST_GROWTH, state.factorySquared) * accelFactoryCostMult() * inflationCostMult();
 }
 
 // A factory's material cost per cycle depends on which way the balance
@@ -71,7 +71,7 @@ function factoryCopperCostEffective() {
 }
 
 function breakerBuildCostEffective() {
-  return BREAKER_BUILD_COST_FUNDS;
+  return BREAKER_BUILD_COST_FUNDS * inflationCostMult();
 }
 
 function nailMakerRateEffective() {
@@ -293,4 +293,54 @@ function settleYinYang() {
       state.yang = 0;
     }
   }
+}
+
+// ----------------------------------------------------------------
+// Acceleration, inflation, and the city's market (see the tunables
+// block in state.js). Acceleration itself is never displayed -- these
+// are the buffs it grants, and they only ever touch three levers.
+// ----------------------------------------------------------------
+
+// A lever's buff strength, 0..1: the permanent floor (raised by
+// nailbombs) plus that lever's current decaying pulse (from actions).
+function accelBuff(lever) {
+  return Math.min(1, state.accelFloor + (state.accelPulse[lever] || 0));
+}
+
+function accelFactoryCostMult() {
+  return 1 - ACCEL_MAX_FACTORY_DISCOUNT * accelBuff("factory");
+}
+
+function accelMarketingCostMult() {
+  return 1 - ACCEL_MAX_MARKETING_DISCOUNT * accelBuff("marketing");
+}
+
+function accelDemandMult() {
+  return 1 + ACCEL_MAX_DEMAND_BONUS * accelBuff("demand");
+}
+
+// Nailbombs are permanent inflation: every nail sells for more, and
+// nearly everything you buy costs more too -- costs grow a bit slower,
+// so wealth balloons while numbers mean less and less.
+function inflationRevenueMult() {
+  return Math.pow(NAILBOMB_REVENUE_MULT, state.nailbombs);
+}
+
+function inflationCostMult() {
+  return Math.pow(NAILBOMB_COST_MULT, state.nailbombs);
+}
+
+function cityAverage(field) {
+  var b = state.cityBuildings;
+  if (!b || !b.length) return 1;
+  var sum = 0;
+  for (var i = 0; i < b.length; i++) sum += b[i][field];
+  return sum / b.length;
+}
+
+// A living market gives full demand; a dark one gives a fraction.
+// Untouched cities are always exactly 1, so players who never engage
+// with the city see no change to the economy at all.
+function cityMarketMult() {
+  return CITY_MARKET_FLOOR + (1 - CITY_MARKET_FLOOR) * cityAverage("m");
 }

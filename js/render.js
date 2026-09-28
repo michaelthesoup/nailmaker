@@ -29,7 +29,7 @@ function render() {
   // production can't actually make that many, sustained revenue can't
   // reach that either -- so revenue is capped at whichever is smaller.
   var sustainableSoldPerSec = Math.min(theoreticalSoldPerSec, theoreticalNailsPerSec);
-  el.avgRev.textContent = fmtMoney(sustainableSoldPerSec * state.price);
+  el.avgRev.textContent = fmtMoney(sustainableSoldPerSec * state.price * inflationRevenueMult());
   el.avgNails.textContent = fmtDecimal(theoreticalNailsPerSec);
   el.mapIndexLabel.textContent = state.mapIndex;
 
@@ -141,6 +141,7 @@ function render() {
 
   renderGuide();
   renderMap();
+  if (typeof renderCity === "function") renderCity();
 }
 
 function renderGuide() {
