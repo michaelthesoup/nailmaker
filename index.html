@@ -571,19 +571,34 @@
   </div>
 
   <div id="mapSection" style="display:none;">
-    <div class="map-readout">
-    <div class="panel-header" style="width:100%; border:1px solid var(--ink); border-bottom:none;">extraction &mdash; map <span id="mapIndexLabel">1</span></div>
-    <div id="mapDisplay"></div>
-    <div class="map-health">
-      <div class="map-health-text" id="mapHealthText">0 / 0</div>
-      <div class="map-health-track"><div class="map-health-fill" id="mapHealthFill"></div></div>
+    <div style="display:flex; gap:14px; align-items:flex-start; flex-wrap:wrap;">
+      <div style="flex:none;">
+        <div class="map-readout">
+        <div class="panel-header" style="width:100%; border:1px solid var(--ink); border-bottom:none;">extraction &mdash; map <span id="mapIndexLabel">1</span></div>
+        <div id="mapDisplay"></div>
+        <div class="map-health">
+          <div class="map-health-text" id="mapHealthText">0 / 0</div>
+          <div class="map-health-track"><div class="map-health-fill" id="mapHealthFill"></div></div>
+        </div>
+        <div class="hint" id="mapMaterials">iron: 0 g &middot; copper: 0 g</div>
+        </div>
+        <div class="hint">i/c = iron/copper &nbsp; I/C = worked by breaker &nbsp; . = drained/empty</div>
+      </div>
+
+      <div class="panel" id="citySection" style="display:none; margin-top:0; width:280px; flex:none;">
+        <div class="panel-header">the skyline</div>
+        <div class="panel-body">
+          <canvas id="cityCanvas" width="380" height="170" style="width:100%; height:170px; display:block; background:var(--paper); border:1px solid var(--ink); cursor:crosshair;"></canvas>
+          <div class="hint" id="cityBuffs" style="text-align:center; margin-top:6px;"></div>
+          <div class="row"><span class="label">nailbombs detonated:</span><span class="value" id="valCityBombCount">0</span></div>
+          <button id="btnCityBomb" style="width:100%; margin-top:6px;">click a building to target it</button>
+          <div class="hint">nailbombs permanently destroy the makers, breakers, or factories they hit, in exchange for a temporary marketing boost -- they get more expensive and more destructive each time.</div>
+        </div>
+      </div>
     </div>
-    <div class="hint" id="mapMaterials">iron: 0 g &middot; copper: 0 g</div>
-    </div>
-    <div class="hint">i/c = iron/copper &nbsp; I/C = worked by breaker &nbsp; . = drained/empty</div>
 
     <div style="display:flex; gap:14px; align-items:flex-start; margin-top:14px;">
-    <div class="panel" id="yinYangSection" style="margin-top:0; display:none; flex:1;">
+    <div class="panel" id="yinYangSection" style="margin-top:0; display:none; width:320px; flex:none;">
       <div class="panel-header">yin &amp; yang</div>
       <div class="panel-body">
         <div class="row"><span class="label">yin (breaking):</span><span class="value" id="valYin">0.0</span></div>
@@ -619,17 +634,6 @@
         <div class="hint" id="swarmCostHint" style="text-align:center;">click a dot to flip it -- costs copper</div>
       </div>
     </div>
-    </div>
-
-    <div class="panel" id="citySection" style="display:none; width:auto; margin-top:14px;">
-      <div class="panel-header">the skyline</div>
-      <div class="panel-body">
-        <canvas id="cityCanvas" width="640" height="200" style="width:100%; height:200px; display:block; background:var(--paper); border:1px solid var(--ink); cursor:crosshair;"></canvas>
-        <div class="hint" id="cityBuffs" style="text-align:center; margin-top:6px;"></div>
-        <div class="row"><span class="label">nailbombs detonated:</span><span class="value" id="valCityBombCount">0</span></div>
-        <button id="btnCityBomb" style="width:100%; margin-top:6px;">click a building to target it</button>
-        <div class="hint">nailbombs permanently destroy the makers, breakers, or factories they hit, in exchange for a temporary marketing boost -- they get more expensive and more destructive each time.</div>
-      </div>
     </div>
   </div>
 
