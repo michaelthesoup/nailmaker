@@ -332,9 +332,7 @@ function mapRemainingWeight(tiles) {
 // temporarily, scars the market permanently, and locks karma at -1.
 // ----------------------------------------------------------------
 
-var CITY_UNLOCK_TOTAL_NAILS = 10000; // the skyline appears once nail production has established a business
 var CITY_TOTAL_SLOTS = 22; // buildings generated per district
-var CITY_MAX_PER_TYPE = 9; // caps how many slots a type receives in one district
 var CITY_REBUILD_INTERVAL_SEC = 0.5; // refreshes the mix used by newly generated districts
 var CITY_DISTRICT_WIDTH = 380;
 var CITY_PAN_SPEED = 18; // world pixels per second
@@ -489,6 +487,15 @@ function defaultState() {
     cityMarketScar: 0, // permanent demand loss from the lasting impact of bombings
     cityKarmaLocked: false,
     isotopeStock: 0, // banked isotope cores from swarm collapses -- one is spent per bomb
+    cityWorld: {
+      cameraX: 0,
+      nextDistrictX: 0,
+      buildings: [],
+      pedestrians: [],
+      aftermath: null,
+      cachedSlots: [],
+      rebuildAccum: 0
+    },
   };
 }
 

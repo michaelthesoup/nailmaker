@@ -5,45 +5,72 @@
 // payoff lives in formulas.js as cityFeverMult()).
 //
 // The skyline is an endlessly generated street. Each district reflects
-// the current maker/breaker/factory mix; camera travel removes buildings
+// the current maker/breaker mix; camera travel removes buildings
 // behind the player and generates more ahead. Bombs pause the camera,
 // damage real units, and leave a visible corridor of ruins to cross.
 // ----------------------------------------------------------------
 
 var cityCanvasEl = null;
 var cityCtx = null;
-var cityLayout = []; // last drawn slot layout: [{type, units, x, w}], used for click hit-testing
-var cityTarget = null; // world-space building selected by the player
+var cityLayout = []; // last drawn district layout: [{type, units, x, w}]
 var cityBlast = null; // { x, r, max } -- the expanding blast ring animation
 var cityShake = 0;
 var cityCameraX = 0;
 var cityNextDistrictX = 0;
 var cityBuildings = [];
 var cityAftermath = null; // { hitX, startX, endX, span, killRadius }
+var cityWorldStateRef = null;
 
 // Cached between rebuilds so the skyline doesn't reshuffle or resize
 // every frame -- see the header comment above.
 var cityCachedSlots = []; // stable slot identities: [{type, indexInType, units, seed}]
 var cityRebuildAccum = 0;
 
-function cityBuildSlots() {
-  var types = [
-    { type: "maker", count: Math.max(0, Math.floor(state.nailMakers)) },
-    { type: "breaker", count: Math.max(0, Math.floor(state.breakers)) },
-    { type: "factory", count: Math.max(0, Math.floor(state.factories)) }
-  ];
-  var total = types[0].count + types[1].count + types[2].count;
-  if (total <= 0) return [];
+function cityRestoreWorld() {
+  if (cityWorldStateRef === state) return;
+  var saved = state.cityWorld;
+  cityCameraX = saved && typeof saved.cameraX === "number" ? saved.cameraX : 0;
+  cityNextDistrictX = saved && typeof saved.nextDistrictX === "number" ? saved.nextDistrictX : 0;
+  cityBuildings = saved && Array.isArray(saved.buildings) ? saved.buildings : [];
+  cityPeds = saved && Array.isArray(saved.pedestrians) ? saved.pedestrians : [];
+  cityAftermath = saved && saved.aftermath ? saved.aftermath : null;
+  cityCachedSlots = saved && Array.isArray(saved.cachedSlots) ? saved.cachedSlots : [];
+  cityRebuildAccum = saved && typeof saved.rebuildAccum === "number" ? saved.rebuildAccum : 0;
+  cityWorldStateRef = state;
+}
 
-  // How many slots each type gets, and how many real units each slot
-  // represents, computed fresh every time (cheap) -- but WHICH slots
-  // keep their old seed/position is decided against the cached layout
-  // below, so a type only reshuffles when its own slot COUNT changes.
+function cityPersistWorld() {
+  state.cityWorld = {
+    cameraX: cityCameraX,
+    nextDistrictX: cityNextDistrictX,
+    buildings: cityBuildings,
+    pedestrians: cityPeds,
+    aftermath: cityAftermath,
+    cachedSlots: cityCachedSlots,
+    rebuildAccum: cityRebuildAccum
+  };
+  cityWorldStateRef = state;
+}
+
+function cityBuildSlots() {
+  var demand = ironDemandRate();
+  var supply = ironSupplyRate();
+  var totalRate = demand + supply;
+
+  var makerCount = Math.max(0, Math.floor(state.nailMakers));
+  var breakerCount = Math.max(0, Math.floor(state.breakers));
+  var makerFraction = totalRate > 0 ? demand / totalRate : 0.5;
+  var makerSlots = Math.round(CITY_TOTAL_SLOTS * makerFraction);
+  makerSlots = Math.max(0, Math.min(CITY_TOTAL_SLOTS, makerSlots));
+  var types = [
+    { type: "maker", count: makerCount, slots: makerSlots },
+    { type: "breaker", count: breakerCount, slots: CITY_TOTAL_SLOTS - makerSlots }
+  ];
+
   var freshByType = {};
   for (var t = 0; t < types.length; t++) {
     var count = types[t].count;
-    if (count <= 0) { freshByType[types[t].type] = []; continue; }
-    var n = Math.min(CITY_MAX_PER_TYPE, Math.max(1, Math.round(CITY_TOTAL_SLOTS * count / total)));
+    var n = types[t].slots;
     var list = [];
     for (var i = 0; i < n; i++) {
       var lo = Math.floor(i * count / n);
@@ -60,7 +87,7 @@ function cityBuildSlots() {
   }
 
   var merged = [];
-  var typeNames = ["maker", "breaker", "factory"];
+  var typeNames = ["maker", "breaker"];
   for (var tn = 0; tn < typeNames.length; tn++) {
     var fresh = freshByType[typeNames[tn]];
     for (var f = 0; f < fresh.length; f++) {
@@ -197,16 +224,6 @@ function cityFeverGainForNextBomb() {
   return CITY_FEVER_PER_BOMB_BASE * Math.pow(CITY_FEVER_EXP_GROWTH, state.cityBombs);
 }
 
-function cityPick(mx) {
-  for (var i = 0; i < cityLayout.length; i++) {
-    var centerX = cityLayout[i].x + cityLayout[i].w / 2;
-    if (centerX >= 0 && centerX <= cityCanvasEl.width && mx >= cityLayout[i].x && mx <= cityLayout[i].x + cityLayout[i].w) {
-      return cityLayout[i].building;
-    }
-  }
-  return null;
-}
-
 // ----------------------------------------------------------------
 // Pedestrians share world coordinates with the city so they can remain
 // still in the blast zone as the camera continues past them.
@@ -283,10 +300,7 @@ function cityDrawPedestrians(groundY, ink) {
 // the dropped bomb visually lands -- see cityApplyImpact() -- so the
 // damage, fever/panic gain, and page shake all land together with the
 // animation instead of popping in the instant the button is clicked.
-function cityArmAndDrop(targetBuilding) {
-  if (!targetBuilding || cityBuildings.indexOf(targetBuilding) < 0) return;
-  var targetCenterX = targetBuilding.worldX + targetBuilding.w / 2;
-  if (targetCenterX < cityCameraX || targetCenterX > cityCameraX + cityCanvasEl.width) return;
+function cityArmAndDrop() {
   if (cityDropActive) return; // one bomb in flight at a time
 
   var nailsCost = cityBombCost();
@@ -294,18 +308,15 @@ function cityArmAndDrop(targetBuilding) {
   if (state.unsold < nailsCost || state.isotopeStock < isoCost) return;
 
   cityEnsureWorld(cityCanvasEl.width, cityBombRadius() * CITY_BUILDING_SPACING);
+  var targetWorldX = cityCameraX + cityCanvasEl.width / 2;
 
   state.unsold -= nailsCost;
   state.isotopeStock -= isoCost;
-  cityTarget = null;
+  cityStartDrop(targetWorldX);
   render();
-
-  cityStartDrop(targetBuilding);
 }
 
-function cityApplyImpact(targetBuilding) {
-  if (!targetBuilding) return;
-
+function cityApplyImpact(targetWorldX) {
   var radius = cityBombRadius();
   var radiusWorld = radius * CITY_BUILDING_SPACING;
   var power = cityBombPower();
@@ -313,9 +324,9 @@ function cityApplyImpact(targetBuilding) {
 
   for (var i = 0; i < cityBuildings.length; i++) {
     var building = cityBuildings[i];
-    var dist = Math.abs(building.worldX - targetBuilding.worldX) / CITY_BUILDING_SPACING;
-    if (dist > radius) continue;
-    var falloff = 1 - (dist / (radius + 0.001));
+    var distance = Math.abs(building.worldX + building.w / 2 - targetWorldX);
+    if (distance > radiusWorld) continue;
+    var falloff = 1 - (distance / (radiusWorld + 0.001));
     lost[building.type] += Math.round(building.units * power * falloff);
   }
 
@@ -344,16 +355,16 @@ function cityApplyImpact(targetBuilding) {
     + radius * CITY_AFTERMATH_RADIUS_DISTANCE
     + power * CITY_AFTERMATH_POWER_DISTANCE;
   cityAftermath = {
-    hitX: targetBuilding.worldX,
-    startX: targetBuilding.worldX - aftermathSpan,
-    endX: targetBuilding.worldX + aftermathSpan,
+    hitX: targetWorldX,
+    startX: targetWorldX - aftermathSpan,
+    endX: targetWorldX + aftermathSpan,
     span: aftermathSpan,
     killRadius: aftermathSpan * 0.12
   };
   cityPanicPedestrians();
 
   cityShake = 10;
-  var hitX = targetBuilding.worldX + targetBuilding.w / 2 - cityCameraX;
+  var hitX = targetWorldX - cityCameraX;
   cityBlast = { x: hitX, r: 0, max: 60 + radius * 22 };
   cityRebuildAccum = CITY_REBUILD_INTERVAL_SEC; // force an immediate rebuild so the destroyed building disappears right away
 
@@ -369,7 +380,7 @@ function cityApplyImpact(targetBuilding) {
 // ----------------------------------------------------------------
 
 var cityDropActive = false;
-var cityDropTarget = null;
+var cityDropTargetX = null;
 var cityDropY = -120;
 var cityDropLastMs = null;
 var cityDropLandY = 0;
@@ -378,21 +389,20 @@ var cityPageShakeFrames = 0;
 var cityPageShakeMagnitude = 0;
 var cityPageShakeRunning = false;
 
-function cityStartDrop(targetBuilding) {
+function cityStartDrop(targetWorldX) {
   if (!el.bombDropOverlay || !cityCanvasEl) {
     // No overlay available (shouldn't happen in the real page) --
     // fall back to an instant impact so a bomb never silently fails.
-    cityApplyImpact(targetBuilding);
+    cityApplyImpact(targetWorldX);
     return;
   }
 
   var rect = cityCanvasEl.getBoundingClientRect();
-  var scaleX = rect.width / cityCanvasEl.width;
-  var targetX = rect.left + (targetBuilding.worldX + targetBuilding.w / 2 - cityCameraX) * scaleX;
+  var targetX = rect.left + rect.width / 2;
   cityDropLandY = rect.top + rect.height * 0.55;
 
   cityDropActive = true;
-  cityDropTarget = targetBuilding;
+  cityDropTargetX = targetWorldX;
   cityDropY = -120;
   cityDropLastMs = null;
 
@@ -417,8 +427,8 @@ function cityDropStep(nowMs) {
     cityDropActive = false;
     el.bombDropOverlay.style.display = "none";
     cityShakePage();
-    cityApplyImpact(cityDropTarget);
-    cityDropTarget = null;
+    cityApplyImpact(cityDropTargetX);
+    cityDropTargetX = null;
     return;
   }
 
@@ -452,7 +462,8 @@ function cityPageShakeStep() {
 }
 
 function cityTick(dt) {
-  if (!state.unlockedCity && state.totalNailsMade >= CITY_UNLOCK_TOTAL_NAILS) state.unlockedCity = true;
+  cityRestoreWorld();
+  state.unlockedCity = !!state.unlockedYinYang;
 
   var feverDecay = Math.pow(0.5, dt / CITY_FEVER_HALFLIFE_SEC);
   state.cityFever *= feverDecay;
@@ -474,32 +485,14 @@ function cityCssColor(name, fallback) {
   return v || fallback;
 }
 
-// Makers and breakers share the same silhouette -- only their colors
-// invert (white body / black windows vs. black body / white windows),
-// matching the maker/breaker palette already used by yin & yang and
-// the foundry swarm. Factories are plain gray blocks, no detail.
+// Makers and breakers share a silhouette; only their colors invert,
+// matching the white/black Foundry Swarm.
 function cityDrawBuilding(slot, groundY, paper, ink) {
-  var baseH = slot.type === "factory" ? 46 : 38;
+  var baseH = 38;
   var growth = Math.log(1 + slot.units) * 10;
   var damage = slot.damage || 0;
   var h = Math.max(2, (baseH + growth) * (1 - damage * 0.9));
   var top = groundY - h;
-
-  if (slot.type === "factory") {
-    cityCtx.fillStyle = damage > 0.5 ? "#686868" : "#9a9a9a";
-    cityCtx.strokeStyle = ink;
-    cityCtx.lineWidth = 1;
-    cityCtx.fillRect(slot.x, top, slot.w, h);
-    cityCtx.strokeRect(slot.x + 0.5, top + 0.5, slot.w - 1, h - 1);
-    if (damage > 0.35) {
-      cityCtx.beginPath();
-      cityCtx.moveTo(slot.x + slot.w * 0.15, groundY - 2);
-      cityCtx.lineTo(slot.x + slot.w * 0.5, groundY - Math.max(2, h * 0.3));
-      cityCtx.lineTo(slot.x + slot.w * 0.85, groundY - 2);
-      cityCtx.stroke();
-    }
-    return;
-  }
 
   var body = slot.type === "maker" ? paper : ink;
   var win = slot.type === "maker" ? ink : paper;
@@ -534,6 +527,7 @@ function cityDrawBuilding(slot, groundY, paper, ink) {
 
 function cityDraw(dt) {
   if (!cityCtx) return;
+  cityRestoreWorld();
   var canvas = el.cityCanvas;
   var W = canvas.width, H = canvas.height;
   var groundY = H - 24;
@@ -565,20 +559,6 @@ function cityDraw(dt) {
   for (var i = 0; i < cityLayout.length; i++) cityDrawBuilding(cityLayout[i], groundY, paper, ink);
   cityDrawPedestrians(groundY, ink);
 
-  if (cityTarget) {
-    var targetX = cityTarget.worldX - cityCameraX;
-    if (targetX + cityTarget.w < 0 || targetX > W) {
-      cityTarget = null;
-      renderCity();
-    } else {
-      var t = { x: targetX, w: cityTarget.w };
-      cityCtx.strokeStyle = ink;
-      cityCtx.setLineDash([3, 3]);
-      cityCtx.strokeRect(t.x - 2, 4, t.w + 4, groundY - 2);
-      cityCtx.setLineDash([]);
-    }
-  }
-
   if (cityBlast) {
     cityBlast.r += 6;
     cityCtx.globalAlpha = Math.max(0, 1 - cityBlast.r / cityBlast.max);
@@ -591,6 +571,7 @@ function cityDraw(dt) {
   }
 
   cityCtx.restore();
+  cityPersistWorld();
 }
 
 function cityBuffText() {
@@ -607,8 +588,8 @@ function cityBuffText() {
 
 function renderCity() {
   if (!el.citySection) return;
-  el.citySection.style.display = state.unlockedCity ? "" : "none";
-  if (!state.unlockedCity) return;
+  el.citySection.style.display = state.unlockedYinYang ? "" : "none";
+  if (!state.unlockedYinYang) return;
 
   el.cityBuffs.textContent = cityBuffText();
   el.cityBombCount.textContent = state.cityBombs + " made";
@@ -626,14 +607,11 @@ function renderCity() {
   if (cityDropActive) {
     el.btnCityBomb.textContent = "falling...";
     el.btnCityBomb.disabled = true;
-  } else if (cityTarget == null) {
-    el.btnCityBomb.textContent = "click a building to target it";
-    el.btnCityBomb.disabled = true;
   } else if (!haveEnough) {
     el.btnCityBomb.textContent = "not enough nails / 1 isotope core";
     el.btnCityBomb.disabled = true;
   } else {
-    el.btnCityBomb.textContent = "use 1 isotope core and detonate here";
+    el.btnCityBomb.textContent = "launch bomb";
     el.btnCityBomb.disabled = false;
   }
 }
@@ -643,18 +621,8 @@ function cityInit() {
   if (!cityCanvasEl) return;
   cityCtx = cityCanvasEl.getContext("2d");
 
-  cityCanvasEl.addEventListener("click", function (e) {
-    if (cityDropActive) return;
-    var rect = cityCanvasEl.getBoundingClientRect();
-    var scaleX = cityCanvasEl.width / rect.width;
-    var mx = (e.clientX - rect.left) * scaleX;
-    cityTarget = cityPick(mx);
-    render();
-  });
-
   el.btnCityBomb.addEventListener("click", function () {
-    if (cityTarget == null) return;
-    cityArmAndDrop(cityTarget);
+    cityArmAndDrop();
   });
 
   requestAnimationFrame(cityLoop);
@@ -664,7 +632,7 @@ function cityInit() {
 // a slower cadence. The camera keeps generating fresh city ahead of it.
 var cityLastFrameMs = null;
 function cityLoop(nowMs) {
-  if (state.unlockedCity) {
+  if (state.unlockedYinYang) {
     var dt = cityLastFrameMs != null ? Math.min(0.1, (nowMs - cityLastFrameMs) / 1000) : 1 / 60;
     cityLastFrameMs = nowMs;
     cityDraw(dt);
