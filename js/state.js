@@ -30,7 +30,7 @@ var IRON_PER_NAIL = 1; // grams
 // slider (0 = all breakers/black, 100 = all makers/white). The cost
 // per cycle is the same no matter which comes out the other end.
 var FACTORY_BUILD_COST_FUNDS = 1000;
-var FACTORY_COST_GROWTH = 1.15; // each factory you own makes the next one cost this much more
+var FACTORY_COST_GROWTH = 1.4; // each factory you own makes the next one cost this much more
 var FACTORY_PERIOD_SEC = 1;
 // A factory's material cost per cycle depends on which way the balance
 // slider is leaning. Building toward nail breakers (heavier mining
@@ -326,20 +326,22 @@ function mapRemainingWeight(tiles) {
 // of the skyline it is, which is what makes "too many breakers" (or
 // makers, or factories) something the player can actually see.
 //
-// A bomb targets one building; it and its neighbors take real damage
-// that falls off with distance, converted straight into a permanent
-// reduction of the player's real makers/breakers/factories -- there is
-// no separate "city state" to track, the skyline is only ever a
-// picture of the numbers the game already has. In exchange, a bomb
-// gives a temporary marketing boost that decays -- see cityFeverMult()
-// in formulas.js. Every number below is a first pass, meant to be
-// tuned once this is actually played.
+// Bomb damage reduces the player's real makers, breakers, and factories.
+// The generated city shows a fading trail of destruction as the camera
+// reaches active civilization again. Each impact also spikes demand
+// temporarily, scars the market permanently, and locks karma at -1.
 // ----------------------------------------------------------------
 
-var CITY_UNLOCK_MARKETING_LEVEL = 15; // the skyline appears once marketing reaches this level
-var CITY_TOTAL_SLOTS = 22; // buildings drawn across the whole skyline
-var CITY_MAX_PER_TYPE = 9; // a type never gets more buildings than this, no matter how far it outweighs the rest -- it just buckets harder instead
-var CITY_REBUILD_INTERVAL_SEC = 0.5; // the skyline only re-reads the player's real counts this often, and only reshuffles a type's layout if its building count actually changed -- otherwise constant small production ticks (a factory finishing a cycle, etc.) would make the whole skyline flicker every frame
+var CITY_UNLOCK_TOTAL_NAILS = 10000; // the skyline appears once nail production has established a business
+var CITY_TOTAL_SLOTS = 22; // buildings generated per district
+var CITY_MAX_PER_TYPE = 9; // caps how many slots a type receives in one district
+var CITY_REBUILD_INTERVAL_SEC = 0.5; // refreshes the mix used by newly generated districts
+var CITY_DISTRICT_WIDTH = 380;
+var CITY_PAN_SPEED = 18; // world pixels per second
+var CITY_BUILDING_SPACING = 22;
+var CITY_AFTERMATH_BASE_DISTANCE = 260;
+var CITY_AFTERMATH_RADIUS_DISTANCE = 180;
+var CITY_AFTERMATH_POWER_DISTANCE = 260;
 
 // Cost and destructiveness both grow every time a bomb goes off, using
 // the same growth rate (CITY_BOMB_COST_GROWTH) so the marketing payoff
@@ -351,6 +353,8 @@ var CITY_BOMB_BASE_RADIUS = 1; // buildings on either side of the target also ta
 var CITY_BOMB_RADIUS_GROWTH = 0.6; // ...growing by this much per bomb already detonated
 var CITY_BOMB_BASE_POWER = 0.5; // fraction of a building's units destroyed at ground zero...
 var CITY_BOMB_POWER_GROWTH = 0.18; // ...growing by this much per bomb already detonated
+var CITY_BOMB_ECONOMY_SHOCK_FACTOR = 0.02; // small system-wide loss to every active workforce category
+var CITY_BOMB_ECONOMY_SHOCK_CAP = 0.15;
 
 // Fever (the temporary marketing boost) grows EXPONENTIALLY alongside
 // the bomb's own cost, not linearly -- both the ceiling it can reach
@@ -361,8 +365,10 @@ var CITY_BOMB_POWER_GROWTH = 0.18; // ...growing by this much per bomb already d
 var CITY_FEVER_EXP_GROWTH = CITY_BOMB_COST_GROWTH;
 var CITY_FEVER_MAX_BASE = 3; // fever's ceiling before any bombs -- grows by CITY_FEVER_EXP_GROWTH per bomb detonated
 var CITY_FEVER_PER_BOMB_BASE = 0.6; // fever a single bomb adds before any bombs -- grows the same way
-var CITY_FEVER_HALFLIFE_SEC = 20; // fever decays back toward zero with this half-life if you stop bombing
+var CITY_FEVER_HALFLIFE_SEC = 40; // fever decays back toward zero with this half-life if you stop bombing
 var CITY_FEVER_DEMAND_PER_POINT = 0.35; // +35% public demand per point of fever, up to the (growing) cap above
+var CITY_MARKET_SCAR_PER_BOMB = 0.08; // permanent public-demand loss per bomb
+var CITY_MARKET_SCAR_MAX = 0.75;
 
 // Pedestrians walking the skyline's ground floor -- purely visual
 // (their count and movement are not saved), except for the panic
@@ -379,6 +385,30 @@ var CITY_PED_PANIC_DURATION_SEC = 4; // how long an individual pedestrian keeps 
 var CITY_PANIC_PER_BOMB = 1; // panic meter jumps to this fraction of max on every bomb, regardless of size
 var CITY_PANIC_HALFLIFE_SEC = 5; // panic fades fast -- it's a street-level reaction, not a lasting market shift
 var CITY_PANIC_DEMAND_MAX = 0.5; // +50% public demand at maximum panic, decaying with it
+
+// ----------------------------------------------------------------
+// The foundry core: a nailbomb now has to be CRAFTED, not just bought.
+// It still needs unsold nails -- the same cost curve as before,
+// cityBombCost() in city.js -- plus one unstable isotope core, which
+// only comes from the swarm (see swarm.js). Only the nail cost scales.
+// ----------------------------------------------------------------
+var CORE_ISOTOPES_BASE = 1;
+
+// ----------------------------------------------------------------
+// The foundry swarm's majority/collapse rule (see swarm.js). Real
+// balance means half white, half black, both at the SAME speed --
+// true parity between how much iron makers consume and breakers
+// supply, the exact same metric yin/yang uses (YINYANG_BALANCE_TOLERANCE
+// in formulas.js). Clicking any dot flips its color and buys enough of
+// the opposite machine type to match the resulting ratio. Severe
+// sustained imbalance collapses the swarm and banks one isotope core.
+// ----------------------------------------------------------------
+var SWARM_MAJORITY_TOLERANCE = 0.05; // matches YINYANG_BALANCE_TOLERANCE's definition of real parity
+var SWARM_MAJORITY_SPEED_MULT = 1; // TESTING: temporarily disabled -- all dots move at the same base speed regardless of majority/minority. Restore to something like 2.4 once the rest of the loop is confirmed to feel right.
+var SWARM_COLLAPSE_IMBALANCE_THRESHOLD = 0.85; // |imbalance| has to cross this...
+var SWARM_COLLAPSE_SUSTAIN_SEC = 1.5; // ...and stay there this long (the grey-out) before it actually collapses
+var SWARM_COLLAPSE_POST_IMBALANCE_TARGET = 0.3; // the real ratio a collapse corrects back down to -- still skewed, just survivable
+var SWARM_COLLAPSE_FUEL_GAIN = 1; // isotope core banked per collapse
 
 function defaultState() {
   var tiles = generateMapTiles(1);
@@ -456,6 +486,9 @@ function defaultState() {
     cityBombs: 0,
     cityFever: 0, // decaying marketing boost from recent bombs -- see cityFeverMult()
     cityPanic: 0, // decaying street-panic boost from a recent bomb -- fast, short-lived, see cityFeverMult()
+    cityMarketScar: 0, // permanent demand loss from the lasting impact of bombings
+    cityKarmaLocked: false,
+    isotopeStock: 0, // banked isotope cores from swarm collapses -- one is spent per bomb
   };
 }
 

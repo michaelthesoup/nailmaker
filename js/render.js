@@ -116,7 +116,10 @@ function render() {
 
     el.valKarma.textContent = fmtInt(state.karma);
     var karmaAvailable = Math.floor(state.tao / KARMA_TAO_THRESHOLD);
-    if (karmaAvailable >= 1) {
+    if (state.cityKarmaLocked) {
+      el.btnReincarnate.disabled = true;
+      el.reincarnateHint.textContent = "karma is locked at -1; this life cannot be reincarnated";
+    } else if (karmaAvailable >= 1) {
       var projectedTotal = state.karma + karmaAvailable;
       el.btnReincarnate.disabled = false;
       el.reincarnateHint.textContent = "reincarnate for +" + karmaAvailable + " karma (" + projectedTotal + " total) \u2014 stronger starting bonuses become more likely as karma grows";

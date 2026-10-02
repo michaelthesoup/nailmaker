@@ -4,37 +4,22 @@
 // The skyline (foundation -- tunables live in state.js, the marketing
 // payoff lives in formulas.js as cityFeverMult()).
 //
-// The skyline is never stored in state -- it's rebuilt from state's
-// real nailMakers / breakers / factories on a slow timer (see
-// CITY_REBUILD_INTERVAL_SEC), not every animation frame. Rebuilding
-// every frame was tried first and made the whole skyline flicker,
-// because factories/makers/breakers change by small amounts constantly
-// (a factory finishing a cycle, a swarm click, etc.), and every change
-// was reshuffling the layout and resizing buildings on the spot. Slot
-// identity is now also kept STABLE across rebuilds: each type's
-// buildings keep the same seed/position as long as that type's slot
-// count doesn't change, so small count changes just resize a building
-// slightly rather than reshuffling the whole skyline.
-//
-// Each type gets a share of a fixed number of building slots
-// proportional to its share of the player's real totals, so a skyline
-// overrun with one dark color IS the player having too much of that
-// thing -- there's nothing else to read.
-//
-// Nailbombs target one building. Detonating destroys it and damages
-// its neighbors, falling off with distance, and that damage converts
-// straight into a permanent loss of real makers/breakers/factories.
-// In exchange the player gets a temporary marketing boost that decays
-// -- and that boost, and what it costs to trigger, both grow
-// EXPONENTIALLY with every bomb already detonated (see state.js).
+// The skyline is an endlessly generated street. Each district reflects
+// the current maker/breaker/factory mix; camera travel removes buildings
+// behind the player and generates more ahead. Bombs pause the camera,
+// damage real units, and leave a visible corridor of ruins to cross.
 // ----------------------------------------------------------------
 
 var cityCanvasEl = null;
 var cityCtx = null;
 var cityLayout = []; // last drawn slot layout: [{type, units, x, w}], used for click hit-testing
-var cityTarget = null; // index into cityLayout the player has selected, or null
+var cityTarget = null; // world-space building selected by the player
 var cityBlast = null; // { x, r, max } -- the expanding blast ring animation
 var cityShake = 0;
+var cityCameraX = 0;
+var cityNextDistrictX = 0;
+var cityBuildings = [];
+var cityAftermath = null; // { hitX, startX, endX, span, killRadius }
 
 // Cached between rebuilds so the skyline doesn't reshuffle or resize
 // every frame -- see the header comment above.
@@ -119,8 +104,77 @@ function cityLayoutFor(slots, width) {
   return out;
 }
 
+function cityGenerateDistrict(startX) {
+  var slots = cityCachedSlots.slice();
+  for (var i = 0; i < slots.length; i++) {
+    slots[i] = {
+      type: slots[i].type,
+      units: slots[i].units,
+      seed: Math.floor(Math.random() * 99999),
+      orderKey: Math.random()
+    };
+  }
+  slots.sort(function (a, b) { return a.orderKey - b.orderKey; });
+
+  var layout = cityLayoutFor(slots, CITY_DISTRICT_WIDTH);
+  for (var j = 0; j < layout.length; j++) {
+    cityBuildings.push({
+      type: layout[j].type,
+      units: layout[j].units,
+      seed: layout[j].seed,
+      worldX: startX + layout[j].x,
+      w: layout[j].w
+    });
+  }
+
+  citySpawnDistrictPedestrians(startX, CITY_DISTRICT_WIDTH);
+}
+
+function cityEnsureWorld(width, extraDistance) {
+  var lookAhead = width * 2 + (extraDistance || 0);
+  while (cityNextDistrictX <= cityCameraX + lookAhead) {
+    cityGenerateDistrict(cityNextDistrictX);
+    cityNextDistrictX += CITY_DISTRICT_WIDTH;
+  }
+
+  cityBuildings = cityBuildings.filter(function (building) {
+    return building.worldX + building.w >= cityCameraX - width;
+  });
+  cityPeds = cityPeds.filter(function (pedestrian) {
+    return pedestrian.worldX >= cityCameraX - width;
+  });
+}
+
+function cityVisibleLayout(width) {
+  var visible = [];
+  for (var i = 0; i < cityBuildings.length; i++) {
+    var building = cityBuildings[i];
+    var x = building.worldX - cityCameraX;
+    if (x > width || x + building.w < 0) continue;
+    var damage = 0;
+    if (cityAftermath) {
+      damage = Math.max(0, 1 - Math.abs(building.worldX - cityAftermath.hitX) / cityAftermath.span);
+    }
+    visible.push({
+      type: building.type,
+      units: building.units,
+      seed: building.seed,
+      x: x,
+      w: building.w,
+      worldX: building.worldX,
+      damage: damage,
+      building: building
+    });
+  }
+  return visible;
+}
+
 function cityBombCost() {
   return Math.round(CITY_BOMB_BASE_NAILS * Math.pow(CITY_BOMB_COST_GROWTH, state.cityBombs));
+}
+
+function cityIsotopesNeeded() {
+  return CORE_ISOTOPES_BASE;
 }
 
 function cityBombRadius() {
@@ -145,91 +199,131 @@ function cityFeverGainForNextBomb() {
 
 function cityPick(mx) {
   for (var i = 0; i < cityLayout.length; i++) {
-    if (mx >= cityLayout[i].x && mx <= cityLayout[i].x + cityLayout[i].w) return i;
+    var centerX = cityLayout[i].x + cityLayout[i].w / 2;
+    if (centerX >= 0 && centerX <= cityCanvasEl.width && mx >= cityLayout[i].x && mx <= cityLayout[i].x + cityLayout[i].w) {
+      return cityLayout[i].building;
+    }
   }
   return null;
 }
 
 // ----------------------------------------------------------------
-// Pedestrians. Purely a visual layer walking the ground strip below
-// the buildings -- their positions are never saved. Calm, they amble
-// left and right at random. A bomb sends every one of them sprinting
-// away from ground zero for a while; how fast/far they're running
-// isn't itself mechanical, but the citywide panic meter it represents
-// (state.cityPanic, decaying separately and much faster than fever)
-// is, and it feeds cityFeverMult() in formulas.js.
+// Pedestrians share world coordinates with the city so they can remain
+// still in the blast zone as the camera continues past them.
 // ----------------------------------------------------------------
 
 var cityPeds = [];
 
-function cityInitPedestrians(width) {
-  cityPeds = [];
+function citySpawnDistrictPedestrians(startX, width) {
   for (var i = 0; i < CITY_PED_COUNT; i++) {
-    cityPeds.push({
-      x: Math.random() * width,
+    var pedestrian = {
+      worldX: startX + Math.random() * width,
       dir: Math.random() < 0.5 ? -1 : 1,
-      panicT: 0
-    });
+      panicT: 0,
+      dead: false
+    };
+    cityApplyAftermathToPedestrian(pedestrian);
+    cityPeds.push(pedestrian);
   }
 }
 
-function cityPanicPedestrians(blastX) {
-  for (var i = 0; i < cityPeds.length; i++) {
-    var p = cityPeds[i];
-    p.panicT = CITY_PED_PANIC_DURATION_SEC;
-    p.dir = p.x < blastX ? -1 : 1; // flee away from the blast
-    if (p.x === blastX) p.dir = Math.random() < 0.5 ? -1 : 1;
+function cityApplyAftermathToPedestrian(pedestrian) {
+  if (!cityAftermath) return;
+  var distance = Math.abs(pedestrian.worldX - cityAftermath.hitX);
+  if (distance > cityAftermath.span) return;
+  if (distance <= cityAftermath.killRadius) {
+    pedestrian.dead = true;
+    pedestrian.panicT = 0;
+  } else {
+    pedestrian.dir = pedestrian.worldX < cityAftermath.hitX ? -1 : 1;
+    pedestrian.panicT = CITY_PED_PANIC_DURATION_SEC;
   }
 }
 
-function cityUpdatePedestrians(dt, width, groundY) {
+function cityPanicPedestrians() {
+  for (var i = 0; i < cityPeds.length; i++) {
+    cityApplyAftermathToPedestrian(cityPeds[i]);
+  }
+}
+
+function cityUpdatePedestrians(dt) {
   for (var i = 0; i < cityPeds.length; i++) {
     var p = cityPeds[i];
+    if (p.dead) continue;
+
+    var insideAftermath = cityAftermath && p.worldX >= cityAftermath.startX && p.worldX <= cityAftermath.endX;
+    if (insideAftermath) cityApplyAftermathToPedestrian(p);
     var panicking = p.panicT > 0;
-    if (panicking) p.panicT = Math.max(0, p.panicT - dt);
+    if (panicking && !insideAftermath) p.panicT = Math.max(0, p.panicT - dt);
 
     var speed = CITY_PED_WALK_SPEED * (panicking ? CITY_PED_PANIC_SPEED_MULT : 1);
-    p.x += p.dir * speed * dt * 60; // dt*60 keeps speed comparable to the old fixed-per-frame numbers regardless of actual framerate
+    p.worldX += p.dir * speed * dt * 60;
 
     if (!panicking && Math.random() < 0.004) p.dir *= -1; // calm wandering: occasionally change direction
-    if (p.x < 4) { p.x = 4; p.dir = 1; }
-    if (p.x > width - 4) { p.x = width - 4; p.dir = -1; }
   }
 }
 
 function cityDrawPedestrians(groundY, ink) {
   for (var i = 0; i < cityPeds.length; i++) {
     var p = cityPeds[i];
+    var x = p.worldX - cityCameraX;
+    if (x < -4 || x > cityCanvasEl.width + 4) continue;
     var panicking = p.panicT > 0;
     cityCtx.fillStyle = ink;
-    cityCtx.globalAlpha = panicking ? 1 : 0.6;
+    cityCtx.globalAlpha = panicking || p.dead ? 1 : 0.6;
     cityCtx.beginPath();
-    cityCtx.arc(p.x, groundY + 8, panicking ? 2 : 1.6, 0, Math.PI * 2);
+    cityCtx.arc(x, groundY + 8, panicking || p.dead ? 2 : 1.6, 0, Math.PI * 2);
     cityCtx.fill();
     cityCtx.globalAlpha = 1;
   }
 }
 
-// Converts blast damage straight into a permanent loss of whatever the
-// affected buildings actually represent -- there's no intermediate
-// "building hp" state, the skyline just reflows next rebuild.
-function cityDetonateAt(targetIndex) {
-  if (targetIndex == null || targetIndex >= cityLayout.length) return;
-  var cost = cityBombCost();
-  if (state.unsold < cost) return;
+// Arming checks and pays BOTH costs up front (nails and one isotope core), then
+// starts the drop sequence. The actual destruction doesn't happen until
+// the dropped bomb visually lands -- see cityApplyImpact() -- so the
+// damage, fever/panic gain, and page shake all land together with the
+// animation instead of popping in the instant the button is clicked.
+function cityArmAndDrop(targetBuilding) {
+  if (!targetBuilding || cityBuildings.indexOf(targetBuilding) < 0) return;
+  var targetCenterX = targetBuilding.worldX + targetBuilding.w / 2;
+  if (targetCenterX < cityCameraX || targetCenterX > cityCameraX + cityCanvasEl.width) return;
+  if (cityDropActive) return; // one bomb in flight at a time
 
-  state.unsold -= cost;
+  var nailsCost = cityBombCost();
+  var isoCost = cityIsotopesNeeded();
+  if (state.unsold < nailsCost || state.isotopeStock < isoCost) return;
+
+  cityEnsureWorld(cityCanvasEl.width, cityBombRadius() * CITY_BUILDING_SPACING);
+
+  state.unsold -= nailsCost;
+  state.isotopeStock -= isoCost;
+  cityTarget = null;
+  render();
+
+  cityStartDrop(targetBuilding);
+}
+
+function cityApplyImpact(targetBuilding) {
+  if (!targetBuilding) return;
+
   var radius = cityBombRadius();
+  var radiusWorld = radius * CITY_BUILDING_SPACING;
   var power = cityBombPower();
   var lost = { maker: 0, breaker: 0, factory: 0 };
 
-  for (var i = 0; i < cityLayout.length; i++) {
-    var dist = Math.abs(i - targetIndex);
+  for (var i = 0; i < cityBuildings.length; i++) {
+    var building = cityBuildings[i];
+    var dist = Math.abs(building.worldX - targetBuilding.worldX) / CITY_BUILDING_SPACING;
     if (dist > radius) continue;
     var falloff = 1 - (dist / (radius + 0.001));
-    var slot = cityLayout[i];
-    lost[slot.type] += Math.round(slot.units * power * falloff);
+    lost[building.type] += Math.round(building.units * power * falloff);
   }
+
+  var economyShock = Math.min(CITY_BOMB_ECONOMY_SHOCK_CAP, power * CITY_BOMB_ECONOMY_SHOCK_FACTOR);
+  var workforce = { maker: state.nailMakers, breaker: state.breakers, factory: state.factories };
+  if (workforce.maker > 0) lost.maker = Math.max(lost.maker, Math.max(1, Math.round(workforce.maker * economyShock)));
+  if (workforce.breaker > 0) lost.breaker = Math.max(lost.breaker, Math.max(1, Math.round(workforce.breaker * economyShock)));
+  if (workforce.factory > 0) lost.factory = Math.max(lost.factory, Math.max(1, Math.round(workforce.factory * economyShock)));
 
   state.nailMakers = Math.max(0, state.nailMakers - lost.maker);
   state.breakers = Math.max(0, state.breakers - lost.breaker);
@@ -241,20 +335,124 @@ function cityDetonateAt(targetIndex) {
   var gain = cityFeverGainForNextBomb();
   state.cityBombs += 1;
   state.cityFever = Math.min(cityFeverMax(), state.cityFever + gain);
+  state.cityMarketScar = Math.min(CITY_MARKET_SCAR_MAX, state.cityMarketScar + CITY_MARKET_SCAR_PER_BOMB);
+  state.karma = -1;
+  state.cityKarmaLocked = true;
   state.cityPanic = CITY_PANIC_PER_BOMB; // a bomb always maxes out the panic meter -- how long that panic actually lasts on-screen is per-pedestrian, below
 
-  cityShake = 10;
-  var hitX = cityLayout[targetIndex].x + cityLayout[targetIndex].w / 2;
-  cityBlast = { x: hitX, r: 0, max: 60 + radius * 22 };
-  cityTarget = null;
-  cityRebuildAccum = CITY_REBUILD_INTERVAL_SEC; // force an immediate rebuild so the destroyed building disappears right away
-  cityPanicPedestrians(hitX);
+  var aftermathSpan = CITY_AFTERMATH_BASE_DISTANCE
+    + radius * CITY_AFTERMATH_RADIUS_DISTANCE
+    + power * CITY_AFTERMATH_POWER_DISTANCE;
+  cityAftermath = {
+    hitX: targetBuilding.worldX,
+    startX: targetBuilding.worldX - aftermathSpan,
+    endX: targetBuilding.worldX + aftermathSpan,
+    span: aftermathSpan,
+    killRadius: aftermathSpan * 0.12
+  };
+  cityPanicPedestrians();
 
+  cityShake = 10;
+  var hitX = targetBuilding.worldX + targetBuilding.w / 2 - cityCameraX;
+  cityBlast = { x: hitX, r: 0, max: 60 + radius * 22 };
+  cityRebuildAccum = CITY_REBUILD_INTERVAL_SEC; // force an immediate rebuild so the destroyed building disappears right away
+
+  cityShakePage();
   render();
 }
 
+// ----------------------------------------------------------------
+// The detonation sequence. A bomb visibly falls in from above the
+// entire page, lands on its target, and the WHOLE page -- not just the
+// skyline panel -- shakes violently. cityApplyImpact() (above) does the
+// actual damage/fever/panic the instant the bomb lands.
+// ----------------------------------------------------------------
+
+var cityDropActive = false;
+var cityDropTarget = null;
+var cityDropY = -120;
+var cityDropLastMs = null;
+var cityDropLandY = 0;
+
+var cityPageShakeFrames = 0;
+var cityPageShakeMagnitude = 0;
+var cityPageShakeRunning = false;
+
+function cityStartDrop(targetBuilding) {
+  if (!el.bombDropOverlay || !cityCanvasEl) {
+    // No overlay available (shouldn't happen in the real page) --
+    // fall back to an instant impact so a bomb never silently fails.
+    cityApplyImpact(targetBuilding);
+    return;
+  }
+
+  var rect = cityCanvasEl.getBoundingClientRect();
+  var scaleX = rect.width / cityCanvasEl.width;
+  var targetX = rect.left + (targetBuilding.worldX + targetBuilding.w / 2 - cityCameraX) * scaleX;
+  cityDropLandY = rect.top + rect.height * 0.55;
+
+  cityDropActive = true;
+  cityDropTarget = targetBuilding;
+  cityDropY = -120;
+  cityDropLastMs = null;
+
+  el.bombDropOverlay.style.left = targetX + "px";
+  el.bombDropOverlay.style.top = cityDropY + "px";
+  el.bombDropOverlay.style.display = "block";
+
+  requestAnimationFrame(cityDropStep);
+}
+
+function cityDropStep(nowMs) {
+  if (!cityDropActive) return;
+  var dt = cityDropLastMs != null ? Math.min(0.05, (nowMs - cityDropLastMs) / 1000) : 1 / 60;
+  cityDropLastMs = nowMs;
+
+  // Accelerates like a falling object, for a bit of weight to the drop.
+  var fallSpeed = 900 + (cityDropY + 120) * 4;
+  cityDropY += fallSpeed * dt;
+  el.bombDropOverlay.style.top = cityDropY + "px";
+
+  if (cityDropY >= cityDropLandY) {
+    cityDropActive = false;
+    el.bombDropOverlay.style.display = "none";
+    cityShakePage();
+    cityApplyImpact(cityDropTarget);
+    cityDropTarget = null;
+    return;
+  }
+
+  requestAnimationFrame(cityDropStep);
+}
+
+function cityShakePage() {
+  cityPageShakeFrames = 28;
+  cityPageShakeMagnitude = 14;
+  if (!cityPageShakeRunning) {
+    cityPageShakeRunning = true;
+    requestAnimationFrame(cityPageShakeStep);
+  }
+}
+
+function cityPageShakeStep() {
+  if (!el.pageShakeWrap) { cityPageShakeRunning = false; return; }
+
+  if (cityPageShakeFrames > 0) {
+    cityPageShakeFrames--;
+    var mag = cityPageShakeMagnitude * (cityPageShakeFrames / 28);
+    var dx = (Math.random() - 0.5) * 2 * mag;
+    var dy = (Math.random() - 0.5) * 2 * mag;
+    var rot = (Math.random() - 0.5) * 0.6 * (mag / 14);
+    el.pageShakeWrap.style.transform = "translate(" + dx.toFixed(1) + "px," + dy.toFixed(1) + "px) rotate(" + rot.toFixed(2) + "deg)";
+    requestAnimationFrame(cityPageShakeStep);
+  } else {
+    el.pageShakeWrap.style.transform = "translate(0,0) rotate(0deg)";
+    cityPageShakeRunning = false;
+  }
+}
+
 function cityTick(dt) {
-  if (!state.unlockedCity && state.marketingLevel >= CITY_UNLOCK_MARKETING_LEVEL) state.unlockedCity = true;
+  if (!state.unlockedCity && state.totalNailsMade >= CITY_UNLOCK_TOTAL_NAILS) state.unlockedCity = true;
 
   var feverDecay = Math.pow(0.5, dt / CITY_FEVER_HALFLIFE_SEC);
   state.cityFever *= feverDecay;
@@ -283,20 +481,29 @@ function cityCssColor(name, fallback) {
 function cityDrawBuilding(slot, groundY, paper, ink) {
   var baseH = slot.type === "factory" ? 46 : 38;
   var growth = Math.log(1 + slot.units) * 10;
-  var h = baseH + growth;
+  var damage = slot.damage || 0;
+  var h = Math.max(2, (baseH + growth) * (1 - damage * 0.9));
   var top = groundY - h;
 
   if (slot.type === "factory") {
-    cityCtx.fillStyle = "#9a9a9a";
+    cityCtx.fillStyle = damage > 0.5 ? "#686868" : "#9a9a9a";
     cityCtx.strokeStyle = ink;
     cityCtx.lineWidth = 1;
     cityCtx.fillRect(slot.x, top, slot.w, h);
     cityCtx.strokeRect(slot.x + 0.5, top + 0.5, slot.w - 1, h - 1);
+    if (damage > 0.35) {
+      cityCtx.beginPath();
+      cityCtx.moveTo(slot.x + slot.w * 0.15, groundY - 2);
+      cityCtx.lineTo(slot.x + slot.w * 0.5, groundY - Math.max(2, h * 0.3));
+      cityCtx.lineTo(slot.x + slot.w * 0.85, groundY - 2);
+      cityCtx.stroke();
+    }
     return;
   }
 
   var body = slot.type === "maker" ? paper : ink;
   var win = slot.type === "maker" ? ink : paper;
+  cityCtx.globalAlpha = 1 - damage * 0.55;
   cityCtx.fillStyle = body;
   cityCtx.strokeStyle = ink;
   cityCtx.lineWidth = 1;
@@ -308,12 +515,21 @@ function cityDrawBuilding(slot, groundY, paper, ink) {
   for (var r = 0; r < rows; r++) {
     for (var c = 0; c < cols; c++) {
       var v = Math.abs(Math.sin((slot.seed + r * cols + c) * 12.9898)) % 1;
-      cityCtx.globalAlpha = v < 0.85 ? 1 : 0.15; // a few dark windows even on an intact building, for texture
+      cityCtx.globalAlpha = v < 0.85 - damage * 0.7 ? 1 : 0.12;
       cityCtx.fillStyle = win;
       cityCtx.fillRect(slot.x + 3 + c * 6, top + 4 + r * 9, 3, 5);
     }
   }
   cityCtx.globalAlpha = 1;
+
+  if (damage > 0.35) {
+    cityCtx.strokeStyle = ink;
+    cityCtx.beginPath();
+    cityCtx.moveTo(slot.x + slot.w * 0.2, groundY - 2);
+    cityCtx.lineTo(slot.x + slot.w * 0.5, groundY - Math.max(2, h * 0.3));
+    cityCtx.lineTo(slot.x + slot.w * 0.8, groundY - 2);
+    cityCtx.stroke();
+  }
 }
 
 function cityDraw(dt) {
@@ -322,13 +538,11 @@ function cityDraw(dt) {
   var W = canvas.width, H = canvas.height;
   var groundY = H - 24;
 
-  if (cityPeds.length !== CITY_PED_COUNT) cityInitPedestrians(W);
-  cityUpdatePedestrians(dt, W, groundY);
-
-  // Uses the cached slots (see cityMaybeRebuild) -- NOT a fresh
-  // cityBuildSlots() call -- so drawing every frame doesn't itself
-  // cause the reshuffling that was the original flicker bug.
-  cityLayout = cityLayoutFor(cityCachedSlots, W);
+  if (!cityDropActive) cityCameraX += CITY_PAN_SPEED * dt;
+  cityEnsureWorld(W, cityAftermath ? cityAftermath.span : 0);
+  cityUpdatePedestrians(dt);
+  cityLayout = cityVisibleLayout(W);
+  if (cityAftermath && cityCameraX > cityAftermath.endX) cityAftermath = null;
 
   var ink = cityCssColor("--ink", "#000");
   var paper = cityCssColor("--paper", "#fff");
@@ -351,12 +565,18 @@ function cityDraw(dt) {
   for (var i = 0; i < cityLayout.length; i++) cityDrawBuilding(cityLayout[i], groundY, paper, ink);
   cityDrawPedestrians(groundY, ink);
 
-  if (cityTarget != null && cityLayout[cityTarget]) {
-    var t = cityLayout[cityTarget];
-    cityCtx.strokeStyle = ink;
-    cityCtx.setLineDash([3, 3]);
-    cityCtx.strokeRect(t.x - 2, 4, t.w + 4, groundY - 2);
-    cityCtx.setLineDash([]);
+  if (cityTarget) {
+    var targetX = cityTarget.worldX - cityCameraX;
+    if (targetX + cityTarget.w < 0 || targetX > W) {
+      cityTarget = null;
+      renderCity();
+    } else {
+      var t = { x: targetX, w: cityTarget.w };
+      cityCtx.strokeStyle = ink;
+      cityCtx.setLineDash([3, 3]);
+      cityCtx.strokeRect(t.x - 2, 4, t.w + 4, groundY - 2);
+      cityCtx.setLineDash([]);
+    }
   }
 
   if (cityBlast) {
@@ -374,10 +594,14 @@ function cityDraw(dt) {
 }
 
 function cityBuffText() {
-  if (state.cityFever <= 0.005 && state.cityPanic <= 0.005) return "the skyline is quiet";
+  if (state.cityFever <= 0.005 && state.cityPanic <= 0.005 && state.cityMarketScar <= 0) return "the skyline is quiet";
   var parts = [];
   if (state.cityPanic > 0.005) parts.push("the street is panicking");
-  parts.push("public demand +" + Math.round((cityFeverMult() - 1) * 100) + "%");
+  if (state.cityFever > 0.005 || state.cityPanic > 0.005) {
+    var temporaryDemand = (1 + CITY_FEVER_DEMAND_PER_POINT * state.cityFever) * (1 + CITY_PANIC_DEMAND_MAX * state.cityPanic);
+    parts.push("public demand +" + Math.round((temporaryDemand - 1) * 100) + "% temporarily");
+  }
+  if (state.cityMarketScar > 0) parts.push("market scar -" + Math.round(state.cityMarketScar * 100) + "% permanently");
   return parts.join(" \u2014 ");
 }
 
@@ -387,13 +611,31 @@ function renderCity() {
   if (!state.unlockedCity) return;
 
   el.cityBuffs.textContent = cityBuffText();
-  el.cityBombCount.textContent = state.cityBombs;
+  el.cityBombCount.textContent = state.cityBombs + " made";
+  el.cityBombNumber.textContent = state.cityBombs + 1;
 
-  var cost = cityBombCost();
-  el.btnCityBomb.textContent = cityTarget == null
-    ? "click a building to target it"
-    : "detonate here (" + fmtInt(cost) + " unsold nails)";
-  el.btnCityBomb.disabled = cityTarget == null || state.unsold < cost;
+  var nailsCost = cityBombCost();
+  var isoCost = cityIsotopesNeeded();
+
+  el.coreNailsLabel.textContent = fmtInt(Math.min(state.unsold, nailsCost)) + " / " + fmtInt(nailsCost);
+  el.coreNailsFill.style.width = Math.min(100, 100 * state.unsold / nailsCost) + "%";
+  el.coreIsotopesLabel.textContent = Math.min(state.isotopeStock, isoCost) + " / " + isoCost;
+  el.coreIsotopesFill.style.width = Math.min(100, 100 * state.isotopeStock / isoCost) + "%";
+
+  var haveEnough = state.unsold >= nailsCost && state.isotopeStock >= isoCost;
+  if (cityDropActive) {
+    el.btnCityBomb.textContent = "falling...";
+    el.btnCityBomb.disabled = true;
+  } else if (cityTarget == null) {
+    el.btnCityBomb.textContent = "click a building to target it";
+    el.btnCityBomb.disabled = true;
+  } else if (!haveEnough) {
+    el.btnCityBomb.textContent = "not enough nails / 1 isotope core";
+    el.btnCityBomb.disabled = true;
+  } else {
+    el.btnCityBomb.textContent = "use 1 isotope core and detonate here";
+    el.btnCityBomb.disabled = false;
+  }
 }
 
 function cityInit() {
@@ -402,6 +644,7 @@ function cityInit() {
   cityCtx = cityCanvasEl.getContext("2d");
 
   cityCanvasEl.addEventListener("click", function (e) {
+    if (cityDropActive) return;
     var rect = cityCanvasEl.getBoundingClientRect();
     var scaleX = cityCanvasEl.width / rect.width;
     var mx = (e.clientX - rect.left) * scaleX;
@@ -411,17 +654,14 @@ function cityInit() {
 
   el.btnCityBomb.addEventListener("click", function () {
     if (cityTarget == null) return;
-    cityDetonateAt(cityTarget);
+    cityArmAndDrop(cityTarget);
   });
 
   requestAnimationFrame(cityLoop);
 }
 
-// Drawing runs every animation frame for smooth blast/shake/pedestrian
-// animation, but the underlying slot layout only rebuilds on its own
-// slow timer via cityTick() in engine.js (see cityMaybeRebuild) --
-// drawing itself never triggers a rebuild, which is what fixes the
-// flicker.
+// Drawing runs each frame while cityTick() refreshes the district mix at
+// a slower cadence. The camera keeps generating fresh city ahead of it.
 var cityLastFrameMs = null;
 function cityLoop(nowMs) {
   if (state.unlockedCity) {

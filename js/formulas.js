@@ -295,21 +295,11 @@ function settleYinYang() {
   }
 }
 
-// ----------------------------------------------------------------
-// The skyline's only mechanical effect: a temporary public-demand
-// boost from recent nailbombs (see the CITY_FEVER_* tunables in
-// state.js). It only ever touches this one lever -- destroying your
-// own machinery is the cost, this bonus is the payoff.
-// ----------------------------------------------------------------
-
-// The skyline's only mechanical effect: a slower marketing-scale boost
-// from recent bombs (fever) and a fast, sharp street-panic spike right
-// after one goes off (panic) -- both fold into this one public-demand
-// multiplier, never into anything else, so there's still only one
-// lever here, not two competing bonus systems.
+// Temporary fever/panic boosts are offset by the permanent market scar.
 function cityFeverMult() {
   var feverMult = 1 + CITY_FEVER_DEMAND_PER_POINT * state.cityFever;
   var panicMult = 1 + CITY_PANIC_DEMAND_MAX * state.cityPanic;
-  return feverMult * panicMult;
+  var marketScarMult = Math.max(1 - CITY_MARKET_SCAR_MAX, 1 - state.cityMarketScar);
+  return marketScarMult * feverMult * panicMult;
 }
 

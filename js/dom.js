@@ -111,6 +111,13 @@ var el = {
   cityBuffs: document.getElementById("cityBuffs"),
   cityBombCount: document.getElementById("valCityBombCount"),
   btnCityBomb: document.getElementById("btnCityBomb"),
+  cityBombNumber: document.getElementById("valCityBombNumber"),
+  coreNailsLabel: document.getElementById("valCoreNails"),
+  coreNailsFill: document.getElementById("coreNailsFill"),
+  coreIsotopesLabel: document.getElementById("valCoreIsotopes"),
+  coreIsotopesFill: document.getElementById("coreIsotopesFill"),
+  bombDropOverlay: document.getElementById("bombDropOverlay"),
+  pageShakeWrap: document.getElementById("pageShakeWrap"),
 };
 
 // ----------------------------------------------------------------

@@ -3,59 +3,49 @@
 // ----------------------------------------------------------------
 // The Foundry Swarm. A small always-visible panel next to yin & yang.
 //
-// The dots are a LIVE readout of the real economy: 10 white / 10 black
-// (scaled with SWARM_DISPLAY_DOTS) means your nail-maker count and
-// breaker count are EXACTLY at the ratio where iron production and
-// consumption match. All black means you have far more breaker
-// capacity than your makers can use; all white means the reverse.
-// This updates every frame from the real numbers -- it is not
-// something the player sets by clicking, it's something clicking
-// CHANGES by altering the real economy underneath.
+// The dots are a LIVE readout of the real economy: half white and half
+// black means iron production and consumption match, using the same
+// rate-based parity metric as yin/yang. More white means makers consume
+// more iron than breakers supply; more black means the reverse.
 //
-// Clicking a dot grants a chunk of the type needed to close the actual
-// gap between your current counts and the exact balance point -- e.g.
-// if reaching balance would take 4,000 more nail makers, a click
-// grants a real fraction of that 4,000, not a token +1 or a flat
-// percentage disconnected from how far off you actually are.
+// BALANCE, properly defined: half white, half black, both moving at
+// the SAME speed. There is no "fast at balance" trick here -- at real
+// parity, every dot drifts at the same calm baseline.
 //
-// Cost is paid in COPPER, not funds -- the same copper a factory would
-// spend to build that unit type (FACTORY_COST_MAKER_SIDE_COPPER /
-// FACTORY_COST_BREAKER_SIDE_COPPER from formulas.js/state.js), times
-// batch size. No discount, no markup.
+// Clicking any dot flips its color and buys enough of the opposite
+// machine type to make the real rate split match the resulting colors.
 //
-// Drift SPEED is inverted from what you might expect: perfect real
-// balance is the FASTEST the dots move (hardest to click precisely --
-// holding the ideal is a constant, active effort), while a badly
-// skewed economy slows them down (easy to see and easy to act on).
+// Push the real imbalance far enough (SWARM_COLLAPSE_IMBALANCE_THRESHOLD)
+// and HOLD it there for a sustained moment, and the whole swarm greys
+// out and collapses into an unstable core: it destroys enough of the
+// overrepresented type to meaningfully correct the real ratio, and
+// banks one isotope core (state.isotopeStock), which together with
+// unsold nails is what the foundry core (see city.js) needs to arm a
+// nailbomb. Copper pays for each balancing conversion.
 //
-// On top of drift, dots also FLEE the cursor when you get close -- and
-// how hard they flee is the OPPOSITE shape from drift speed: at real
-// balance they barely react (they're already fast, so precision alone
-// is the challenge), while at real imbalance they panic and dodge hard
-// (they're slow and easy to reach, so persistence/cornering becomes
-// the challenge instead). The two hard states never stack on the same
-// dot -- each tests a different skill. A brief stun window after a
+// Dots also FLEE the cursor when you get close, independent of all the
+// above -- stronger the more imbalanced the real economy currently is,
+// barely reacting at true parity. A brief stun window after a
 // successful hit stops the next dot from becoming instantly harder to
 // land right after you land one.
 // ----------------------------------------------------------------
 
 var SWARM_DISPLAY_DOTS = 30;
 var SWARM_DOT_RADIUS = 3;
-var SWARM_BASE_SPEED = 0.35; // px/frame at the FASTEST point (perfect real balance)
-var SWARM_MIN_SPEED_MULT = 0.15; // speed multiplier at maximum real imbalance (slow)
-var SWARM_MAX_SPEED_MULT = 1.0; // speed multiplier at perfect real balance (fast)
-var SWARM_GRANT_PROGRESS_FRACTION = 0.25; // each click closes this fraction of the REAL remaining gap
-var SWARM_FALLBACK_FARM_RATE = 0.1; // used only when clicking the "wrong" direction (no real gap that way)
+var SWARM_BASE_SPEED = 0.25; // px/frame -- the uniform speed BOTH colors move at when genuinely balanced, and the baseline for the minority color otherwise. Kept deliberately gentle: balance is meant to be the EASY state now, not a challenge.
 var SWARM_CLICK_COOLDOWN_MS = 250;
 
-// Flee behavior -- inverted from drift speed on purpose (see header).
+// Flee behavior -- strongest at real imbalance, weakest at real parity.
 var SWARM_FLEE_RADIUS = 55; // px -- dots within this distance of the cursor start dodging
-var SWARM_FLEE_MIN_MULT = 0.05; // flee strength at perfect real balance (barely reacts)
-var SWARM_FLEE_MAX_MULT = 1.0; // flee strength at maximum real imbalance (panics)
-var SWARM_FLEE_FORCE = 0.9; // px/frame of push added at the center of the flee radius
+// TESTING: still eased down from the original 0.05 / 1.0 / 0.9 while
+// the rest of the loop is being worked out, but nudged back up a bit
+// from the near-zero first pass.
+var SWARM_FLEE_MIN_MULT = 0.05;
+var SWARM_FLEE_MAX_MULT = 0.4;
+var SWARM_FLEE_FORCE = 0.35;
 var SWARM_STUN_MS = 350; // after a hit, a dot ignores flee for this long so chaining feels fair
 
-var swarmDots = []; // { x, y, vx, vy, side: 'maker' | 'breaker', stunUntil } -- side is resynced live every frame
+var swarmDots = []; // { x, y, vx, vy, side: 'maker' | 'breaker', speedy, stunUntil }
 var swarmCanvasEl = null;
 var swarmCtx = null;
 var swarmWidth = 288;
@@ -63,6 +53,12 @@ var swarmHeight = 224;
 var swarmLastClickAt = 0;
 var swarmMouseX = null;
 var swarmMouseY = null; // null while the cursor isn't over the canvas -- no flee to compute
+var swarmLastFrameMs = null;
+
+// Collapse state -- how long the real imbalance has been sitting past
+// the collapse threshold. Not saved; resets harmlessly on reload.
+var swarmCollapseSustain = 0;
+var swarmGreying = false;
 
 function swarmRandomVelocity(speed) {
   var angle = Math.random() * Math.PI * 2;
@@ -77,14 +73,24 @@ function swarmSpawnDot(side) {
     vx: v.vx,
     vy: v.vy,
     side: side,
+    speedy: false,
     stunUntil: 0
   };
 }
 
+function swarmWithinTolerance() {
+  return Math.abs(ironStructuralImbalance()) <= SWARM_MAJORITY_TOLERANCE;
+}
+
+function swarmMajoritySide() {
+  return ironDemandRate() >= ironSupplyRate() ? "maker" : "breaker";
+}
+
 // Keeps the fixed dot pool's color split matching the LIVE real
-// balance (demand share vs supply share). Re-labels existing dots
-// toward the target split rather than respawning, so drift stays
-// smooth frame to frame -- only colors change, positions don't reset.
+// balance (demand share vs supply share), and marks which dots are
+// currently the fast "majority" group. Re-labels existing dots toward
+// the target split rather than respawning, so drift stays smooth frame
+// to frame -- only colors/speed change, positions don't reset.
 function swarmSyncDots() {
   while (swarmDots.length < SWARM_DISPLAY_DOTS) {
     swarmDots.push(swarmSpawnDot(Math.random() < 0.5 ? "maker" : "breaker"));
@@ -113,21 +119,19 @@ function swarmSyncDots() {
       if (swarmDots[i].side === "maker") { swarmDots[i].side = "breaker"; toFlipToBreaker--; }
     }
   }
+
+  var balanced = swarmWithinTolerance();
+  var majority = swarmMajoritySide();
+  for (i = 0; i < swarmDots.length; i++) {
+    swarmDots[i].speedy = !balanced && swarmDots[i].side === majority;
+  }
 }
 
-// Inverted on purpose: real balance is FAST (hard to hold), real
-// imbalance is SLOW (easy to fix once it's drifted).
 function swarmImbalanceMagnitude() {
   return Math.abs(ironStructuralImbalance()); // 0 (balanced) .. 1 (fully leaning)
 }
 
-function swarmSpeedMultiplier() {
-  var imbalance = swarmImbalanceMagnitude();
-  return SWARM_MIN_SPEED_MULT + (SWARM_MAX_SPEED_MULT - SWARM_MIN_SPEED_MULT) * (1 - imbalance);
-}
-
-// Also inverted from speed, but in the OTHER direction: strongest flee
-// at maximum imbalance, weakest at perfect balance. See header comment.
+// Strongest flee at maximum real imbalance, weakest at perfect balance.
 function swarmFleeMultiplier() {
   var imbalance = swarmImbalanceMagnitude();
   return SWARM_FLEE_MIN_MULT + (SWARM_FLEE_MAX_MULT - SWARM_FLEE_MIN_MULT) * imbalance;
@@ -137,15 +141,70 @@ function swarmColorFor(side) {
   return side === "maker" ? "#fff" : "#000";
 }
 
-function swarmStep() {
+// ----------------------------------------------------------------
+// Collapse: sustained severe imbalance destroys enough of the
+// overrepresented type to bring actual iron rates back toward the
+// survivable target.
+// ----------------------------------------------------------------
+
+function swarmUpdateCollapse(dt) {
+  var imbalance = swarmImbalanceMagnitude();
+  if (imbalance >= SWARM_COLLAPSE_IMBALANCE_THRESHOLD) {
+    swarmCollapseSustain += dt;
+    swarmGreying = true;
+    if (swarmCollapseSustain >= SWARM_COLLAPSE_SUSTAIN_SEC) {
+      swarmCollapse();
+    }
+  } else {
+    swarmCollapseSustain = 0;
+    swarmGreying = false;
+  }
+}
+
+function swarmCollapse() {
+  swarmCollapseSustain = 0;
+  swarmGreying = false;
+
+  var majority = swarmMajoritySide();
+  var majorityCount = majority === "maker" ? state.nailMakers : state.breakers;
+  // Solve in iron rates: a maker and a breaker do not necessarily
+  // contribute the same amount of capacity.
+  var t = SWARM_COLLAPSE_POST_IMBALANCE_TARGET;
+  var minorityRate = majority === "maker" ? ironSupplyRate() : ironDemandRate();
+  var targetMajorityRate = minorityRate * (1 + t) / Math.max(0.0001, 1 - t);
+  var perUnitRate = majority === "maker"
+    ? nailMakerRateEffective() * IRON_PER_NAIL
+    : breakerIntakeEffective() * activeIronTileCount();
+  var targetMajority = perUnitRate > 0 ? targetMajorityRate / perUnitRate : majorityCount;
+  var destroyed = Math.max(0, Math.round(majorityCount - targetMajority));
+
+  if (majority === "maker") {
+    state.nailMakers = Math.max(0, state.nailMakers - destroyed);
+    while (state.factoryTimers && state.factoryTimers.length > state.factories) state.factoryTimers.pop();
+  } else {
+    state.breakers = Math.max(0, state.breakers - destroyed);
+  }
+
+  state.isotopeStock += SWARM_COLLAPSE_FUEL_GAIN;
+
+  swarmFlashHint("unstable core formed -- destroyed " + fmtInt(destroyed) + " " + majority + "s, +" + SWARM_COLLAPSE_FUEL_GAIN + " isotope core", 2000);
+  render();
+}
+
+function swarmStep(nowMs) {
   if (!swarmCtx) return;
   if (!state.unlockedYinYang) {
+    swarmLastFrameMs = null;
     requestAnimationFrame(swarmStep);
     return;
   }
 
+  var dt = swarmLastFrameMs != null ? Math.min(0.1, (nowMs - swarmLastFrameMs) / 1000) : 1 / 60;
+  swarmLastFrameMs = nowMs;
+
   swarmSyncDots();
-  var speedMult = swarmSpeedMultiplier();
+  swarmUpdateCollapse(dt);
+
   var fleeMult = swarmFleeMultiplier();
   var now = Date.now();
 
@@ -153,13 +212,23 @@ function swarmStep() {
     el.swarmIronRates.textContent = "iron: " + fmtWeight(ironSupplyRate()) + "/s made \u00b7 " + fmtWeight(ironDemandRate()) + "/s used";
   }
   if (el.swarmUnitCounts) {
-    el.swarmUnitCounts.textContent = fmtInt(state.nailMakers) + " makers \u00b7 " + fmtInt(state.breakers) + " breakers";
+    var statusNote = "";
+    if (swarmGreying) statusNote = " \u00b7 UNSTABLE -- collapsing soon";
+    el.swarmUnitCounts.textContent = fmtInt(state.nailMakers) + " makers \u00b7 " + fmtInt(state.breakers) + " breakers" + statusNote;
   }
 
   swarmCtx.clearRect(0, 0, swarmWidth, swarmHeight);
   swarmCtx.strokeStyle = "#000";
   swarmCtx.lineWidth = 1;
   swarmCtx.strokeRect(0.5, 0.5, swarmWidth - 1, swarmHeight - 1);
+
+  if (swarmGreying) {
+    var flash = 0.08 + 0.08 * Math.abs(Math.sin(nowMs / 120));
+    swarmCtx.fillStyle = "#000";
+    swarmCtx.globalAlpha = flash;
+    swarmCtx.fillRect(0, 0, swarmWidth, swarmHeight);
+    swarmCtx.globalAlpha = 1;
+  }
 
   for (var i = 0; i < swarmDots.length; i++) {
     var d = swarmDots[i];
@@ -175,19 +244,12 @@ function swarmStep() {
         var pushStrength = (1 - dist / SWARM_FLEE_RADIUS) * SWARM_FLEE_FORCE * fleeMult;
         d.vx += (dx / dist) * pushStrength;
         d.vy += (dy / dist) * pushStrength;
-        // Cap total speed so a dot cornered at point-blank range doesn't
-        // rocket off unrealistically fast -- keeps the chase readable.
-        var speed = Math.sqrt(d.vx * d.vx + d.vy * d.vy);
-        var maxSpeed = SWARM_BASE_SPEED * 3;
-        if (speed > maxSpeed) {
-          d.vx = (d.vx / speed) * maxSpeed;
-          d.vy = (d.vy / speed) * maxSpeed;
-        }
       }
     }
 
-    d.x += d.vx * speedMult;
-    d.y += d.vy * speedMult;
+    var dotSpeedMult = d.speedy ? SWARM_MAJORITY_SPEED_MULT : 1;
+    d.x += d.vx * dotSpeedMult;
+    d.y += d.vy * dotSpeedMult;
 
     // Wall-bounce always wins over flee -- a dot inside the margin gets
     // pushed back regardless of what flee just did, so dots can't pin
@@ -208,9 +270,12 @@ function swarmStep() {
     }
 
     swarmCtx.beginPath();
-    swarmCtx.arc(d.x, d.y, SWARM_DOT_RADIUS, 0, Math.PI * 2);
+    swarmCtx.arc(d.x, d.y, d.speedy ? SWARM_DOT_RADIUS + 0.6 : SWARM_DOT_RADIUS, 0, Math.PI * 2);
     swarmCtx.fillStyle = swarmColorFor(d.side);
+    if (swarmGreying) { swarmCtx.globalAlpha = 0.5 + 0.5 * Math.abs(Math.sin(nowMs / 120 + i)); }
     swarmCtx.fill();
+    swarmCtx.globalAlpha = 1;
+    swarmCtx.lineWidth = d.speedy ? 1.6 : 1;
     swarmCtx.stroke();
   }
 
@@ -226,37 +291,8 @@ function swarmFlashHint(text, duration) {
   }, duration || 1200);
 }
 
-// Batch size: a fraction of the REAL remaining gap to exact balance.
-// Clicking a black/breaker-surplus dot grants MAKERS (closing a supply
-// surplus); clicking a white/maker-surplus dot grants BREAKERS
-// (closing a demand surplus). If the real gap in that direction is
-// already zero (you clicked the "wrong" color for the current
-// imbalance, or things are already balanced), it falls back to a
-// small percentage of current holdings so the click still does
-// something rather than being a dead button.
-function swarmBatchSize(clickedSide) {
-  if (clickedSide === "breaker") {
-    var deficitMakers = ironDeficitMakers();
-    if (deficitMakers > 0) return Math.max(1, Math.round(deficitMakers * SWARM_GRANT_PROGRESS_FRACTION));
-    return Math.max(1, Math.round(state.breakers * SWARM_FALLBACK_FARM_RATE));
-  } else {
-    var deficitBreakers = ironDeficitBreakers();
-    if (deficitBreakers > 0) return Math.max(1, Math.round(deficitBreakers * SWARM_GRANT_PROGRESS_FRACTION));
-    return Math.max(1, Math.round(state.nailMakers * SWARM_FALLBACK_FARM_RATE));
-  }
-}
-
-// Cost is paid in copper, at exactly what a factory would spend to
-// build that many of that unit type (FACTORY_COST_MAKER_SIDE_COPPER /
-// FACTORY_COST_BREAKER_SIDE_COPPER) -- no discount, no markup, no
-// escalation. Clicking a maker (white) dot grants breakers, so the
-// cost is the breaker-side copper cost times the batch size, and vice
-// versa.
-function swarmGrantCost(clickedSide, batchSize) {
-  var grantedUnitCopperCost = clickedSide === "maker" ? FACTORY_COST_BREAKER_SIDE_COPPER : FACTORY_COST_MAKER_SIDE_COPPER;
-  return grantedUnitCopperCost * batchSize;
-}
-
+// Clicking any dot flips its color. Copper buys the opposite machine
+// capacity needed to move the real rate split to that visible ratio.
 function swarmHandleClick(mx, my) {
   var now = Date.now();
   if (now - swarmLastClickAt < SWARM_CLICK_COOLDOWN_MS) return;
@@ -264,13 +300,40 @@ function swarmHandleClick(mx, my) {
   for (var i = 0; i < swarmDots.length; i++) {
     var d = swarmDots[i];
     var dx = d.x - mx, dy = d.y - my;
-    if (dx * dx + dy * dy > (SWARM_DOT_RADIUS + 4) * (SWARM_DOT_RADIUS + 4)) continue;
+    if (dx * dx + dy * dy > (SWARM_DOT_RADIUS + 6) * (SWARM_DOT_RADIUS + 6)) continue;
 
-    var batchSize = swarmBatchSize(d.side);
-    var cost = swarmGrantCost(d.side, batchSize);
+    var makerDots = swarmDots.filter(function (dot) { return dot.side === "maker"; }).length;
+    var targetMakerDots = makerDots + (d.side === "maker" ? -1 : 1);
+    var demand = ironDemandRate();
+    var supply = ironSupplyRate();
+    var machineType;
+    var perUnitRate;
+    var machinesNeeded;
+
+    if (targetMakerDots < makerDots) {
+      machineType = "breaker";
+      perUnitRate = breakerIntakeEffective() * activeIronTileCount();
+      var upperMakerFraction = (targetMakerDots + 0.5) / SWARM_DISPLAY_DOTS;
+      var requiredSupply = demand * (1 - upperMakerFraction) / upperMakerFraction;
+      machinesNeeded = Math.max(1, Math.floor((requiredSupply - supply) / perUnitRate) + 1);
+    } else {
+      machineType = "maker";
+      perUnitRate = nailMakerRateEffective() * IRON_PER_NAIL;
+      var lowerMakerFraction = (targetMakerDots - 0.5) / SWARM_DISPLAY_DOTS;
+      var requiredDemand = supply * lowerMakerFraction / (1 - lowerMakerFraction);
+      machinesNeeded = Math.max(1, Math.ceil((requiredDemand - demand) / perUnitRate));
+    }
+
+    if (perUnitRate <= 0 || !isFinite(machinesNeeded)) {
+      swarmFlashHint("turn on " + (machineType === "maker" ? "nail makers" : "breakers") + " to change the ratio");
+      return;
+    }
+
+    var unitCopperCost = machineType === "maker" ? FACTORY_COST_MAKER_SIDE_COPPER : FACTORY_COST_BREAKER_SIDE_COPPER;
+    var cost = unitCopperCost * machinesNeeded;
 
     if (state.copperAmt < cost) {
-      swarmFlashHint("not enough copper (" + fmtWeight(cost) + " for +" + batchSize + ")");
+      swarmFlashHint("not enough copper (" + fmtWeight(cost) + " for " + fmtInt(machinesNeeded) + " " + machineType + "s)");
       return;
     }
 
@@ -278,15 +341,15 @@ function swarmHandleClick(mx, my) {
     state.copperAmt -= cost;
     d.stunUntil = now + SWARM_STUN_MS;
 
-    if (d.side === "maker") {
-      state.breakers += batchSize;
-      d.side = "breaker"; // flip THIS dot immediately -- don't wait for the next sync pass to pick some other dot
-      swarmFlashHint("+" + batchSize + " breakers (" + fmtWeight(cost) + ")", 1000);
+    if (machineType === "maker") {
+      state.nailMakers += machinesNeeded;
     } else {
-      state.nailMakers += batchSize;
-      d.side = "maker";
-      swarmFlashHint("+" + batchSize + " makers (" + fmtWeight(cost) + ")", 1000);
+      state.breakers += machinesNeeded;
     }
+
+    d.side = d.side === "maker" ? "breaker" : "maker";
+    d.speedy = false;
+    swarmFlashHint("added " + fmtInt(machinesNeeded) + " " + machineType + "s to match the new ratio (" + fmtWeight(cost) + ")", 1200);
 
     if (state.breakers > 0) state.unlockedMap = true;
     render();

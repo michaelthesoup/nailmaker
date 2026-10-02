@@ -26,6 +26,7 @@ var RC_SUSPENSE_MS = 2200; // how long the noise flickers before resolving into 
 var rc = null; // active ritual state while the overlay is open
 
 function startReincarnation() {
+  if (state.cityKarmaLocked) return;
   var karmaAvailable = Math.floor(state.tao / KARMA_TAO_THRESHOLD);
   if (karmaAvailable < 1) return;
 
@@ -241,6 +242,13 @@ function buildGrantedText(granted) {
 el.btnReincarnate.addEventListener("click", startReincarnation);
 
 el.btnReincarnateConfirm.addEventListener("click", function () {
+  if (state.cityKarmaLocked) {
+    rc = null;
+    el.reincarnateOverlay.style.display = "none";
+    render();
+    return;
+  }
+
   var ritual = rc;
   rc = null;
   el.reincarnateOverlay.style.display = "none";

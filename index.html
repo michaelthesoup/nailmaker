@@ -362,6 +362,7 @@
 </head>
 <body>
 
+<div id="pageShakeWrap">
 <h1 id="titleCount">nails: 0</h1>
 
 <div class="top-buttons">
@@ -588,11 +589,17 @@
       <div class="panel" id="citySection" style="display:none; margin-top:0; width:280px; flex:none;">
         <div class="panel-header">the skyline</div>
         <div class="panel-body">
-          <canvas id="cityCanvas" width="380" height="170" style="width:100%; height:170px; display:block; background:var(--paper); border:1px solid var(--ink); cursor:crosshair;"></canvas>
-          <div class="hint" id="cityBuffs" style="text-align:center; margin-top:6px;"></div>
-          <div class="row"><span class="label">nailbombs detonated:</span><span class="value" id="valCityBombCount">0</span></div>
+          <canvas id="cityCanvas" width="380" height="120" style="width:100%; height:120px; display:block; background:var(--paper); border:1px solid var(--ink); cursor:crosshair;"></canvas>
+          <div class="hint" id="cityBuffs" style="text-align:center; margin-top:4px;"></div>
+
+          <div class="row" style="margin-top:6px;"><span class="label">foundry core &mdash; bomb <span id="valCityBombNumber">1</span></span><span class="value" id="valCityBombCount">0 made</span></div>
+          <div class="row" style="margin-top:2px;"><span class="label" style="font-size:11px;">unsold nails</span><span class="value" id="valCoreNails" style="font-size:11px;">0 / 0</span></div>
+          <div class="map-health-track"><div class="map-health-fill" id="coreNailsFill"></div></div>
+          <div class="row" style="margin-top:4px;"><span class="label" style="font-size:11px;">isotope cores</span><span class="value" id="valCoreIsotopes" style="font-size:11px;">0 / 1</span></div>
+          <div class="map-health-track"><div class="map-health-fill" id="coreIsotopesFill" style="background:var(--ink);"></div></div>
+
           <button id="btnCityBomb" style="width:100%; margin-top:6px;">click a building to target it</button>
-          <div class="hint">nailbombs permanently destroy the makers, breakers, or factories they hit, in exchange for a temporary marketing boost -- they get more expensive and more destructive each time.</div>
+          <div class="hint">one core per bomb. demand spikes briefly; the market scar and -1 karma are permanent.</div>
         </div>
       </div>
     </div>
@@ -672,6 +679,8 @@
   </div>
 </div>
 
+<div id="bombDropOverlay" style="position:fixed; left:0; top:-120px; font-size:34px; line-height:1; pointer-events:none; z-index:80; display:none; transform:translateX(-50%);">&#9679;</div>
+
 <input type="text" id="cheatBox" spellcheck="false">
 
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
@@ -694,6 +703,8 @@
 <script src="js/cloudsave.js"></script>
 <script src="js/reincarnation.js"></script>
 <script src="js/engine.js"></script>
+
+</div>
 
 </body>
 </html>
