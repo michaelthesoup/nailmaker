@@ -145,11 +145,19 @@ function swarmColorFor(side) {
 // Collapse: sustained severe imbalance destroys enough of the
 // overrepresented type to bring actual iron rates back toward the
 // survivable target.
+//
+// Only counts if BOTH demand and supply actually exist. A player who
+// simply hasn't bought a breaker yet (zero supply) reads as maximum
+// imbalance by the raw math, but that's just not having started --
+// not instability -- so it must never trigger a collapse on its own.
+// Without this, buying your very first nail maker before your first
+// breaker (or vice versa) would eventually wipe it right back out.
 // ----------------------------------------------------------------
 
 function swarmUpdateCollapse(dt) {
+  var bothSidesActive = ironDemandRate() > 0 && ironSupplyRate() > 0;
   var imbalance = swarmImbalanceMagnitude();
-  if (imbalance >= SWARM_COLLAPSE_IMBALANCE_THRESHOLD) {
+  if (bothSidesActive && imbalance >= SWARM_COLLAPSE_IMBALANCE_THRESHOLD) {
     swarmCollapseSustain += dt;
     swarmGreying = true;
     if (swarmCollapseSustain >= SWARM_COLLAPSE_SUSTAIN_SEC) {

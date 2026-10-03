@@ -226,8 +226,15 @@ function checkYinYangUnlock() {
 // The foundry swarm unlocks the first time the player actually achieves
 // real balance (production and consumption matching) -- not just
 // alongside yin/yang automatically. Once unlocked, it stays unlocked.
+// Having literally nothing built yet (demand == supply == 0) is NOT
+// real balance -- it's just not having started -- so that trivial case
+// is explicitly excluded, or this would fire on turn one of a fresh
+// game, before the player owns a single nail maker or breaker.
 function checkSwarmUnlock() {
   if (state.unlockedSwarm) return;
+  var demand = ironDemandRate();
+  var supply = ironSupplyRate();
+  if (demand <= 0 && supply <= 0) return;
   if (Math.abs(ironStructuralImbalance()) <= SWARM_MAJORITY_TOLERANCE) {
     state.unlockedSwarm = true;
   }
