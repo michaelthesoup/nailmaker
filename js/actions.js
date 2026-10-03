@@ -101,18 +101,6 @@ el.btnBuyBreaker.addEventListener("click", function () {
   state.breakerCooldownUntil = Date.now() + BREAKER_COOLDOWN_MS;
   render();
 });
-el.btnToggleNailMakers.addEventListener("click", function () {
-  state.nailMakersOn = !state.nailMakersOn;
-  render();
-});
-el.btnToggleFactories.addEventListener("click", function () {
-  state.factoriesOn = !state.factoriesOn;
-  render();
-});
-el.btnToggleBreakers.addEventListener("click", function () {
-  state.breakersOn = !state.breakersOn;
-  render();
-});
 
 function goToNextMap() {
   if (mapHasDeposits(state.mapTiles)) return;

@@ -6,7 +6,7 @@
 
 var PRICE_MIN = 0.01;
 var PRICE_STEP = 0.01;
-var PRICE_MAX = 0.08; // only used for the price stepper's rough feel, not the demand math
+var PRICE_MAX = 0.08; // also used as the starting price -- a reasonable one, not the rock-bottom floor
 
 // Marketing, Universal-Paperclips style. Their formula is:
 //   PD = (1 + 0.1*U) * (1.1^M) * Bonuses * (0.8/P)
@@ -75,7 +75,6 @@ var DEPOSITS_PER_MAP = 15;
 // Progressive UI reveal. Map stays hidden until the first breaker
 // is bought -- before that, there's nothing on it for anything to do.
 var MACHINERY_UNLOCK_NAILS = 250;
-var TUNING_UNLOCK_NAILS = 250;
 
 // Yin & Yang: a late-game balance meter. Unlocks once you've ever held
 // a full metric ton of BOTH iron and copper at the same time -- by
@@ -341,37 +340,42 @@ var CITY_AFTERMATH_BASE_DISTANCE = 260;
 var CITY_AFTERMATH_RADIUS_DISTANCE = 180;
 var CITY_AFTERMATH_POWER_DISTANCE = 260;
 
-// Cost and destructiveness both grow every time a bomb goes off, using
+// Cost and destructiveness both grow every time a nailbomb goes off, using
 // the same growth rate (CITY_BOMB_COST_GROWTH) so the marketing payoff
 // keeps pace with the escalating price -- see CITY_FEVER_EXP_GROWTH
 // below, which reuses this same number on purpose.
-var CITY_BOMB_BASE_NAILS = 50000; // unsold nails consumed by the first bomb
-var CITY_BOMB_COST_GROWTH = 2.3; // each bomb afterward costs this much more
+var CITY_BOMB_BASE_NAILS = 50000; // unsold nails consumed by the first nailbomb
+var CITY_BOMB_COST_GROWTH = 2.3; // each nailbomb afterward costs this much more
 var CITY_BOMB_BASE_RADIUS = 1; // buildings on either side of the target also take damage, at this radius...
-var CITY_BOMB_RADIUS_GROWTH = 0.6; // ...growing by this much per bomb already detonated
+var CITY_BOMB_RADIUS_GROWTH = 0.6; // ...growing by this much per nailbomb already detonated
 var CITY_BOMB_BASE_POWER = 0.5; // fraction of a building's units destroyed at ground zero...
-var CITY_BOMB_POWER_GROWTH = 0.18; // ...growing by this much per bomb already detonated
+var CITY_BOMB_POWER_GROWTH = 0.18; // ...growing by this much per nailbomb already detonated
 var CITY_BOMB_ECONOMY_SHOCK_FACTOR = 0.02; // small system-wide loss to every active workforce category
 var CITY_BOMB_ECONOMY_SHOCK_CAP = 0.15;
 
 // Fever (the temporary marketing boost) grows EXPONENTIALLY alongside
-// the bomb's own cost, not linearly -- both the ceiling it can reach
-// and how much a single bomb adds to it scale by CITY_FEVER_EXP_GROWTH
-// per bomb already detonated, the same rate the cost itself grows by.
-// A bomb that's 2.3x more expensive than the last also buys roughly
+// the nailbomb's own cost, not linearly -- both the ceiling it can reach
+// and how much a single nailbomb adds to it scale by CITY_FEVER_EXP_GROWTH
+// per nailbomb already detonated, the same rate the cost itself grows by.
+// A nailbomb that's 2.3x more expensive than the last also buys roughly
 // 2.3x more marketing.
 var CITY_FEVER_EXP_GROWTH = CITY_BOMB_COST_GROWTH;
-var CITY_FEVER_MAX_BASE = 3; // fever's ceiling before any bombs -- grows by CITY_FEVER_EXP_GROWTH per bomb detonated
-var CITY_FEVER_PER_BOMB_BASE = 0.6; // fever a single bomb adds before any bombs -- grows the same way
+var CITY_FEVER_MAX_BASE = 3; // fever's ceiling before any nailbombs -- grows by CITY_FEVER_EXP_GROWTH per nailbomb detonated
+var CITY_FEVER_PER_BOMB_BASE = 0.6; // fever a single nailbomb adds before any nailbombs -- grows the same way
 var CITY_FEVER_HALFLIFE_SEC = 40; // fever decays back toward zero with this half-life if you stop bombing
 var CITY_FEVER_DEMAND_PER_POINT = 0.35; // +35% public demand per point of fever, up to the (growing) cap above
-var CITY_MARKET_SCAR_PER_BOMB = 0.08; // permanent public-demand loss per bomb
-var CITY_MARKET_SCAR_MAX = 0.75;
+// The market scar is now a permanent DEMAND BOOST (not a penalty) --
+// every nailbomb permanently raises public demand further, on top of
+// the temporary fever/panic spikes. This is deliberately a huge number:
+// the destructive path trades karma/reincarnation away forever in
+// exchange for demand that only ever grows, never shrinks.
+var CITY_MARKET_SCAR_PER_BOMB = 0.5; // +50% permanent demand per nailbomb
+var CITY_MARKET_SCAR_MAX = 10; // caps at +1000% permanent demand
 
 // Pedestrians walking the skyline's ground floor -- purely visual
 // (their count and movement are not saved), except for the panic
 // meter they drive, which is real state and feeds public demand.
-// A bomb sends the whole street into a panic that fades fast (a
+// A nailbomb sends the whole street into a panic that fades fast (a
 // people-scale reaction, much quicker than the fever's marketing-scale
 // decay), and panic buying is worth a short, sharp demand spike on
 // top of the fever bonus -- the same "public demand" lever, not a
@@ -379,15 +383,15 @@ var CITY_MARKET_SCAR_MAX = 0.75;
 var CITY_PED_COUNT = 16;
 var CITY_PED_WALK_SPEED = 0.25; // px/frame, calm
 var CITY_PED_PANIC_SPEED_MULT = 3.5; // how much faster a panicking pedestrian moves
-var CITY_PED_PANIC_DURATION_SEC = 4; // how long an individual pedestrian keeps sprinting after a bomb
-var CITY_PANIC_PER_BOMB = 1; // panic meter jumps to this fraction of max on every bomb, regardless of size
+var CITY_PED_PANIC_DURATION_SEC = 4; // how long an individual pedestrian keeps sprinting after a nailbomb
+var CITY_PANIC_PER_BOMB = 1; // panic meter jumps to this fraction of max on every nailbomb, regardless of size
 var CITY_PANIC_HALFLIFE_SEC = 5; // panic fades fast -- it's a street-level reaction, not a lasting market shift
 var CITY_PANIC_DEMAND_MAX = 0.5; // +50% public demand at maximum panic, decaying with it
 
 // ----------------------------------------------------------------
 // The foundry core: a nailbomb now has to be CRAFTED, not just bought.
 // It still needs unsold nails -- the same cost curve as before,
-// cityBombCost() in city.js -- plus one unstable isotope core, which
+// cityBombCost() in city.js -- plus one unstable core, which
 // only comes from the swarm (see swarm.js). Only the nail cost scales.
 // ----------------------------------------------------------------
 var CORE_ISOTOPES_BASE = 1;
@@ -399,21 +403,21 @@ var CORE_ISOTOPES_BASE = 1;
 // supply, the exact same metric yin/yang uses (YINYANG_BALANCE_TOLERANCE
 // in formulas.js). Clicking any dot flips its color and buys enough of
 // the opposite machine type to match the resulting ratio. Severe
-// sustained imbalance collapses the swarm and banks one isotope core.
+// sustained imbalance collapses the swarm and banks one unstable core.
 // ----------------------------------------------------------------
 var SWARM_MAJORITY_TOLERANCE = 0.05; // matches YINYANG_BALANCE_TOLERANCE's definition of real parity
 var SWARM_MAJORITY_SPEED_MULT = 1; // TESTING: temporarily disabled -- all dots move at the same base speed regardless of majority/minority. Restore to something like 2.4 once the rest of the loop is confirmed to feel right.
-var SWARM_COLLAPSE_IMBALANCE_THRESHOLD = 0.85; // |imbalance| has to cross this...
+var SWARM_COLLAPSE_IMBALANCE_THRESHOLD = 0.4; // |imbalance| has to cross this -- eased down from 0.85, which required nearly every dot to be one color. Now a clear but not total majority (~70% of dots) is enough.
 var SWARM_COLLAPSE_SUSTAIN_SEC = 1.5; // ...and stay there this long (the grey-out) before it actually collapses
 var SWARM_COLLAPSE_POST_IMBALANCE_TARGET = 0.3; // the real ratio a collapse corrects back down to -- still skewed, just survivable
-var SWARM_COLLAPSE_FUEL_GAIN = 1; // isotope core banked per collapse
+var SWARM_COLLAPSE_FUEL_GAIN = 1; // unstable core banked per collapse
 
 function defaultState() {
   var tiles = generateMapTiles(1);
   return {
     funds: 25.00,
     unsold: 0,
-    price: PRICE_MIN,
+    price: PRICE_MAX, // a good starting price, not the rock-bottom floor
     ironAmt: 100,
     copperAmt: 0,
     marketingLevel: 0,
@@ -440,7 +444,6 @@ function defaultState() {
 
     unlockedMap: false,
     unlockedMachinery: false,
-    unlockedTuning: false,
     unlockedFactorySquared: false,
     guideSeen: {
       handmade: false,
@@ -480,13 +483,14 @@ function defaultState() {
     // The skyline (see tunables above). Buildings themselves are never
     // stored -- they're computed fresh from nailMakers/breakers/factories
     // whenever the panel draws, so there's nothing here to desync.
-    unlockedCity: false,
+    unlockedCity: false, // unlocks the first time the swarm collapses and produces an unstable core
+    unlockedSwarm: false, // unlocks the first time the player achieves real balance (production == consumption)
     cityBombs: 0,
-    cityFever: 0, // decaying marketing boost from recent bombs -- see cityFeverMult()
-    cityPanic: 0, // decaying street-panic boost from a recent bomb -- fast, short-lived, see cityFeverMult()
+    cityFever: 0, // decaying marketing boost from recent nailbombs -- see cityFeverMult()
+    cityPanic: 0, // decaying street-panic boost from a recent nailbomb -- fast, short-lived, see cityFeverMult()
     cityMarketScar: 0, // permanent demand loss from the lasting impact of bombings
     cityKarmaLocked: false,
-    isotopeStock: 0, // banked isotope cores from swarm collapses -- one is spent per bomb
+    isotopeStock: 0, // banked unstable cores from swarm collapses -- one is spent per nailbomb
     cityWorld: {
       cameraX: 0,
       nextDistrictX: 0,

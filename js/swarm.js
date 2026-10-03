@@ -19,7 +19,7 @@
 // and HOLD it there for a sustained moment, and the whole swarm greys
 // out and collapses into an unstable core: it destroys enough of the
 // overrepresented type to meaningfully correct the real ratio, and
-// banks one isotope core (state.isotopeStock), which together with
+// banks one unstable core (state.isotopeStock), which together with
 // unsold nails is what the foundry core (see city.js) needs to arm a
 // nailbomb. Copper pays for each balancing conversion.
 //
@@ -186,14 +186,15 @@ function swarmCollapse() {
   }
 
   state.isotopeStock += SWARM_COLLAPSE_FUEL_GAIN;
+  state.unlockedCity = true; // the skyline unlocks the first time the player destabilizes the swarm this hard
 
-  swarmFlashHint("unstable core formed -- destroyed " + fmtInt(destroyed) + " " + majority + "s, +" + SWARM_COLLAPSE_FUEL_GAIN + " isotope core", 2000);
+  swarmFlashHint("unstable core formed -- destroyed " + fmtInt(destroyed) + " " + majority + "s", 2000);
   render();
 }
 
 function swarmStep(nowMs) {
   if (!swarmCtx) return;
-  if (!state.unlockedYinYang) {
+  if (!state.unlockedSwarm) {
     swarmLastFrameMs = null;
     requestAnimationFrame(swarmStep);
     return;
@@ -325,7 +326,7 @@ function swarmHandleClick(mx, my) {
     }
 
     if (perUnitRate <= 0 || !isFinite(machinesNeeded)) {
-      swarmFlashHint("turn on " + (machineType === "maker" ? "nail makers" : "breakers") + " to change the ratio");
+      swarmFlashHint("turn on " + (machineType === "maker" ? "nail makers" : "breakers") + " first");
       return;
     }
 
@@ -349,7 +350,7 @@ function swarmHandleClick(mx, my) {
 
     d.side = d.side === "maker" ? "breaker" : "maker";
     d.speedy = false;
-    swarmFlashHint("added " + fmtInt(machinesNeeded) + " " + machineType + "s to match the new ratio (" + fmtWeight(cost) + ")", 1200);
+    swarmFlashHint("+" + fmtInt(machinesNeeded) + " " + machineType + "s (" + fmtWeight(cost) + ")", 1200);
 
     if (state.breakers > 0) state.unlockedMap = true;
     render();

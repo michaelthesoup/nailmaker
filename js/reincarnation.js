@@ -269,7 +269,6 @@ el.btnReincarnateConfirm.addEventListener("click", function () {
   var unlocksCarried = {
     unlockedMap: state.unlockedMap,
     unlockedMachinery: state.unlockedMachinery,
-    unlockedTuning: state.unlockedTuning,
     unlockedYinYang: state.unlockedYinYang,
     unlockedCity: state.unlockedCity,
     guideSeen: state.guideSeen
@@ -288,7 +287,6 @@ el.btnReincarnateConfirm.addEventListener("click", function () {
   state.nirvanaAchieved = nirvanaCarried;
   state.unlockedMap = unlocksCarried.unlockedMap;
   state.unlockedMachinery = unlocksCarried.unlockedMachinery;
-  state.unlockedTuning = unlocksCarried.unlockedTuning;
   state.unlockedYinYang = unlocksCarried.unlockedYinYang;
   state.unlockedCity = unlocksCarried.unlockedCity;
   state.guideSeen = unlocksCarried.guideSeen;

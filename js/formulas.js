@@ -223,6 +223,16 @@ function checkYinYangUnlock() {
   }
 }
 
+// The foundry swarm unlocks the first time the player actually achieves
+// real balance (production and consumption matching) -- not just
+// alongside yin/yang automatically. Once unlocked, it stays unlocked.
+function checkSwarmUnlock() {
+  if (state.unlockedSwarm) return;
+  if (Math.abs(ironStructuralImbalance()) <= SWARM_MAJORITY_TOLERANCE) {
+    state.unlockedSwarm = true;
+  }
+}
+
 // How close yin and yang are, as a ratio (0 = one bar totally idle
 // while the other has moved, 1 = dead even). Used only for the status label.
 function harmonyRatio() {
@@ -266,24 +276,22 @@ function yinYangPDMultiplier() {
 
 // Called once per real second (from the settle loop in tick()).
 // Uses the STRUCTURAL demand/supply balance, not moment-to-moment
-// actual flow -- see ironStructuralImbalance() above. When your build
-// is genuinely balanced (within tolerance), BOTH bars tick up together,
-// since exact production/consumption parity is the ideal state, not
-// a tie that goes nowhere. Otherwise, whichever side your build is
-// skewed toward ticks up alone. If both bars are sitting at 100
-// together, that's a tao point.
+// actual flow -- see ironStructuralImbalance() above. Exactly ONE bar
+// ticks up per settle, always -- whichever side demand/supply currently
+// favors (ties go to yang). There is no longer a "both tick up together
+// at balance" case; balance just means the tick keeps landing on
+// whichever side is barely ahead, which naturally slows down near zero
+// imbalance since the sign keeps flipping. If both bars are sitting at
+// 100 together, that's a tao point.
 function settleYinYang() {
   if (state.unlockedYinYang) {
     var imbalance = ironStructuralImbalance();
 
-    if (Math.abs(imbalance) <= YINYANG_BALANCE_TOLERANCE) {
-      state.yin = Math.min(YINYANG_MAX, state.yin + yinYangTickAmount());
-      state.yang = Math.min(YINYANG_MAX, state.yang + yinYangTickAmount());
-    } else if (imbalance > 0) {
-      // demand (making) outpaces supply (breaking) -- yang-leaning
+    if (imbalance >= 0) {
+      // demand (making) at or ahead of supply (breaking) -- yang ticks
       state.yang = Math.min(YINYANG_MAX, state.yang + yinYangTickAmount());
     } else {
-      // supply (breaking) outpaces demand (making) -- yin-leaning
+      // supply (breaking) ahead of demand (making) -- yin ticks
       state.yin = Math.min(YINYANG_MAX, state.yin + yinYangTickAmount());
     }
 
@@ -295,11 +303,12 @@ function settleYinYang() {
   }
 }
 
-// Temporary fever/panic boosts are offset by the permanent market scar.
+// Temporary fever/panic spikes stack on top of the PERMANENT market
+// scar -- every nailbomb leaves demand permanently higher, never lower.
 function cityFeverMult() {
   var feverMult = 1 + CITY_FEVER_DEMAND_PER_POINT * state.cityFever;
   var panicMult = 1 + CITY_PANIC_DEMAND_MAX * state.cityPanic;
-  var marketScarMult = Math.max(1 - CITY_MARKET_SCAR_MAX, 1 - state.cityMarketScar);
+  var marketScarMult = 1 + Math.min(CITY_MARKET_SCAR_MAX, state.cityMarketScar);
   return marketScarMult * feverMult * panicMult;
 }
 

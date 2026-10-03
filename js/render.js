@@ -87,13 +87,9 @@ function render() {
   el.btnMakeNail.disabled = state.ironAmt < IRON_PER_NAIL;
   el.btnPriceMinus.disabled = state.price <= PRICE_MIN;
 
-  // ---- tuning: simple on/off ----
-  el.btnToggleNailMakers.textContent = state.nailMakersOn ? "ON" : "OFF";
-  el.btnToggleFactories.textContent = state.factoriesOn ? "ON" : "OFF";
-  el.btnToggleBreakers.textContent = state.breakersOn ? "ON" : "OFF";
-
   // ---- yin & yang ----
   checkYinYangUnlock();
+  checkSwarmUnlock();
   if (state.unlockedYinYang) {
     el.yin.textContent = fmtInt(state.yin) + " / " + YINYANG_MAX;
     el.yang.textContent = fmtInt(state.yang) + " / " + YINYANG_MAX;
@@ -133,14 +129,13 @@ function render() {
   if (!state.unlockedMap && state.breakers > 0) state.unlockedMap = true;
   if (!state.unlockedMachinery && state.totalNailsMade >= MACHINERY_UNLOCK_NAILS) state.unlockedMachinery = true;
   if (!state.unlockedFactorySquared && state.nailMakers >= FACTORY_SQUARED_UNLOCK_MAKERS && state.breakers >= FACTORY_SQUARED_UNLOCK_BREAKERS) state.unlockedFactorySquared = true;
-  if (!state.unlockedTuning && state.totalNailsMade >= TUNING_UNLOCK_NAILS) state.unlockedTuning = true;
-
   el.mapSection.style.display = state.unlockedMap ? "" : "none";
+  if (el.postBreakerSection) el.postBreakerSection.style.display = state.unlockedMap ? "" : "none";
+  if (el.factoryBalanceSliderWrap) el.factoryBalanceSliderWrap.style.display = state.factories > 0 ? "" : "none";
   el.machinerySection.style.display = state.unlockedMachinery ? "" : "none";
   if (el.factorySquaredSection) el.factorySquaredSection.style.display = state.unlockedFactorySquared ? "" : "none";
-  el.tuningSection.style.display = state.unlockedTuning ? "" : "none";
   el.yinYangSection.style.display = state.unlockedYinYang ? "" : "none";
-  if (el.swarmSection) el.swarmSection.style.display = state.unlockedYinYang ? "" : "none";
+  if (el.swarmSection) el.swarmSection.style.display = state.unlockedSwarm ? "" : "none";
 
   renderGuide();
   renderMap();

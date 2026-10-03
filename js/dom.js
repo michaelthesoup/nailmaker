@@ -82,12 +82,9 @@ var el = {
   breakerIronRate: document.getElementById("valBreakerIronRate"),
   breakerCopperRate: document.getElementById("valBreakerCopperRate"),
 
-  btnToggleNailMakers: document.getElementById("btnToggleNailMakers"),
-  btnToggleFactories: document.getElementById("btnToggleFactories"),
-  btnToggleBreakers: document.getElementById("btnToggleBreakers"),
-
   machinerySection: document.getElementById("machinerySection"),
-  tuningSection: document.getElementById("tuningSection"),
+  postBreakerSection: document.getElementById("postBreakerSection"),
+  factoryBalanceSliderWrap: document.getElementById("factoryBalanceSliderWrap"),
   mapSection: document.getElementById("mapSection"),
 
   yinYangSection: document.getElementById("yinYangSection"),

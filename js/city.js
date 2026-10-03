@@ -212,9 +212,9 @@ function cityBombPower() {
   return CITY_BOMB_BASE_POWER + state.cityBombs * CITY_BOMB_POWER_GROWTH;
 }
 
-// Both the fever ceiling and what a single bomb adds to it grow
-// EXPONENTIALLY with bombs already detonated, at the same rate the
-// bomb's own cost grows -- see the CITY_FEVER_EXP_GROWTH comment in
+// Both the fever ceiling and what a single nailbomb adds to it grow
+// EXPONENTIALLY with nailbombs already detonated, at the same rate the
+// nailbomb's own cost grows -- see the CITY_FEVER_EXP_GROWTH comment in
 // state.js.
 function cityFeverMax() {
   return CITY_FEVER_MAX_BASE * Math.pow(CITY_FEVER_EXP_GROWTH, state.cityBombs);
@@ -295,13 +295,13 @@ function cityDrawPedestrians(groundY, ink) {
   }
 }
 
-// Arming checks and pays BOTH costs up front (nails and one isotope core), then
+// Arming checks and pays BOTH costs up front (nails and one unstable core), then
 // starts the drop sequence. The actual destruction doesn't happen until
-// the dropped bomb visually lands -- see cityApplyImpact() -- so the
+// the dropped nailbomb visually lands -- see cityApplyImpact() -- so the
 // damage, fever/panic gain, and page shake all land together with the
 // animation instead of popping in the instant the button is clicked.
 function cityArmAndDrop() {
-  if (cityDropActive) return; // one bomb in flight at a time
+  if (cityDropActive) return; // one nailbomb in flight at a time
 
   var nailsCost = cityBombCost();
   var isoCost = cityIsotopesNeeded();
@@ -349,7 +349,7 @@ function cityApplyImpact(targetWorldX) {
   state.cityMarketScar = Math.min(CITY_MARKET_SCAR_MAX, state.cityMarketScar + CITY_MARKET_SCAR_PER_BOMB);
   state.karma = -1;
   state.cityKarmaLocked = true;
-  state.cityPanic = CITY_PANIC_PER_BOMB; // a bomb always maxes out the panic meter -- how long that panic actually lasts on-screen is per-pedestrian, below
+  state.cityPanic = CITY_PANIC_PER_BOMB; // a nailbomb always maxes out the panic meter -- how long that panic actually lasts on-screen is per-pedestrian, below
 
   var aftermathSpan = CITY_AFTERMATH_BASE_DISTANCE
     + radius * CITY_AFTERMATH_RADIUS_DISTANCE
@@ -373,10 +373,10 @@ function cityApplyImpact(targetWorldX) {
 }
 
 // ----------------------------------------------------------------
-// The detonation sequence. A bomb visibly falls in from above the
+// The detonation sequence. A nailbomb visibly falls in from above the
 // entire page, lands on its target, and the WHOLE page -- not just the
 // skyline panel -- shakes violently. cityApplyImpact() (above) does the
-// actual damage/fever/panic the instant the bomb lands.
+// actual damage/fever/panic the instant the nailbomb lands.
 // ----------------------------------------------------------------
 
 var cityDropActive = false;
@@ -392,7 +392,7 @@ var cityPageShakeRunning = false;
 function cityStartDrop(targetWorldX) {
   if (!el.bombDropOverlay || !cityCanvasEl) {
     // No overlay available (shouldn't happen in the real page) --
-    // fall back to an instant impact so a bomb never silently fails.
+    // fall back to an instant impact so a nailbomb never silently fails.
     cityApplyImpact(targetWorldX);
     return;
   }
@@ -463,7 +463,6 @@ function cityPageShakeStep() {
 
 function cityTick(dt) {
   cityRestoreWorld();
-  state.unlockedCity = !!state.unlockedYinYang;
 
   var feverDecay = Math.pow(0.5, dt / CITY_FEVER_HALFLIFE_SEC);
   state.cityFever *= feverDecay;
@@ -582,14 +581,14 @@ function cityBuffText() {
     var temporaryDemand = (1 + CITY_FEVER_DEMAND_PER_POINT * state.cityFever) * (1 + CITY_PANIC_DEMAND_MAX * state.cityPanic);
     parts.push("public demand +" + Math.round((temporaryDemand - 1) * 100) + "% temporarily");
   }
-  if (state.cityMarketScar > 0) parts.push("market scar -" + Math.round(state.cityMarketScar * 100) + "% permanently");
+  if (state.cityMarketScar > 0) parts.push("market scar +" + Math.round(state.cityMarketScar * 100) + "% permanently");
   return parts.join(" \u2014 ");
 }
 
 function renderCity() {
   if (!el.citySection) return;
-  el.citySection.style.display = state.unlockedYinYang ? "" : "none";
-  if (!state.unlockedYinYang) return;
+  el.citySection.style.display = state.unlockedCity ? "" : "none";
+  if (!state.unlockedCity) return;
 
   el.cityBuffs.textContent = cityBuffText();
   el.cityBombCount.textContent = state.cityBombs + " made";
@@ -608,10 +607,10 @@ function renderCity() {
     el.btnCityBomb.textContent = "falling...";
     el.btnCityBomb.disabled = true;
   } else if (!haveEnough) {
-    el.btnCityBomb.textContent = "not enough nails / 1 isotope core";
+    el.btnCityBomb.textContent = "not enough nails / 1 unstable core";
     el.btnCityBomb.disabled = true;
   } else {
-    el.btnCityBomb.textContent = "launch bomb";
+    el.btnCityBomb.textContent = "launch nailbomb";
     el.btnCityBomb.disabled = false;
   }
 }
@@ -632,7 +631,7 @@ function cityInit() {
 // a slower cadence. The camera keeps generating fresh city ahead of it.
 var cityLastFrameMs = null;
 function cityLoop(nowMs) {
-  if (state.unlockedYinYang) {
+  if (state.unlockedCity) {
     var dt = cityLastFrameMs != null ? Math.min(0.1, (nowMs - cityLastFrameMs) / 1000) : 1 / 60;
     cityLastFrameMs = nowMs;
     cityDraw(dt);
