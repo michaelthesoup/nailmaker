@@ -216,26 +216,28 @@ function ironDeficitBreakers() {
 // Yin & Yang helpers
 // ----------------------------------------------------------------
 
+// Yin & Yang is about the relationship between two forces -- making
+// and breaking -- so it unlocks the moment BOTH forces actually exist,
+// not whenever the player happens to be sitting on a stockpile of
+// material. A tonne of iron and copper measured nothing meaningful
+// about balance; owning at least one of each machine does.
 function checkYinYangUnlock() {
   if (state.unlockedYinYang) return;
-  if (state.ironAmt >= YINYANG_UNLOCK_GRAMS && state.copperAmt >= YINYANG_UNLOCK_GRAMS) {
+  if (state.nailMakers >= 1 && state.breakers >= 1) {
     state.unlockedYinYang = true;
   }
 }
 
-// The foundry swarm unlocks the first time the player actually achieves
-// real balance (production and consumption matching) -- not just
-// alongside yin/yang automatically. Once unlocked, it stays unlocked.
-// Having literally nothing built yet (demand == supply == 0) is NOT
-// real balance -- it's just not having started -- so that trivial case
-// is explicitly excluded, or this would fire on turn one of a fresh
-// game, before the player owns a single nail maker or breaker.
+// The foundry swarm unlocks at 1 tao, not at a single lucky instant of
+// balance. Reaching 1 tao requires filling BOTH yin and yang to 100 --
+// and since settleYinYang() advances only one bar per settle, whichever
+// side currently favors, that's only possible by deliberately crossing
+// back and forth across true balance over time. It's real, demonstrated
+// understanding of the mechanic, not something that can happen by
+// accident in the first few seconds of owning a maker and a breaker.
 function checkSwarmUnlock() {
   if (state.unlockedSwarm) return;
-  var demand = ironDemandRate();
-  var supply = ironSupplyRate();
-  if (demand <= 0 && supply <= 0) return;
-  if (Math.abs(ironStructuralImbalance()) <= SWARM_MAJORITY_TOLERANCE) {
+  if (state.tao >= 1) {
     state.unlockedSwarm = true;
   }
 }

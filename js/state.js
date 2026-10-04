@@ -80,7 +80,6 @@ var MACHINERY_UNLOCK_NAILS = 250;
 // a full metric ton of BOTH iron and copper at the same time -- by
 // then the economy is big enough that "surplus material" is a real
 // problem worth having a system about.
-var YINYANG_UNLOCK_GRAMS = 1000000; // 1 metric ton
 
 // Each real second, we compare how many grams you harvested (mined,
 // whether by hand or by breaker) against how many grams you profited
