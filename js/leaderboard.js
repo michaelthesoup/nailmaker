@@ -13,6 +13,25 @@
 var LOCAL_LEADERBOARD_KEY = "nailMakerLeaderboard";
 var LEADERBOARD_MAX_ENTRIES = 100;
 
+// ----------------------------------------------------------------
+// Open/close toggle -- purely a UI preference, not saved state. Starts
+// open; the button just flips the panel body's visibility.
+// ----------------------------------------------------------------
+
+var leaderboardOpen = true;
+
+function setLeaderboardOpen(open) {
+  leaderboardOpen = open;
+  if (el.leaderboardBody) el.leaderboardBody.style.display = open ? "" : "none";
+  if (el.btnToggleLeaderboard) el.btnToggleLeaderboard.textContent = open ? "hide" : "show";
+}
+
+if (el.btnToggleLeaderboard) {
+  el.btnToggleLeaderboard.addEventListener("click", function () {
+    setLeaderboardOpen(!leaderboardOpen);
+  });
+}
+
 function loadLocalLeaderboard() {
   try {
     var raw = localStorage.getItem(LOCAL_LEADERBOARD_KEY);

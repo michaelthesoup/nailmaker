@@ -48,6 +48,8 @@ var el = {
   btnReincarnateConfirm: document.getElementById("btnReincarnateConfirm"),
   leaderboardList: document.getElementById("leaderboardList"),
   leaderboardNote: document.getElementById("leaderboardNote"),
+  leaderboardBody: document.getElementById("leaderboardBody"),
+  btnToggleLeaderboard: document.getElementById("btnToggleLeaderboard"),
 
   btnAuthToggle: document.getElementById("btnAuthToggle"),
   authOverlay: document.getElementById("authOverlay"),
@@ -94,8 +96,6 @@ var el = {
   sliderYinYang: document.getElementById("sliderYinYang"),
   yinYangStatus: document.getElementById("valYinYangStatus"),
   yinYangHint: document.getElementById("yinYangHint"),
-  btnYinYangSpeed: document.getElementById("btnYinYangSpeed"),
-  yinYangSpeedCost: document.getElementById("valYinYangSpeedCost"),
 
   swarmSection: document.getElementById("swarmSection"),
   swarmCanvas: document.getElementById("swarmCanvas"),

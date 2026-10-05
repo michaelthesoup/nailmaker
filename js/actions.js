@@ -14,14 +14,6 @@ setupRepeatButton(el.btnPricePlus, function () {
   render();
 });
 
-el.btnYinYangSpeed.addEventListener("click", function () {
-  var cost = yinYangSpeedCost();
-  if (state.tao < cost) return;
-  state.tao -= cost;
-  state.yinYangSpeedLevel = (state.yinYangSpeedLevel || 0) + 1;
-  render();
-});
-
 el.btnMakeNail.addEventListener("click", function () {
   if (state.ironAmt >= IRON_PER_NAIL) {
     state.ironAmt -= IRON_PER_NAIL;

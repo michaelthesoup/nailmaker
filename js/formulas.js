@@ -228,16 +228,18 @@ function checkYinYangUnlock() {
   }
 }
 
-// The foundry swarm unlocks at 1 tao, not at a single lucky instant of
-// balance. Reaching 1 tao requires filling BOTH yin and yang to 100 --
-// and since settleYinYang() advances only one bar per settle, whichever
-// side currently favors, that's only possible by deliberately crossing
-// back and forth across true balance over time. It's real, demonstrated
-// understanding of the mechanic, not something that can happen by
-// accident in the first few seconds of owning a maker and a breaker.
+// The foundry swarm unlocks at 1 tao AND owning at least one factory --
+// not at a single lucky instant of balance. Reaching 1 tao requires
+// filling BOTH yin and yang to 100, and since settleYinYang() advances
+// only one bar per settle (whichever side currently favors), that's
+// only possible by deliberately crossing back and forth across true
+// balance over time -- real, demonstrated understanding of the
+// mechanic. Requiring a factory too means the swarm only appears once
+// the player has an economy with automated production actually running,
+// not just two hand-bought machines.
 function checkSwarmUnlock() {
   if (state.unlockedSwarm) return;
-  if (state.tao >= 1) {
+  if (state.tao >= 1 && state.factories >= 1) {
     state.unlockedSwarm = true;
   }
 }
@@ -258,16 +260,12 @@ function productionRateBonusMultiplier() {
   return 1 + state.tao * TAO_RATE_BONUS_PER_POINT;
 }
 
-function yinYangSpeedCost() {
-  return YINYANG_SPEED_COST_BASE * Math.pow(2, state.yinYangSpeedLevel || 0);
-}
-
 function yinYangTickAmount() {
   return YINYANG_TICK_AMOUNT;
 }
 
 function yinYangTickInterval() {
-  return 1 / Math.pow(1.2, state.yinYangSpeedLevel || 0);
+  return 1; // settles once per real second -- no speed upgrades anymore
 }
 
 function yinYangStatusLabel() {

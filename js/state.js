@@ -89,7 +89,6 @@ var MACHINERY_UNLOCK_NAILS = 250;
 // you're using more than you're pulling. A simple, discrete, always-
 // readable +1/sec race between two 0-100 bars.
 var YINYANG_TICK_AMOUNT = 1;
-var YINYANG_SPEED_COST_BASE = 1;
 var YINYANG_MAX = 100;
 
 var YINYANG_STATUS_DEADZONE = 0.9; // harmony ratio above this reads as "BALANCED"
@@ -462,7 +461,6 @@ function defaultState() {
     yin: 0,
     yang: 0,
     tao: 0, // tao points -- earned by Yin/Yang laps or rare reincarnation awards
-    yinYangSpeedLevel: 0, // each level makes Yin/Yang settle 20% faster
     karma: 0, // permanent across reincarnations -- carried over explicitly, never wiped by a reset
     nirvanaAchieved: false, // a true permanent achievement -- survives even suicide, unlike karma
 

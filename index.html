@@ -597,11 +597,6 @@
         <div class="yy-status" id="valYinYangStatus">BALANCED</div>
         <div class="hint" id="yinYangHint">stay balanced for a production/sales bonus</div>
 
-        <div class="row" style="margin-top:8px;">
-          <span class="label">yin/yang speed:</span>
-          <button id="btnYinYangSpeed">increase (<span id="valYinYangSpeedCost">1 tao</span>)</button>
-        </div>
-
         <hr class="machinery-divider">
 
         <div class="row"><span class="label">karma:</span><span class="value" id="valKarma">0</span></div>
@@ -623,8 +618,11 @@
   </div>
 
   <div class="panel" id="leaderboardSection" style="width:280px; position:fixed; top:20px; right:20px; z-index:10;">
-    <div class="panel-header">leaderboard</div>
-    <div class="panel-body">
+    <div class="panel-header" style="display:flex; justify-content:space-between; align-items:center;">
+      <span>leaderboard</span>
+      <button id="btnToggleLeaderboard" style="font-size:10px; padding:2px 6px;">hide</button>
+    </div>
+    <div class="panel-body" id="leaderboardBody">
       <div class="hint" id="leaderboardNote">local to this browser -- log in for a global leaderboard</div>
       <div id="leaderboardList" style="max-height:60vh; overflow-y:auto;"></div>
     </div>

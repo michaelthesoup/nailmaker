@@ -103,9 +103,6 @@ function render() {
 
     renderYinYangStatus(yinYangStatusLabel());
 
-    el.yinYangSpeedCost.textContent = yinYangSpeedCost() + " tao";
-    el.btnYinYangSpeed.disabled = state.tao < yinYangSpeedCost();
-
     if (el.yinYangHint) {
       el.yinYangHint.textContent = "harvest more than you use to fill yin, use more than you harvest to fill yang \u2014 fill both to earn Tao. Each held Tao gives makers and breakers +" + Math.round(TAO_RATE_BONUS_PER_POINT * 100) + "% rate and +" + Math.round(YINYANG_PD_BONUS_PER_LEVEL * 100) + "% demand.";
     }
