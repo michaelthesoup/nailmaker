@@ -18,8 +18,8 @@
 // Push the real imbalance far enough (SWARM_COLLAPSE_IMBALANCE_THRESHOLD)
 // and HOLD it there for a sustained moment, and the whole swarm greys
 // out and collapses into an unstable core: it destroys enough of the
-// overrepresented type to meaningfully correct the real ratio, and
-// banks one unstable core (state.isotopeStock), which together with
+// overrepresented type to bring real iron rates as close to parity as
+// whole machines allow, then banks one unstable core (state.isotopeStock), which together with
 // unsold nails is what the foundry core (see city.js) needs to arm a
 // nailbomb. Copper pays for each balancing conversion.
 //
@@ -143,8 +143,8 @@ function swarmColorFor(side) {
 
 // ----------------------------------------------------------------
 // Collapse: sustained severe imbalance destroys enough of the
-// overrepresented type to bring actual iron rates back toward the
-// survivable target.
+// overrepresented type to bring actual iron rates as close to parity
+// as whole machines allow.
 //
 // Only counts if BOTH demand and supply actually exist. A player who
 // simply hasn't bought a breaker yet (zero supply) reads as maximum
@@ -164,8 +164,12 @@ function swarmUpdateCollapse(dt) {
       swarmCollapse();
     }
   } else {
-    swarmCollapseSustain = 0;
-    swarmGreying = false;
+    // Decays back down rather than resetting to zero instantly -- a
+    // single frame dipping just under the threshold (very plausible
+    // while the player is actively correcting it) shouldn't throw away
+    // all the sustained progress built up so far.
+    swarmCollapseSustain = Math.max(0, swarmCollapseSustain - dt * 2);
+    swarmGreying = swarmCollapseSustain > 0;
   }
 }
 
@@ -177,14 +181,17 @@ function swarmCollapse() {
   var majorityCount = majority === "maker" ? state.nailMakers : state.breakers;
   // Solve in iron rates: a maker and a breaker do not necessarily
   // contribute the same amount of capacity.
-  var t = SWARM_COLLAPSE_POST_IMBALANCE_TARGET;
   var minorityRate = majority === "maker" ? ironSupplyRate() : ironDemandRate();
-  var targetMajorityRate = minorityRate * (1 + t) / Math.max(0.0001, 1 - t);
   var perUnitRate = majority === "maker"
     ? nailMakerRateEffective() * IRON_PER_NAIL
     : breakerIntakeEffective() * activeIronTileCount();
-  var targetMajority = perUnitRate > 0 ? targetMajorityRate / perUnitRate : majorityCount;
-  var destroyed = Math.max(0, Math.round(majorityCount - targetMajority));
+  var targetMajority = perUnitRate > 0 ? minorityRate / perUnitRate : majorityCount;
+  var lowerCount = Math.floor(targetMajority);
+  var upperCount = Math.min(majorityCount, Math.ceil(targetMajority));
+  var lowerImbalance = Math.abs((lowerCount * perUnitRate - minorityRate) / (lowerCount * perUnitRate + minorityRate));
+  var upperImbalance = Math.abs((upperCount * perUnitRate - minorityRate) / (upperCount * perUnitRate + minorityRate));
+  var remainingMajority = upperImbalance < lowerImbalance ? upperCount : lowerCount;
+  var destroyed = Math.max(0, majorityCount - remainingMajority);
 
   if (majority === "maker") {
     state.nailMakers = Math.max(0, state.nailMakers - destroyed);

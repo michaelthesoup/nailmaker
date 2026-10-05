@@ -41,6 +41,26 @@
     overflow-x: auto;
   }
 
+  .map-layout {
+    display: grid;
+    grid-template-columns: max-content max-content;
+    gap: 14px;
+    align-items: start;
+  }
+
+  .map-column,
+  .city-column {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  @media (max-width: 700px) {
+    .map-layout {
+      grid-template-columns: max-content;
+    }
+  }
+
   .row {
     display: flex;
     justify-content: space-between;
@@ -550,70 +570,72 @@
   </div>
 
   <div id="mapSection" style="display:none;">
-    <div style="display:flex; gap:14px; align-items:flex-start; flex-wrap:wrap;">
-      <div style="flex:none;">
-        <div class="map-readout">
-        <div class="panel-header" style="width:100%; border:1px solid var(--ink); border-bottom:none;">extraction &mdash; map <span id="mapIndexLabel">1</span></div>
-        <div id="mapDisplay"></div>
-        <div class="map-health">
-          <div class="map-health-text" id="mapHealthText">0 / 0</div>
-          <div class="map-health-track"><div class="map-health-fill" id="mapHealthFill"></div></div>
+    <div class="map-layout">
+      <div class="map-column">
+        <div style="flex:none;">
+          <div class="map-readout">
+          <div class="panel-header" style="width:100%; border:1px solid var(--ink); border-bottom:none;">extraction &mdash; map <span id="mapIndexLabel">1</span></div>
+          <div id="mapDisplay"></div>
+          <div class="map-health">
+            <div class="map-health-text" id="mapHealthText">0 / 0</div>
+            <div class="map-health-track"><div class="map-health-fill" id="mapHealthFill"></div></div>
+          </div>
+          <div class="hint" id="mapMaterials">iron: 0 g &middot; copper: 0 g</div>
+          </div>
+          <div class="hint" style="margin-top:0;">i/c = iron/copper &nbsp; I/C = worked by breaker &nbsp; . = drained/empty</div>
         </div>
-        <div class="hint" id="mapMaterials">iron: 0 g &middot; copper: 0 g</div>
+
+        <div class="panel" id="yinYangSection" style="margin-top:0; display:none; width:320px; flex:none;">
+          <div class="panel-header">yin &amp; yang</div>
+          <div class="panel-body">
+            <div class="row"><span class="label">yin (breaking):</span><span class="value" id="valYin">0.0</span></div>
+            <div class="row"><span class="label">yang (making):</span><span class="value" id="valYang">0.0</span></div>
+            <div class="row"><span class="label">tao:</span><span class="value" id="valYinYangLevel">0</span></div>
+
+            <div class="yy-bar-wrap">
+              <div class="yy-bar-labels"><span>yin</span><span>yang</span></div>
+              <input type="range" id="sliderYinYang" min="0" max="100" step="1" value="50" tabindex="-1">
+            </div>
+            <div class="yy-status" id="valYinYangStatus">BALANCED</div>
+            <div class="hint" id="yinYangHint">stay balanced for a production/sales bonus</div>
+
+            <hr class="machinery-divider">
+
+            <div class="row"><span class="label">karma:</span><span class="value" id="valKarma">0</span></div>
+            <div class="hint" id="reincarnateHint">reach 3 tao to end this life and be reborn</div>
+            <button id="btnReincarnate" style="width:100%; margin-top:6px;" disabled>reincarnate</button>
+          </div>
         </div>
-        <div class="hint">i/c = iron/copper &nbsp; I/C = worked by breaker &nbsp; . = drained/empty</div>
       </div>
 
+      <div class="city-column">
       <div class="panel" id="citySection" style="display:none; margin-top:0; width:280px; flex:none;">
-        <div class="panel-header">the skyline</div>
-        <div class="panel-body">
-          <canvas id="cityCanvas" width="380" height="120" style="width:100%; height:120px; display:block; background:var(--paper); border:1px solid var(--ink);"></canvas>
-          <div class="hint" id="cityBuffs" style="text-align:center; margin-top:4px;"></div>
+          <div class="panel-header">the skyline</div>
+          <div class="panel-body">
+            <canvas id="cityCanvas" width="380" height="120" style="width:100%; height:120px; display:block; background:var(--paper); border:1px solid var(--ink);"></canvas>
+            <div class="hint" id="cityBuffs" style="text-align:center; margin-top:4px;"></div>
 
-          <div class="row" style="margin-top:6px;"><span class="label">foundry core &mdash; nailbomb <span id="valCityBombNumber">1</span></span><span class="value" id="valCityBombCount">0 made</span></div>
-          <div class="row" style="margin-top:2px;"><span class="label" style="font-size:11px;">unsold nails</span><span class="value" id="valCoreNails" style="font-size:11px;">0 / 0</span></div>
-          <div class="map-health-track"><div class="map-health-fill" id="coreNailsFill"></div></div>
-          <div class="row" style="margin-top:4px;"><span class="label" style="font-size:11px;">unstable cores</span><span class="value" id="valCoreIsotopes" style="font-size:11px;">0 / 1</span></div>
-          <div class="map-health-track"><div class="map-health-fill" id="coreIsotopesFill" style="background:var(--ink);"></div></div>
+            <div class="row" style="margin-top:6px;"><span class="label">foundry core &mdash; nailbomb <span id="valCityBombNumber">1</span></span><span class="value" id="valCityBombCount">0 made</span></div>
+            <div class="row" style="margin-top:2px;"><span class="label" style="font-size:11px;">unsold nails</span><span class="value" id="valCoreNails" style="font-size:11px;">0 / 0</span></div>
+            <div class="map-health-track"><div class="map-health-fill" id="coreNailsFill"></div></div>
+            <div class="row" style="margin-top:4px;"><span class="label" style="font-size:11px;">unstable cores</span><span class="value" id="valCoreIsotopes" style="font-size:11px;">0 / 1</span></div>
+            <div class="map-health-track"><div class="map-health-fill" id="coreIsotopesFill" style="background:var(--ink);"></div></div>
 
-          <button id="btnCityBomb" style="width:100%; margin-top:6px;">launch nailbomb</button>
-          <div class="hint">launches down the middle. one unstable core per nailbomb; demand spikes briefly, and the market scar permanently raises demand further -- but karma locks at -1 forever.</div>
-        </div>
+            <button id="btnCityBomb" style="width:100%; margin-top:6px;">launch nailbomb</button>
+            <div class="hint">launches down the middle. one unstable core per nailbomb; demand spikes briefly, and the market scar permanently raises demand further -- but karma locks at -1 forever.</div>
+          </div>
       </div>
-    </div>
 
-    <div style="display:flex; gap:14px; align-items:flex-start; margin-top:14px;">
-    <div class="panel" id="yinYangSection" style="margin-top:0; display:none; width:320px; flex:none;">
-      <div class="panel-header">yin &amp; yang</div>
-      <div class="panel-body">
-        <div class="row"><span class="label">yin (breaking):</span><span class="value" id="valYin">0.0</span></div>
-        <div class="row"><span class="label">yang (making):</span><span class="value" id="valYang">0.0</span></div>
-        <div class="row"><span class="label">tao:</span><span class="value" id="valYinYangLevel">0</span></div>
-
-        <div class="yy-bar-wrap">
-          <div class="yy-bar-labels"><span>yin</span><span>yang</span></div>
-          <input type="range" id="sliderYinYang" min="0" max="100" step="1" value="50" tabindex="-1">
-        </div>
-        <div class="yy-status" id="valYinYangStatus">BALANCED</div>
-        <div class="hint" id="yinYangHint">stay balanced for a production/sales bonus</div>
-
-        <hr class="machinery-divider">
-
-        <div class="row"><span class="label">karma:</span><span class="value" id="valKarma">0</span></div>
-        <div class="hint" id="reincarnateHint">reach 3 tao to end this life and be reborn</div>
-        <button id="btnReincarnate" style="width:100%; margin-top:6px;" disabled>reincarnate</button>
+      <div class="panel" id="swarmSection" style="margin-top:0; display:none; width:320px; flex:none;">
+          <div class="panel-header">the foundry swarm</div>
+          <div class="panel-body">
+            <canvas id="swarmCanvas" width="288" height="224" style="width:100%; height:224px; display:block; background:var(--paper); border:1px solid var(--ink); cursor:crosshair;"></canvas>
+            <div class="hint" id="swarmIronRates" style="text-align:center; margin-top:6px;">iron: 0 g/s made &middot; 0 g/s used</div>
+            <div class="hint" id="swarmUnitCounts" style="text-align:center;">0 makers &middot; 0 breakers</div>
+            <div class="hint" id="swarmCostHint" style="text-align:center;">click a dot to flip it -- costs copper</div>
+          </div>
       </div>
-    </div>
-
-    <div class="panel" id="swarmSection" style="margin-top:0; display:none; width:320px; flex:none;">
-      <div class="panel-header">the foundry swarm</div>
-      <div class="panel-body">
-        <canvas id="swarmCanvas" width="288" height="224" style="width:100%; height:224px; display:block; background:var(--paper); border:1px solid var(--ink); cursor:crosshair;"></canvas>
-        <div class="hint" id="swarmIronRates" style="text-align:center; margin-top:6px;">iron: 0 g/s made &middot; 0 g/s used</div>
-        <div class="hint" id="swarmUnitCounts" style="text-align:center;">0 makers &middot; 0 breakers</div>
-        <div class="hint" id="swarmCostHint" style="text-align:center;">click a dot to flip it -- costs copper</div>
       </div>
-    </div>
     </div>
   </div>
 

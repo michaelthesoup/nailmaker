@@ -405,9 +405,8 @@ var CORE_ISOTOPES_BASE = 1;
 // ----------------------------------------------------------------
 var SWARM_MAJORITY_TOLERANCE = 0.05; // matches YINYANG_BALANCE_TOLERANCE's definition of real parity
 var SWARM_MAJORITY_SPEED_MULT = 1; // TESTING: temporarily disabled -- all dots move at the same base speed regardless of majority/minority. Restore to something like 2.4 once the rest of the loop is confirmed to feel right.
-var SWARM_COLLAPSE_IMBALANCE_THRESHOLD = 0.4; // |imbalance| has to cross this -- eased down from 0.85, which required nearly every dot to be one color. Now a clear but not total majority (~70% of dots) is enough.
+var SWARM_COLLAPSE_IMBALANCE_THRESHOLD = 0.32; // |imbalance| has to cross this -- eased down from 0.85 (nearly every dot one color), then from 0.4 (which was still easy to hover just under during active play). Now a clear ~2-to-1 majority is enough.
 var SWARM_COLLAPSE_SUSTAIN_SEC = 1.5; // ...and stay there this long (the grey-out) before it actually collapses
-var SWARM_COLLAPSE_POST_IMBALANCE_TARGET = 0.3; // the real ratio a collapse corrects back down to -- still skewed, just survivable
 var SWARM_COLLAPSE_FUEL_GAIN = 1; // unstable core banked per collapse
 
 function defaultState() {
