@@ -326,7 +326,8 @@ function mapRemainingWeight(tiles) {
 // Bomb damage reduces the player's real makers, breakers, and factories.
 // The generated city shows a fading trail of destruction as the camera
 // reaches active civilization again. Each impact also spikes demand
-// temporarily, scars the market permanently, and locks karma at -1.
+// temporarily, scars the market permanently, and drains tao (pushing it
+// negative, which also costs karma standing and blocks reincarnation).
 // ----------------------------------------------------------------
 
 var CITY_TOTAL_SLOTS = 22; // buildings generated per district
@@ -369,6 +370,9 @@ var CITY_FEVER_DEMAND_PER_POINT = 0.35; // +35% public demand per point of fever
 // exchange for demand that only ever grows, never shrinks.
 var CITY_MARKET_SCAR_PER_BOMB = 0.5; // +50% permanent demand per nailbomb
 var CITY_MARKET_SCAR_MAX = 10; // caps at +1000% permanent demand
+// Each nailbomb drains tao by round(this * the bomb's power) -- 3 for the first
+// bomb (= -1 karma standing at 3 tao per karma), then more for each bigger bomb.
+var CITY_BOMB_TAO_PER_POWER = 6;
 
 // Pedestrians walking the skyline's ground floor -- purely visual
 // (their count and movement are not saved), except for the panic
@@ -485,7 +489,6 @@ function defaultState() {
     cityFever: 0, // decaying marketing boost from recent nailbombs -- see cityFeverMult()
     cityPanic: 0, // decaying street-panic boost from a recent nailbomb -- fast, short-lived, see cityFeverMult()
     cityMarketScar: 0, // permanent demand loss from the lasting impact of bombings
-    cityKarmaLocked: false,
     isotopeStock: 0, // banked unstable cores from swarm collapses -- one is spent per nailbomb
     cityWorld: {
       cameraX: 0,

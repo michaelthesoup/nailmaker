@@ -196,6 +196,13 @@
     min-width: 120px;
   }
 
+  .bonus-note {
+    color: #999;
+    font-weight: normal;
+    font-size: 11px;
+    margin-left: 4px;
+  }
+
   .hint {
     color: #555;
     font-size: 11px;
@@ -531,7 +538,7 @@
       <p>On top of that basic economy sit two longer-term layers that give the game its shape:</p>
       <ul>
         <li><strong>Balance (the Taoist and Buddhist layer).</strong> Your economy has two opposing forces: <em>making</em> (nail makers, which consume iron) and <em>breaking</em> (nail breakers, which produce iron). Keeping those forces in proportion, and deliberately crossing back and forth across true balance, fills the yin and yang bars and earns <strong>tao</strong>. Tao is turned into <strong>karma</strong> by <strong>reincarnation</strong>, which ends your current life and starts a new one with better starting bonuses. Enough karma eventually reaches <strong>Nirvana</strong>, which is as close to a finish line as the game has.</li>
-        <li><strong>Acceleration (the destructive layer).</strong> If you push your economy badly out of balance on purpose, the foundry swarm collapses into an <strong>unstable core</strong>. Unstable cores let you build and launch <strong>nailbombs</strong> at your own skyline. Nailbombs wreck part of your machinery, but they raise public demand permanently and enormously. The price is that your karma is locked at &minus;1 and that life can never be reincarnated.</li>
+        <li><strong>Acceleration (the destructive layer).</strong> If you push your economy badly out of balance on purpose, the foundry swarm collapses into an <strong>unstable core</strong>. Unstable cores let you build and launch <strong>nailbombs</strong> at your own skyline. Nailbombs wreck part of your machinery, but they raise public demand permanently and enormously. The price is that every nailbomb drains your tao and can push it below zero. While tao is negative you cannot reincarnate, and your karma standing drops by 1 for every 3 tao you are down.</li>
       </ul>
       <p>There is no single fixed ending. Your score for a life is the total number of nails you made in it. That score goes on the leaderboard when you end a life. You can pursue a high score, pursue Nirvana, or explore the nailbomb path, and the game lets you choose.</p>
       <p>Panels appear as you demonstrate that you understand what they are about. You never need to hunt for hidden requirements: each section below tells you exactly what unlocks it.</p>
@@ -575,8 +582,8 @@
       <p>The price control sits in the business panel with a <strong>&minus;</strong> and a <strong>+</strong> button. Each press moves the price by $0.01, and the price cannot go below $0.01. You start at $0.08. If you hold a button down it repeats, getting faster the longer you hold, and after five seconds of holding each repeat fires three steps at once so that large changes do not take forever.</p>
       <h3>Public demand</h3>
       <p>The number labelled <em>public demand (%)</em> is calculated like this:</p>
-      <p><code>demand = 1.4<sup>marketing level</sup> &times; (0.8 &divide; price) &times; (1 + 0.1 &times; tao) &times; skyline multiplier</code></p>
-      <p>Reading it from left to right: each marketing level multiplies demand by 1.4; a lower price raises demand in exact inverse proportion (halve the price and demand doubles); every tao point you currently hold adds 10%; and the skyline multiplier is 1.0 until you start using nailbombs (section 15). Because the price term is <code>0.8 &divide; price</code>, a price of $0.80 gives a demand of exactly 1% with no marketing, and $0.08 gives 10%.</p>
+      <p><code>demand = 1.4<sup>marketing level</sup> &times; (0.8 &divide; price) &times; (1 + 0.1 &times; tao + nailbomb scar) &times; fever &times; panic</code></p>
+      <p>Reading it from left to right: each marketing level multiplies demand by 1.4; a lower price raises demand in exact inverse proportion (halve the price and demand doubles); every tao point you currently hold adds 10%; the permanent nailbomb scar adds another +50% per bomb (section 15) and <em>adds</em> to the tao bonus rather than multiplying it, so the small percentage next to the demand figure is simply the total of both; and fever and panic are temporary nailbomb spikes that multiply on top. Because the price term is <code>0.8 &divide; price</code>, a price of $0.80 gives a demand of exactly 1% with no marketing, and $0.08 gives 10%.</p>
       <h3>From demand to sales</h3>
       <p>Demand is not a count of nails; it is turned into nails sold per second by this curve (borrowed from Universal Paperclips):</p>
       <p><code>nails sold per second = min(1, demand &divide; 100) &times; 7 &times; demand<sup>1.6</sup></code></p>
@@ -661,8 +668,9 @@
       <p>When <strong>both bars reach 100</strong>, you earn <strong>1 tao</strong> and both bars reset to zero. Because only one bar can tick at a time, this cannot be achieved by sitting still: you have to spend time on the yang side and time on the yin side. The only way to fill both is to genuinely cross back and forth over true balance as your build changes, which is exactly the point.</p>
       <h3>What held tao does</h3>
       <ul>
-        <li><strong>+50% rate</strong> for every nail maker and nail breaker, per tao point held.</li>
-        <li><strong>+10% public demand</strong> per tao point held. The business panel shows this next to the demand figure.</li>
+        <li><strong>+50% rate</strong> for every nail maker and nail breaker, per tao point held. The total is shown as a small percentage next to the nail makers and nail breakers counts.</li>
+        <li><strong>+10% public demand</strong> per tao point held. The business panel shows the total of this and the nailbomb scar next to the demand figure.</li>
+        <li><strong>Negative tao gives 0%.</strong> If your tao drops below zero (nailbombs do this), the bonuses are simply zero. They never become a penalty: production and demand are never reduced below their base.</li>
       </ul>
       <p>The word "held" matters. These bonuses depend on the tao you hold right now, so spending or losing tao removes the bonus immediately. Reincarnation (next section) converts tao into karma, which is permanent, but your new life only starts with the small tao award described there.</p>
 
@@ -736,11 +744,11 @@
         <li><strong>A small system-wide loss.</strong> Every active category (makers, breakers, factories) also loses a little regardless of where the bomb landed, a few percent at most (capped at 15%), and never less than one machine.</li>
         <li><strong>Fever.</strong> A temporary demand boost: each bomb adds fever points that grow 2.3&times; larger for every bomb before it, up to a ceiling that grows the same way. Each fever point gives +35% public demand, and fever decays with a half-life of 40 seconds.</li>
         <li><strong>Panic.</strong> The street panic-buys: a short +50% demand spike that is back to nothing within seconds (half-life 5 seconds).</li>
-        <li><strong>The market scar.</strong> A <em>permanent</em> demand increase of +50% per bomb, capped at +1000% in total. It never decays and it stacks with everything else.</li>
-        <li><strong>Karma locks at &minus;1.</strong> Your karma becomes &minus;1 and stays that way for the rest of this life. Reincarnation is disabled: the button reads that karma is locked and this life cannot be reincarnated.</li>
+        <li><strong>The market scar.</strong> A <em>permanent</em> demand increase of +50% per bomb, capped at +1000% in total. It never decays. It adds to the tao demand bonus, and fever and panic multiply on top of it.</li>
+        <li><strong>Tao drain.</strong> Each bomb subtracts tao equal to its power times 6, rounded: 3 for the first bomb, then 4, 5, 6 and so on as bombs get bigger. Tao can go below zero. Every 3 tao below zero counts as &minus;1 on the karma counter (&minus;3 tao is &minus;1 karma, &minus;6 is &minus;2), and while tao is negative the reincarnate button is disabled.</li>
       </ul>
       <p>The skyline's status line tells you what is currently active: the street panicking, the temporary demand bonus, and the permanent scar.</p>
-      <p>Nailbombing is the opposite bargain from balance. You give up reincarnation, and all the karma you would have built, in return for huge demand that only ever grows. It is a legitimate path for chasing a high nail count, and the only way off it is ending the run.</p>
+      <p>Nailbombing is the opposite bargain from balance. You dig yourself a tao hole, and with it a stretch of life where you cannot reincarnate, in return for huge demand that only ever grows. The hole is not permanent: yin and yang laps still earn +1 tao each, so you can work your way back up to 3 tao and reincarnate again, but every further bomb digs it deeper.</p>
 
       <h2 id="g-paths">16. Ending a life: all the ways</h2>
       <table>
@@ -749,7 +757,7 @@
           <td><strong>Reincarnate</strong></td>
           <td>Hold 3 or more tao, press <em>reincarnate</em>.</td>
           <td>All karma (plus the new karma), Nirvana, panel unlocks, yin and yang bars, and a rolled starting package including 1 to 3 tao.</td>
-          <td>The economy of the life you are leaving. Disabled if you nailbombed.</td>
+          <td>The economy of the life you are leaving. Not available while your tao is negative (for example after nailbombing).</td>
         </tr>
         <tr>
           <td><strong>End run</strong></td>
@@ -758,10 +766,10 @@
           <td>Everything else, including all karma. You start exactly like a brand new player.</td>
         </tr>
         <tr>
-          <td><strong>Nailbomb lock</strong></td>
+          <td><strong>Nailbomb</strong></td>
           <td>Drop a nailbomb.</td>
           <td>You keep playing this life with permanently higher demand.</td>
-          <td>Karma goes to &minus;1 and reincarnation is shut off for the rest of the life. The only exit is ending the run.</td>
+          <td>Tao drops by 3 or more per bomb and can go negative, which blocks reincarnation until you earn it back above 3.</td>
         </tr>
       </table>
       <p>Both ending options ask you to confirm. Both submit your lifetime nail count to the leaderboard and delete your local and cloud saves so the old life cannot be reloaded. Ending a run with karma in the bank warns you plainly that the karma will be lost.</p>
@@ -786,7 +794,7 @@
         <li><strong>Feed the factories.</strong> Copper is worth far more as machines than as cash. Buy a factory early and keep it supplied. The slider decides what you get, and cheaper makers get you more machines per gram of copper.</li>
         <li><strong>Learn to cross balance.</strong> Tao is the point of the middle game. Fill yin and yang by deliberately leaning your factories one way and then the other. The percentages above the slider tell you what you are building. The swarm's copper-for-balance clicks help when you overshoot.</li>
         <li><strong>Mind the map.</strong> Your breakers' output depends on how many iron deposits the current map has, so a new map can shift your balance on its own.</li>
-        <li><strong>Choose your path deliberately.</strong> Reincarnation compounds across lives and leads toward Nirvana. Nailbombing gives immense demand now at the cost of that entire future. Everything you do to the swarm on the way to a collapse costs you real machines.</li>
+        <li><strong>Choose your path deliberately.</strong> Reincarnation compounds across lives and leads toward Nirvana. Nailbombing gives immense demand now at the cost of a tao hole you have to climb out of before you can reincarnate again. Everything you do to the swarm on the way to a collapse costs you real machines.</li>
         <li><strong>Save before you experiment.</strong> Collapses and nailbombs destroy things and cannot be undone. The save button is a cheap safety net, and nothing here is automatic except cloud saving when you are logged in.</li>
       </ul>
 
@@ -806,12 +814,13 @@
         <tr><td>Factory&sup2;</td><td>Unlocks at 100,000 makers and 100,000 breakers; $1,000,000,000 &times; 1.1<sup>owned</sup>; 10,000,000 g copper per factory built</td></tr>
         <tr><td>Yin &amp; yang</td><td>Unlocks with 1 maker + 1 breaker; one bar +1 per second; both at 100 = 1 tao</td></tr>
         <tr><td>Each held tao</td><td>+50% maker and breaker rate, +10% public demand</td></tr>
-        <tr><td>Karma</td><td>1 per 3 tao at reincarnation</td></tr>
+        <tr><td>Karma</td><td>1 per 3 tao at reincarnation; every 3 tao below zero is &minus;1 on the counter</td></tr>
         <tr><td>Swarm unlocks</td><td>1 tao held + 1 factory</td></tr>
         <tr><td>Swarm click</td><td>Costs 100 g copper per maker or 1,000 g per breaker bought; 0.25 s cooldown</td></tr>
         <tr><td>Collapse</td><td>Imbalance &ge; 0.32 for 1.5 s; yields 1 unstable core; unlocks the skyline</td></tr>
         <tr><td>Nailbomb nails</td><td>50,000 &times; 2.3<sup>bombs dropped</sup>, plus 1 unstable core</td></tr>
-        <tr><td>Nailbomb permanent scar</td><td>+50% demand per bomb, capped at +1000%</td></tr>
+        <tr><td>Nailbomb permanent scar</td><td>+50% demand per bomb (added to the tao bonus), capped at +1000%</td></tr>
+        <tr><td>Nailbomb tao drain</td><td>round(6 &times; bomb power): 3 for the first bomb, rising with each bigger one</td></tr>
         <tr><td>Fever / panic</td><td>+35% demand per fever point (half-life 40 s) / up to +50% (half-life 5 s)</td></tr>
         <tr><td>Cloud autosave</td><td>Every 30 seconds while logged in</td></tr>
       </table>
@@ -842,7 +851,7 @@
           <button id="btnPricePlus">+</button>
         </div>
 
-        <div class="row"><span class="label">public demand (%):</span><span class="value"><span id="valDemand">0%</span><span id="valDemandYYNote" style="color:#999; font-weight:normal; font-size:11px; margin-left:4px;"></span></span></div>
+        <div class="row"><span class="label">public demand (%):</span><span class="value"><span id="valDemand">0%</span><span id="valDemandYYNote" class="bonus-note"></span></span></div>
 
         <div class="row">
           <span class="label">marketing level:</span>
@@ -871,7 +880,7 @@
         <div class="machinery-block" style="border-top:none; margin-top:0; padding-top:0;">
           <div class="row">
             <span class="label">nail makers:</span>
-            <span class="value" id="valNailMakers">0</span>
+            <span class="value"><span id="valNailMakers">0</span><span class="bonus-note" id="valNailMakerBonus"></span></span>
             <button id="btnBuyNailMaker">buy nail maker</button>
           </div>
           <div class="hint">
@@ -881,7 +890,7 @@
 
           <div class="row">
             <span class="label">nail breakers:</span>
-            <span class="value" id="valBreakers">0</span>
+            <span class="value"><span id="valBreakers">0</span><span class="bonus-note" id="valBreakerBonus"></span></span>
             <button id="btnBuyBreaker">buy breaker</button>
           </div>
           <div class="hint">
@@ -997,7 +1006,7 @@
             <div class="map-health-track"><div class="map-health-fill" id="coreIsotopesFill" style="background:var(--ink);"></div></div>
 
             <button id="btnCityBomb" style="width:100%; margin-top:6px;">launch nailbomb</button>
-            <div class="hint">launches down the middle. one unstable core per nailbomb; demand spikes briefly, and the market scar permanently raises demand further -- but karma locks at -1 forever.</div>
+            <div class="hint">launches down the middle. one unstable core per nailbomb; demand spikes briefly and the market scar permanently raises demand further -- but every bomb drains tao (3 for the first, more for bigger bombs).</div>
           </div>
       </div>
 

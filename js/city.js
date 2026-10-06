@@ -347,8 +347,7 @@ function cityApplyImpact(targetWorldX) {
   state.cityBombs += 1;
   state.cityFever = Math.min(cityFeverMax(), state.cityFever + gain);
   state.cityMarketScar = Math.min(CITY_MARKET_SCAR_MAX, state.cityMarketScar + CITY_MARKET_SCAR_PER_BOMB);
-  state.karma = -1;
-  state.cityKarmaLocked = true;
+  state.tao -= Math.max(1, Math.round(CITY_BOMB_TAO_PER_POWER * power)); // bigger bombs drain more tao; it can go negative
   state.cityPanic = CITY_PANIC_PER_BOMB; // a nailbomb always maxes out the panic meter -- how long that panic actually lasts on-screen is per-pedestrian, below
 
   var aftermathSpan = CITY_AFTERMATH_BASE_DISTANCE

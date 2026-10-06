@@ -11,7 +11,7 @@
 // gets fast enough to cause real performance trouble.
 var SETTLE_INTERVAL_FLOOR_SEC = 0.05; // never settle faster than 20x/sec
 
-function tick(dt) {
+function tick(dt, skipRender) {
   state.simTime += dt;
   cityTick(dt);
 
@@ -127,12 +127,35 @@ function tick(dt) {
     return;
   }
 
-  render();
+  if (!skipRender) render();
 }
 
-setInterval(function () {
-  tick(TICK_MS / 1000);
-}, TICK_MS);
+// Browsers throttle timers in background tabs (often to ~1 call/sec, or
+// worse), so counting every timer call as exactly TICK_MS of game time made
+// the game crawl whenever the tab wasn't focused. Instead we measure the
+// real time that passed since the last call and simulate all of it, in
+// steps no bigger than TICK_MS so factories/settling behave exactly as
+// they do at normal speed. The cap stops a long sleep/suspend from
+// stalling the page with an enormous catch-up.
+var MAX_CATCHUP_SEC = 600;
+var lastTickWallMs = Date.now();
+
+function runElapsedTime() {
+  var now = Date.now();
+  var elapsed = (now - lastTickWallMs) / 1000;
+  lastTickWallMs = now;
+  if (!(elapsed > 0)) return;
+  if (elapsed > MAX_CATCHUP_SEC) elapsed = MAX_CATCHUP_SEC;
+
+  var step = TICK_MS / 1000;
+  while (elapsed > 1e-9) {
+    var dt = Math.min(step, elapsed);
+    elapsed -= dt;
+    tick(dt, elapsed > 1e-9); // only the last step of a batch needs to redraw
+  }
+}
+
+setInterval(runElapsedTime, TICK_MS);
 
 render();
 renderLeaderboard();

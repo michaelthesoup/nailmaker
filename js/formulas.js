@@ -256,8 +256,12 @@ function harmonyRatio() {
 
 // Held Tao directly controls this bonus. Spending Tao therefore removes
 // the corresponding rate bonus immediately.
+function taoRateBonus() {
+  return Math.max(0, state.tao) * TAO_RATE_BONUS_PER_POINT; // negative tao just means 0%, never a penalty
+}
+
 function productionRateBonusMultiplier() {
-  return 1 + state.tao * TAO_RATE_BONUS_PER_POINT;
+  return 1 + taoRateBonus();
 }
 
 function yinYangTickAmount() {
@@ -275,10 +279,19 @@ function yinYangStatusLabel() {
   return diff > 0 ? "YANG-LEANING" : "YIN-LEANING";
 }
 
-// Permanent public-demand multiplier from past tao points -- this
-// This is based on currently held Tao, so spending Tao reduces it.
+function taoDemandBonus() {
+  return Math.max(0, state.tao) * YINYANG_PD_BONUS_PER_LEVEL; // negative tao just means 0%
+}
+
+// All permanent demand bonuses ADD together (tao + nailbomb market scar),
+// so the percentage shown next to demand is exactly the sum of its parts.
+function permanentDemandBonus() {
+  return taoDemandBonus() + Math.min(CITY_MARKET_SCAR_MAX, state.cityMarketScar);
+}
+
+// Based on currently held Tao and the permanent market scar.
 function yinYangPDMultiplier() {
-  return 1 + YINYANG_PD_BONUS_PER_LEVEL * state.tao;
+  return 1 + permanentDemandBonus();
 }
 
 // Called once per real second (from the settle loop in tick()).
@@ -310,12 +323,11 @@ function settleYinYang() {
   }
 }
 
-// Temporary fever/panic spikes stack on top of the PERMANENT market
-// scar -- every nailbomb leaves demand permanently higher, never lower.
+// Temporary fever/panic spikes multiply on top of the permanent bonuses
+// (the market scar itself lives in permanentDemandBonus() above).
 function cityFeverMult() {
   var feverMult = 1 + CITY_FEVER_DEMAND_PER_POINT * state.cityFever;
   var panicMult = 1 + CITY_PANIC_DEMAND_MAX * state.cityPanic;
-  var marketScarMult = 1 + Math.min(CITY_MARKET_SCAR_MAX, state.cityMarketScar);
-  return marketScarMult * feverMult * panicMult;
+  return feverMult * panicMult;
 }
 

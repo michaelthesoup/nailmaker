@@ -15,6 +15,8 @@ var el = {
   iron: document.getElementById("valIron"),
   copper: document.getElementById("valCopper"),
   nailMakers: document.getElementById("valNailMakers"),
+  nailMakerBonus: document.getElementById("valNailMakerBonus"),
+  breakerBonus: document.getElementById("valBreakerBonus"),
   factories: document.getElementById("valFactories"),
   breakers: document.getElementById("valBreakers"),
   avgRev: document.getElementById("valAvgRev"),

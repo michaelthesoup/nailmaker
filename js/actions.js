@@ -251,6 +251,11 @@ function migrateLoadedState() {
   }
   delete state.taoBonusStack;
   delete state.yinYangLevel;
+
+  // The karma lock no longer exists (nailbombs drain tao instead). A save
+  // made under the old rule has karma stuck at -1 -- reset it to 0.
+  if (state.cityKarmaLocked && state.karma < 0) state.karma = 0;
+  delete state.cityKarmaLocked;
 }
 
 function flashButton(btn, text) {

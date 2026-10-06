@@ -10,11 +10,13 @@ function render() {
   el.unsold.textContent = fmtInt(state.unsold);
   el.price.textContent = fmtMoney(state.price);
   el.demand.textContent = Math.round(publicDemandPD()) + "%";
-  if (state.unlockedYinYang && state.tao > 0) {
-    el.demandYYNote.textContent = "(+" + Math.round(YINYANG_PD_BONUS_PER_LEVEL * state.tao * 100) + "% from tao)";
-  } else {
-    el.demandYYNote.textContent = "";
-  }
+  // Total permanent demand bonus (tao + nailbomb scar), as one number.
+  var demandBonusPct = Math.round(permanentDemandBonus() * 100);
+  el.demandYYNote.textContent = demandBonusPct > 0 ? "+" + demandBonusPct + "%" : "";
+  // Same idea for machine speed: the tao rate bonus applies to makers and breakers alike.
+  var rateBonusPct = Math.round(taoRateBonus() * 100);
+  el.nailMakerBonus.textContent = rateBonusPct > 0 ? "+" + rateBonusPct + "%" : "";
+  el.breakerBonus.textContent = rateBonusPct > 0 ? "+" + rateBonusPct + "%" : "";
   el.marketing.textContent = state.marketingLevel;
   el.iron.textContent = fmtWeight(state.ironAmt);
   el.copper.textContent = fmtWeight(state.copperAmt);
@@ -107,14 +109,16 @@ function render() {
     renderYinYangStatus(yinYangStatusLabel());
 
     if (el.yinYangHint) {
-      el.yinYangHint.textContent = "harvest more than you use to fill yin, use more than you harvest to fill yang \u2014 fill both to earn Tao. Each held Tao gives makers and breakers +" + Math.round(TAO_RATE_BONUS_PER_POINT * 100) + "% rate and +" + Math.round(YINYANG_PD_BONUS_PER_LEVEL * 100) + "% demand.";
+      el.yinYangHint.textContent = "harvest more than you use to fill yin, use more than you harvest to fill yang \u2014 fill both to earn Tao. Each held Tao gives makers and breakers +" + Math.round(TAO_RATE_BONUS_PER_POINT * 100) + "% rate and +" + Math.round(YINYANG_PD_BONUS_PER_LEVEL * 100) + "% demand." + (state.tao < 0 ? " Negative tao gives no bonus (0%) \u2014 it isn't a penalty, but it blocks reincarnation." : "");
     }
 
-    el.valKarma.textContent = fmtInt(state.karma);
+    // Negative tao counts against your karma standing: every 3 tao below zero is -1 karma.
+    var negativeKarma = state.tao < 0 ? Math.trunc(state.tao / KARMA_TAO_THRESHOLD) : 0;
+    el.valKarma.textContent = fmtInt(state.karma + negativeKarma);
     var karmaAvailable = Math.floor(state.tao / KARMA_TAO_THRESHOLD);
-    if (state.cityKarmaLocked) {
+    if (state.tao < 0) {
       el.btnReincarnate.disabled = true;
-      el.reincarnateHint.textContent = "karma is locked at -1; this life cannot be reincarnated";
+      el.reincarnateHint.textContent = "tao is negative (" + state.tao + ") \u2014 earn it back to " + KARMA_TAO_THRESHOLD + " to reincarnate";
     } else if (karmaAvailable >= 1) {
       var projectedTotal = state.karma + karmaAvailable;
       el.btnReincarnate.disabled = false;
