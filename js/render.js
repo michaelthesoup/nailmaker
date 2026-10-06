@@ -39,6 +39,9 @@ function render() {
   el.factoryOutputRate.textContent = fmtDecimal(state.factories * (1 / FACTORY_PERIOD_SEC) * 60);
 
   el.sliderFactoryBalance.value = state.factoryBalance;
+  // Share of factory output going to each machine type (white = makers, black = breakers).
+  el.factoryMakerPct.textContent = Math.round(state.factoryBalance) + "%";
+  el.factoryBreakerPct.textContent = Math.round(100 - state.factoryBalance) + "%";
   var gray = Math.round(255 * (state.factoryBalance / 100));
   el.sliderFactoryBalance.style.accentColor = "rgb(" + gray + "," + gray + "," + gray + ")";
 
@@ -140,21 +143,8 @@ function render() {
 }
 
 function renderGuide() {
-  if (!el.guideOverlay) return;
-  var unlocked = guideUnlocks();
-  if (!state.guideSeen) state.guideSeen = {};
-
-  var sections = document.querySelectorAll("[data-guide-unlock]");
-  for (var i = 0; i < sections.length; i++) {
-    var key = sections[i].getAttribute("data-guide-unlock");
-    sections[i].style.display = unlocked[key] ? "" : "none";
-  }
-
-  var unread = 0;
-  for (var unlockKey in unlocked) {
-    if (unlocked[unlockKey] && !state.guideSeen[unlockKey]) unread++;
-  }
-  el.btnGuide.textContent = unread ? "guide (" + unread + ")" : "guide";
+  // The guide is now one complete manual -- nothing is gated or "unread".
+  if (el.btnGuide) el.btnGuide.textContent = "guide";
 }
 
 function renderYinYangStatus(label) {

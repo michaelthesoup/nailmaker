@@ -12,6 +12,11 @@
   :root {
     --paper: #ffffff; /* background */
     --ink: #000000;   /* text, borders -- same value on purpose, this theme never distinguished them */
+    /* every column and every panel is exactly this wide: 320px, shrinking
+       evenly (never below 280px) so all three columns stay side by side
+       on narrower windows instead of wrapping underneath each other */
+    --col-w: clamp(280px, calc((100vw - 40px - 2 * var(--gap)) / 3), 320px);
+    --gap: 14px;      /* same gap between columns and between stacked panels */
   }
 
   html[data-theme="dark"] {
@@ -35,31 +40,44 @@
 
   .columns {
     display: flex;
-    gap: 12px;
+    gap: var(--gap);
     align-items: flex-start;
     flex-wrap: nowrap;
     overflow-x: auto;
   }
 
+  /* #mapSection and .map-layout are only wrappers (JS shows/hides
+     #mapSection) -- "contents" lets the map column and skyline column
+     sit directly in .columns as siblings of the business column, so all
+     three share one row, one width and one gap. */
+  #mapSection {
+    display: contents;
+  }
+
+  /* Left column (map, then yin & yang) stays put; the skyline sits
+     beside the map and the swarm beside yin & yang, each pair stretched
+     to the same height so they line up top and bottom. */
   .map-layout {
     display: grid;
-    grid-template-columns: max-content max-content;
-    gap: 14px;
-    align-items: start;
+    grid-template-columns: var(--col-w) var(--col-w);
+    gap: var(--gap);
+    align-items: stretch;
+    align-content: start;
   }
 
   .map-column,
   .city-column {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
+    display: contents;
   }
 
-  @media (max-width: 700px) {
-    .map-layout {
-      grid-template-columns: max-content;
-    }
+  .map-layout .panel {
+    margin-bottom: 0;
   }
+
+  #mapPanel       { grid-column: 1; grid-row: 1; }
+  #citySection    { grid-column: 2; grid-row: 1; }
+  #yinYangSection { grid-column: 1; grid-row: 2; }
+  #swarmSection   { grid-column: 2; grid-row: 2; }
 
   .row {
     display: flex;
@@ -74,8 +92,8 @@
   .panel {
     border: 1px solid var(--ink);
     background: var(--paper);
-    margin-bottom: 14px;
-    width: 320px;
+    margin-bottom: var(--gap);
+    width: var(--col-w);
   }
 
   .panel-header {
@@ -110,7 +128,7 @@
   }
 
   .row button {
-    width: 140px;
+    width: min(140px, 42%);
     flex-shrink: 0;
     margin-left: 10px;
   }
@@ -138,8 +156,8 @@
   .top-buttons {
     display: flex;
     gap: 6px;
-    width: 320px;
-    margin-bottom: 14px;
+    width: var(--col-w);
+    margin-bottom: var(--gap);
   }
 
   .top-buttons button {
@@ -149,14 +167,16 @@
 
   #mapDisplay {
     font-family: "Courier New", Courier, monospace;
-    font-size: 15px;
+    font-size: calc(var(--col-w) / 18.8);
     line-height: 1.15;
-    letter-spacing: 2px;
+    letter-spacing: calc(var(--col-w) / 107);
     white-space: pre;
+    text-align: center;
     border: 1px solid var(--ink);
-    padding: 8px;
+    padding: 8px 0;
     background: var(--paper);
-    width: fit-content;
+    width: 100%;
+    overflow: hidden;
   }
 
   #mapMaterials {
@@ -352,24 +372,104 @@
     opacity: 1;
   }
 
-  .guide-tabs {
+  /* ---- User's guide: a full-page manual ---- */
+  #guideOverlay {
+    position: fixed;
+    inset: 0;
+    background: var(--paper);
+    z-index: 50;
+    overflow-y: auto;
+  }
+
+  .guide-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 2;
     display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    background: var(--paper);
     border-bottom: 1px solid var(--ink);
   }
 
-  .guide-tab {
-    flex: 1;
-    border: 0;
-    border-right: 1px solid var(--ink);
-    background: var(--paper);
-    text-align: left;
+  .guide-topbar strong { font-size: 16px; }
+
+  .guide-page {
+    display: grid;
+    grid-template-columns: 250px minmax(0, 1fr);
+    gap: 40px;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 24px 20px 90px;
   }
 
-  .guide-tab:last-child { border-right: 0; }
-  .guide-tab.active { background: var(--ink); color: var(--paper); }
-  .guide-section { border-top: 1px solid #ddd; padding-top: 10px; }
-  .guide-section:first-child { border-top: 0; padding-top: 0; }
-  .guide-locked { color: #777; }
+  .guide-toc {
+    position: sticky;
+    top: 70px;
+    align-self: start;
+    max-height: calc(100vh - 100px);
+    overflow-y: auto;
+    border: 1px solid var(--ink);
+    padding: 8px 12px;
+  }
+
+  .guide-toc a {
+    display: block;
+    padding: 4px 0;
+    color: var(--ink);
+    text-decoration: none;
+  }
+
+  .guide-toc a:hover { text-decoration: underline; }
+
+  .guide-content {
+    max-width: 840px;
+    font-size: 14px;
+    line-height: 1.7;
+  }
+
+  .guide-content h2 {
+    font-size: 22px;
+    margin: 48px 0 12px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--ink);
+    scroll-margin-top: 70px;
+  }
+
+  .guide-content h2:first-child { margin-top: 0; }
+  .guide-content h3 { font-size: 16px; margin: 26px 0 6px; }
+  .guide-content p { margin: 0 0 12px; }
+  .guide-content ul { margin: 0 0 12px; padding-left: 22px; }
+  .guide-content li { margin-bottom: 5px; }
+
+  .guide-content code {
+    font-family: "Courier New", Courier, monospace;
+    font-size: 13px;
+    border: 1px solid #bbb;
+    padding: 0 4px;
+  }
+
+  .guide-content table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 8px 0 18px;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .guide-content th,
+  .guide-content td {
+    border: 1px solid var(--ink);
+    padding: 6px 8px;
+    text-align: left;
+    vertical-align: top;
+  }
+
+  @media (max-width: 800px) {
+    .guide-page { grid-template-columns: minmax(0, 1fr); }
+    .guide-toc { position: static; max-height: none; }
+  }
 </style>
 <script>
   (function () {
@@ -394,53 +494,328 @@
 
 <button id="btnDarkMode" style="position:fixed; bottom:12px; left:12px; font-size:10px; padding:2px 6px; opacity:0.7; z-index:5;">dark mode</button>
 
-<div id="guideOverlay" style="display:none; position:fixed; inset:0; background:var(--paper); z-index:50; align-items:flex-start; justify-content:center; overflow-y:auto;">
-  <div style="width:520px; max-width:90vw; margin:60px 0 60px 0; border:1px solid var(--ink); background:var(--paper);">
-    <div class="panel-header" style="display:flex; justify-content:space-between; align-items:center;">
-      <span>guide</span>
-      <button id="btnGuideClose">x</button>
-    </div>
-    <div class="guide-tabs">
-      <button id="btnGuideStory" class="guide-tab active">what to do</button>
-      <button id="btnGuideMechanics" class="guide-tab">how it works</button>
-    </div>
-    <div class="panel-body" style="line-height:1.6;">
-      <div id="guideStorySheet">
-        <p class="guide-section"><strong>1. Make the first nails</strong><br>
-        Press <em>make nail</em> by hand. Make 100 nails to see what comes next.</p>
+<div id="guideOverlay" style="display:none;">
+  <div class="guide-topbar">
+    <strong>Nail Maker &mdash; user's guide</strong>
+    <button id="btnGuideClose">close guide</button>
+  </div>
 
-        <p class="guide-section" data-guide-unlock="handmade"><strong>2. Build a rhythm</strong><br>
-        After 100 nails, you most likely ran out of iron. Buy 100g of iron to keep making nails until the machinery chapter opens at 250 nails. Buy nail makers when you can: they turn iron into nails without another click.</p>
+  <div class="guide-page">
 
-        <p class="guide-section" data-guide-unlock="map"><strong>3. Put the ground to work</strong><br>
-        Buy a nail breaker. It spends nails to mine iron and copper from the map. Keep an eye on the deposits, and move to the next map once the current one is empty.</p>
+    <nav class="guide-toc" aria-label="guide contents">
+      <a href="#g-about" data-goto="g-about">1. What this game is</a>
+      <a href="#g-layout" data-goto="g-layout">2. The screen</a>
+      <a href="#g-basics" data-goto="g-basics">3. Iron, nails and money</a>
+      <a href="#g-selling" data-goto="g-selling">4. Selling: price, demand, marketing</a>
+      <a href="#g-makers" data-goto="g-makers">5. Nail makers</a>
+      <a href="#g-breakers" data-goto="g-breakers">6. Nail breakers and the map</a>
+      <a href="#g-copper" data-goto="g-copper">7. Copper</a>
+      <a href="#g-factories" data-goto="g-factories">8. Factories</a>
+      <a href="#g-factory2" data-goto="g-factory2">9. Factory&sup2;</a>
+      <a href="#g-balance" data-goto="g-balance">10. Iron balance</a>
+      <a href="#g-yinyang" data-goto="g-yinyang">11. Yin, yang and tao</a>
+      <a href="#g-reincarnation" data-goto="g-reincarnation">12. Reincarnation and karma</a>
+      <a href="#g-swarm" data-goto="g-swarm">13. The foundry swarm</a>
+      <a href="#g-collapse" data-goto="g-collapse">14. Collapse and unstable cores</a>
+      <a href="#g-skyline" data-goto="g-skyline">15. The skyline and nailbombs</a>
+      <a href="#g-paths" data-goto="g-paths">16. Ending a life: all the ways</a>
+      <a href="#g-saving" data-goto="g-saving">17. Saving, accounts, leaderboard</a>
+      <a href="#g-tips" data-goto="g-tips">18. Strategy notes</a>
+      <a href="#g-numbers" data-goto="g-numbers">19. Reference numbers</a>
+    </nav>
 
-        <p class="guide-section" data-guide-unlock="yinYang"><strong>4. Find balance</strong><br>
-        Once Yin and Yang appear, let the two sides develop. Watch which side is ahead, use the live bonus, and try to fill both bars together.</p>
+    <div class="guide-content">
 
-        <p class="guide-section" data-guide-unlock="yinYang"><strong>5. Complete a life</strong><br>
-        A full Yin/Yang cycle earns Tao. Tao earns karma when you reincarnate. Reincarnation keeps your long-term progress, but starts the next life with a fresh economy.</p>
+      <h2 id="g-about">1. What this game is</h2>
+      <p>Nail Maker is an incremental game. You begin with $25, 100 grams of iron and nothing else, and you grow that into a self-running industrial economy by making nails and selling them. Everything in the game feeds back into the same loop: iron becomes nails, nails become money (or become ammunition for mining), money and mined metal become machines, and machines make more nails.</p>
+      <p>On top of that basic economy sit two longer-term layers that give the game its shape:</p>
+      <ul>
+        <li><strong>Balance (the Taoist and Buddhist layer).</strong> Your economy has two opposing forces: <em>making</em> (nail makers, which consume iron) and <em>breaking</em> (nail breakers, which produce iron). Keeping those forces in proportion, and deliberately crossing back and forth across true balance, fills the yin and yang bars and earns <strong>tao</strong>. Tao is turned into <strong>karma</strong> by <strong>reincarnation</strong>, which ends your current life and starts a new one with better starting bonuses. Enough karma eventually reaches <strong>Nirvana</strong>, which is as close to a finish line as the game has.</li>
+        <li><strong>Acceleration (the destructive layer).</strong> If you push your economy badly out of balance on purpose, the foundry swarm collapses into an <strong>unstable core</strong>. Unstable cores let you build and launch <strong>nailbombs</strong> at your own skyline. Nailbombs wreck part of your machinery, but they raise public demand permanently and enormously. The price is that your karma is locked at &minus;1 and that life can never be reincarnated.</li>
+      </ul>
+      <p>There is no single fixed ending. Your score for a life is the total number of nails you made in it. That score goes on the leaderboard when you end a life. You can pursue a high score, pursue Nirvana, or explore the nailbomb path, and the game lets you choose.</p>
+      <p>Panels appear as you demonstrate that you understand what they are about. You never need to hunt for hidden requirements: each section below tells you exactly what unlocks it.</p>
 
-        <p class="guide-section" data-guide-unlock="yinYang"><strong>6. Keep the loop going</strong><br>
-        Save locally or sign in for cloud saving and the global leaderboard. End a run for its score, or reincarnate when you want the next life to begin stronger.</p>
-      </div>
+      <h2 id="g-layout">2. The screen</h2>
+      <h3>Top of the page</h3>
+      <p>The large counter at the top-left shows <em>nails</em>, the total number of nails you have made in this life. It is also shown in the browser tab title. Under it are four buttons: <strong>save</strong> and <strong>load</strong> (local browser saving), <strong>end run</strong> (end this life for good, see section 16) and <strong>guide</strong> (this page).</p>
+      <h3>The three columns</h3>
+      <ul>
+        <li><strong>Left column:</strong> the business panel (funds, price, demand, marketing, iron), the <em>make nail</em> button, the machinery panel (nail makers, nail breakers, copper, factories) and, much later, the factory&sup2; panel.</li>
+        <li><strong>Middle column:</strong> the extraction map, with the yin &amp; yang panel directly beneath it.</li>
+        <li><strong>Right column:</strong> the skyline beside the map, and the foundry swarm beside yin &amp; yang.</li>
+      </ul>
+      <p>Most of these panels are hidden at the start and appear when you earn them, so a fresh game shows only the business panel and the make nail button.</p>
+      <h3>Corners of the page</h3>
+      <ul>
+        <li><strong>Top-right:</strong> the leaderboard, which can be hidden and shown with its own button.</li>
+        <li><strong>Bottom-right:</strong> log in / sign up (or log out, once signed in).</li>
+        <li><strong>Bottom-left:</strong> a dark mode / light mode toggle. Your choice is remembered in your browser.</li>
+      </ul>
+      <h3>Reading the numbers</h3>
+      <p>Large numbers are written out in words once they pass a thousand ("14.4 million", "3.20 billion", and so on up through duodecillions). Weights switch units automatically: grams, kilograms, tonnes (t), megatonnes (Mt) and gigatonnes (Gt). Money is shown with more decimal places when it is very small, because early nails sell for fractions of a cent.</p>
 
-      <div id="guideMechanicsSheet" style="display:none;">
-        <p class="guide-section"><strong>Making and selling</strong><br>
-        Making one nail consumes 1 g of iron and adds one unsold nail. Unsold nails sell automatically. Price changes demand: higher prices earn more per nail but reduce how many customers buy. Marketing raises demand multiplicatively, and each level costs more than the last.</p>
+      <h2 id="g-basics">3. Iron, nails and money</h2>
+      <p>Three things are always in play at the start:</p>
+      <ul>
+        <li><strong>Iron</strong> is the raw material. One nail costs exactly 1 gram of iron. You start with 100 g.</li>
+        <li><strong>Unsold inventory</strong> is the nails you have made but not yet sold. Nails sell automatically; you do not need to press anything to sell them.</li>
+        <li><strong>Funds</strong> are your money. You start with $25.00. Sales add to it; machines, marketing and iron purchases take from it.</li>
+      </ul>
+      <h3>Making a nail by hand</h3>
+      <p>The <strong>make nail</strong> button spends 1 g of iron, adds one nail to your unsold inventory and adds one to your lifetime total. It is disabled when you have less than 1 g of iron. Your 100 g starting stock is therefore exactly 100 hand-made nails.</p>
+      <h3>Buying iron</h3>
+      <p>The <strong>buy iron</strong> button costs $1.00 and gives 100 g, which is another 100 nails. This is how you keep going by hand. It is also, at the very beginning, the entire reason money matters: money turns into iron, iron turns into nails, nails turn back into money.</p>
+      <h3>The first goal</h3>
+      <p>Once you have made <strong>250 nails in total</strong>, the <strong>machinery</strong> panel appears and the game stops being a clicking game. From there, the sections below describe each system in the order you meet it.</p>
 
-        <p class="guide-section" data-guide-unlock="machinery"><strong>Machinery</strong><br>
-        Nail makers consume iron and produce nails every second. Nail breakers consume unsold nails as ammunition, then mine every active iron and copper deposit once per nail. Factories complete one unit per cycle, with the balance slider deciding whether that unit is a maker or breaker.</p>
+      <h2 id="g-selling">4. Selling: price, demand and marketing</h2>
+      <p>You do not choose when to sell. The public buys nails continuously at a rate that depends on your price and your marketing, and your unsold inventory shrinks as they do. What you control is how attractive your product is.</p>
+      <h3>Price</h3>
+      <p>The price control sits in the business panel with a <strong>&minus;</strong> and a <strong>+</strong> button. Each press moves the price by $0.01, and the price cannot go below $0.01. You start at $0.08. If you hold a button down it repeats, getting faster the longer you hold, and after five seconds of holding each repeat fires three steps at once so that large changes do not take forever.</p>
+      <h3>Public demand</h3>
+      <p>The number labelled <em>public demand (%)</em> is calculated like this:</p>
+      <p><code>demand = 1.4<sup>marketing level</sup> &times; (0.8 &divide; price) &times; (1 + 0.1 &times; tao) &times; skyline multiplier</code></p>
+      <p>Reading it from left to right: each marketing level multiplies demand by 1.4; a lower price raises demand in exact inverse proportion (halve the price and demand doubles); every tao point you currently hold adds 10%; and the skyline multiplier is 1.0 until you start using nailbombs (section 15). Because the price term is <code>0.8 &divide; price</code>, a price of $0.80 gives a demand of exactly 1% with no marketing, and $0.08 gives 10%.</p>
+      <h3>From demand to sales</h3>
+      <p>Demand is not a count of nails; it is turned into nails sold per second by this curve (borrowed from Universal Paperclips):</p>
+      <p><code>nails sold per second = min(1, demand &divide; 100) &times; 7 &times; demand<sup>1.6</sup></code></p>
+      <p>The key property is that it is steeply super-linear. At the starting price of $0.08 and no marketing, demand is 10 and the market would take about 28 nails per second. At $0.04 demand is 20 and the market would take about 169 nails per second. Small price cuts therefore produce huge jumps in how many nails the public will take, and a sharp cut can trigger a genuine mass sell-off of your inventory.</p>
+      <h3>The price that actually matters</h3>
+      <p>Cutting the price always raises the number of nails the public is <em>willing</em> to buy, and in this formula it also always raises the theoretical revenue. But the public can only buy nails you actually have. The right way to think about price is therefore: <strong>find the highest price at which you still sell everything you produce.</strong> Any demand beyond your production is wasted, and any price lower than needed gives away revenue for nothing. When your nail inventory is piling up, your price is too high or your marketing too low; when your inventory sits at zero and sales are limited by production, you can raise the price.</p>
+      <h3>Marketing</h3>
+      <p>The <strong>buy marketing</strong> button costs $25 for the first level and doubles with every level you own ($25, $50, $100, $200 &hellip;). Each level multiplies public demand by 1.4. Marketing is the other lever on demand besides price, and it is the one that does not cost you per-nail revenue.</p>
+      <h3>The two rate displays</h3>
+      <p><em>avg revenue/s</em> is the sales rate (demand-driven) capped at your theoretical production, multiplied by the price: it is the revenue you could sustain, not a bursty reading. <em>avg nails/s</em> is your theoretical production, ignoring whether iron happens to be available this instant.</p>
 
-        <p class="guide-section" data-guide-unlock="map"><strong>The map</strong><br>
-        Each map has a fixed pattern of iron and copper deposits. Deposits have more capacity on later maps. A breaker can only mine while it has nails to spend and while deposits remain. The map health readout shows remaining material.</p>
+      <h2 id="g-makers">5. Nail makers</h2>
+      <p>A <strong>nail maker</strong> is a machine that turns iron into nails with no clicking. It costs a flat <strong>$5</strong>, forever (the price never rises), with a one-second pause between purchases. Each one produces <strong>1 nail per second</strong> and consumes <strong>1 g of iron per second</strong> while doing so.</p>
+      <p>If your iron runs out, your makers stall: they can only make as many nails as your iron stock allows. This is the central tension of the early game, because iron has to come from somewhere. You can buy it for money, or you can mine it, which brings in nail breakers.</p>
+      <p>The machinery panel shows, under the nail maker line, how much iron per second your makers consume and how many nails per second they produce. Both figures include the tao bonus (section 11).</p>
 
-        <p class="guide-section" data-guide-unlock="yinYang"><strong>Yin, Yang, and Tao</strong><br>
-        Yin rises when harvesting is ahead of use. Yang rises when use is ahead of harvesting. Balance gives a live production bonus. Filling both bars together awards Tao and resets the bars. Tao also increases demand, while Tao's current-life rate bonus does not survive reincarnation.</p>
+      <h2 id="g-breakers">6. Nail breakers and the extraction map</h2>
+      <p>A <strong>nail breaker</strong> is the opposite of a nail maker. It costs <strong>$75</strong> with a one-second pause between purchases. Each breaker fires <strong>1 nail per second</strong> from your unsold inventory into the ground, and what comes back is iron and copper. Buying your first breaker reveals the <strong>extraction map</strong> and the copper and factory controls.</p>
+      <h3>How mining works</h3>
+      <p>The map is a grid of 10 rows by 21 columns holding 15 deposits, each randomly iron or copper (about half and half). One nail hits <strong>every active deposit once</strong>. Each hit removes 1 g from that deposit and hands you 1 g of that deposit's material. So if the map currently has 8 iron deposits and 7 copper deposits, one nail returns 8 g of iron and 7 g of copper. A nail costs you one nail and returns a lot more material than that, which is why breakers are so powerful.</p>
+      <p>Since every nail hits every deposit equally, all the deposits on a map drain together and run out at the same moment. Map 1's deposits hold 2,000 g each, so 2,000 nails of ammunition clear the entire map.</p>
+      <h3>Reading the map</h3>
+      <ul>
+        <li><strong>i</strong> and <strong>c</strong> in lowercase: an iron or copper deposit that nobody is working.</li>
+        <li><strong>I</strong> and <strong>C</strong> in capitals: an iron or copper deposit that a breaker is currently working.</li>
+        <li><strong>.</strong> : a drained, empty square.</li>
+      </ul>
+      <p>The bar under the map shows the total weight left on the map against what it started with, and a line below it breaks down how much iron and how much copper remains.</p>
+      <h3>New maps</h3>
+      <p>When the last deposit is drained, the next map generates automatically. Map <em>n</em> has deposits of <code>2,000 g &times; 1.2<sup>(n &minus; 1)</sup></code> each, so every map holds 20% more than the last. Each map number always generates the same layout.</p>
+      <h3>Nails burned as ammo are nails not sold</h3>
+      <p>Breakers eat from the same unsold inventory that the public buys from. Each time sales and mining are settled, breakers take their ammunition first and the public buys from what is left. If breakers are taking more nails than you produce, there is nothing left to sell. This is a real trade-off between revenue now and iron and copper later.</p>
+      <h3>Why unsold inventory moves in a sawtooth</h3>
+      <p>Production flows in smoothly every moment, but breaking and selling are settled in chunks. The settling interval is <code>1 &divide; (number of breakers)</code> seconds, but never faster than 20 times a second. One breaker settles once a second; ten settle ten times a second with each chunk a tenth the size. The total output is identical either way: the interval just keeps the numbers moving smoothly as you grow.</p>
 
-        <p class="guide-section"><strong>Reincarnation and saving</strong><br>
-        Reincarnation converts Tao into permanent karma and rolls independent starting bonuses for the next life. Karma improves the odds of stronger starts. The map, Yin/Yang progress, unlocks, and long-term progression persist; the economy is rebuilt from the new starting package. Local saves use this browser, while signed-in players also receive cloud autosaves.</p>
-      </div>
+      <h2 id="g-copper">7. Copper</h2>
+      <p>Copper comes only from the map, via your breakers. The copper line sits in the machinery panel beside a <strong>sell copper</strong> button, which sells all of it at once for <strong>$0.05 per gram</strong> ($50 per kilogram).</p>
+      <p>Copper has two real jobs: <strong>building machines</strong> (factories spend it every cycle) and <strong>buying balance</strong> (swarm clicks spend it, section 13). Selling it is possible but usually a worse use than feeding factories. The game's design is that iron has one job (becoming nails) and copper has one job (becoming machines).</p>
+
+      <h2 id="g-factories">8. Factories</h2>
+      <p>A <strong>factory</strong> automates the buying of machines. You pay for a factory once with funds, and from then on it builds nail makers or nail breakers for you out of copper alone. Factories are the engine of long-term growth.</p>
+      <h3>Cost</h3>
+      <p>The first factory costs <strong>$1,000</strong>. Each factory you own multiplies the price of the next by 1.4, so the price is <code>$1,000 &times; 1.4<sup>factories owned</sup></code>.</p>
+      <h3>What a factory does</h3>
+      <p>Each factory has a cycle of one second. When a cycle completes, and you have enough copper, it spends that copper and produces exactly one machine: either a nail maker or a nail breaker. If you lack copper, the factory waits ready and builds as soon as you have enough, so a copper shortage pauses factories rather than breaking anything. The machinery panel shows how much copper per second your factories are consuming and how many units per minute they produce.</p>
+      <h3>The balance slider</h3>
+      <p>Once you own a factory, a slider appears. It controls what factories build, from 0 (all nail breakers, black) to 100 (all nail makers, white), in steps of 5. The two percentages above the bar show the current split: the breaker share on the black side, the maker share on the white side. The split is exact over time, not just on average: a factory set to 90% makers produces nine makers for every breaker.</p>
+      <h3>What it costs in copper</h3>
+      <p>A breaker is heavy mining equipment and a maker is a light machine, so they cost different amounts of copper. Per cycle, a factory spends <code>1,000 g &times; (breaker share) + 100 g &times; (maker share)</code>. All breakers costs 1,000 g per machine, all makers costs 100 g per machine, and the midpoint of 50/50 costs 550 g per cycle on average. Copper is the only material factories use. They never need iron or funds beyond the purchase price.</p>
+      <p>Choosing the slider is therefore both a balance decision (section 10) and a speed decision: building makers is ten times cheaper in copper, but a pile of makers with no iron supply simply stalls.</p>
+
+      <h2 id="g-factory2">9. Factory&sup2;</h2>
+      <p>Factory&sup2; ("factory squared") is the next step of automation: a factory that builds factories. It unlocks only when you own at least <strong>100,000 nail makers and 100,000 nail breakers</strong>, and its panel appears below the machinery panel.</p>
+      <ul>
+        <li><strong>Cost:</strong> $1,000,000,000 for the first, with each one you own making the next 10% more expensive.</li>
+        <li><strong>Output:</strong> each factory&sup2; produces one regular factory per second.</li>
+        <li><strong>Copper cost:</strong> 10,000,000 g (ten tonnes) of copper per production cycle, each.</li>
+      </ul>
+      <p>Like regular factories, factory&sup2; units simply pause when there is not enough copper. Once you own one, the ordinary buy factory button disappears, because factory&sup2; has taken over that job.</p>
+
+      <h2 id="g-balance">10. Iron balance</h2>
+      <p>Balance is the idea the whole late game is built on, so it is worth defining exactly. Your economy has two sides, and they are measured in iron per second:</p>
+      <ul>
+        <li><strong>Iron demand</strong> is how much iron your nail makers <em>could</em> consume: <code>makers &times; maker rate &times; 1 g</code>.</li>
+        <li><strong>Iron supply</strong> is how much iron your breakers <em>could</em> extract: <code>breakers &times; breaker rate &times; number of active iron deposits</code>.</li>
+      </ul>
+      <p>The balance reading is <code>(demand &minus; supply) &divide; (demand + supply)</code>, a number from &minus;1 to +1. Zero means perfect balance: what your makers can consume equals what your breakers can supply. Positive means making outruns breaking (yang). Negative means breaking outruns making (yin).</p>
+      <p>This is a <em>structural</em> measurement. It looks at the capacity your current build represents, not at the moment-to-moment flow, which would throttle itself the instant your iron stock ran dry. It therefore changes only when you change your build or when the map changes (a new map can have a different number of iron deposits, which changes your supply). The tao bonus raises makers and breakers by the same percentage, so it does not disturb balance.</p>
+      <p>A player who has built nothing yet is not "balanced" and not "unbalanced" either: with no makers and no breakers there is simply nothing to measure, and the game treats that state as not started.</p>
+
+      <h2 id="g-yinyang">11. Yin, yang and tao</h2>
+      <h3>Unlocking</h3>
+      <p>The yin &amp; yang panel appears when you own <strong>at least one nail maker and at least one nail breaker</strong>. It is not about stockpiles: it is about the relationship between making and breaking existing at all.</p>
+      <h3>How the bars fill</h3>
+      <p>There are two bars, yin (breaking) and yang (making), each running from 0 to 100. Once per real second, <strong>exactly one</strong> of them rises by 1:</p>
+      <ul>
+        <li>If iron demand is at least as large as supply (making is ahead, or exactly tied), <strong>yang</strong> rises.</li>
+        <li>If supply is larger than demand (breaking is ahead), <strong>yin</strong> rises.</li>
+      </ul>
+      <p>The slider in the panel shows the gap between the two bars as a position between yin and yang, and a status label reads <em>BALANCED</em>, <em>YANG-LEANING</em> or <em>YIN-LEANING</em>. It reads balanced when the smaller bar is at least 90% of the larger.</p>
+      <h3>Earning tao</h3>
+      <p>When <strong>both bars reach 100</strong>, you earn <strong>1 tao</strong> and both bars reset to zero. Because only one bar can tick at a time, this cannot be achieved by sitting still: you have to spend time on the yang side and time on the yin side. The only way to fill both is to genuinely cross back and forth over true balance as your build changes, which is exactly the point.</p>
+      <h3>What held tao does</h3>
+      <ul>
+        <li><strong>+50% rate</strong> for every nail maker and nail breaker, per tao point held.</li>
+        <li><strong>+10% public demand</strong> per tao point held. The business panel shows this next to the demand figure.</li>
+      </ul>
+      <p>The word "held" matters. These bonuses depend on the tao you hold right now, so spending or losing tao removes the bonus immediately. Reincarnation (next section) converts tao into karma, which is permanent, but your new life only starts with the small tao award described there.</p>
+
+      <h2 id="g-reincarnation">12. Reincarnation and karma</h2>
+      <p>Reincarnation lets you end a life and carry something real into the next. It lives at the bottom of the yin &amp; yang panel, with a karma counter above it.</p>
+      <h3>Converting tao into karma</h3>
+      <p>Every <strong>3 tao</strong> becomes <strong>1 karma</strong>, calculated at the moment you reincarnate (leftover tao that does not make a full 3 is simply lost with the life). The button stays disabled until you hold at least 3 tao. Karma never goes away: it is not spent, it is added to a permanent total that follows you through every future life, and it increases the odds of strong starting bonuses.</p>
+      <h3>The ritual</h3>
+      <p>After you confirm, a wall of flickering characters fills the screen. It is mostly noise and resolves, after a short wait, into your fate: a title for your next life and the list of starting bonuses it grants. You then press <em>begin new life</em>.</p>
+      <h3>Starting bonuses</h3>
+      <p>Each bonus is rolled on its own, so one life can be rich in one area and ordinary in another. Nothing is guaranteed. The amounts grow with your total karma, and each roll is randomised to between roughly 60% and 140% of its expected value.</p>
+      <table>
+        <tr><th>Bonus</th><th>Starts to appear</th><th>Notes</th></tr>
+        <tr><td>Funds, iron, copper</td><td>Any karma</td><td>Always rolls something, even at 1 karma. At about 32 karma expect roughly $2 million, 5 tonnes of iron and 2 tonnes of copper.</td></tr>
+        <tr><td>Nail makers</td><td>Above 2 karma</td><td>Reliable by around 10 karma. About 1,300 at 32 karma.</td></tr>
+        <tr><td>Marketing levels</td><td>Above 10 karma</td><td>About level 18 at 32 karma.</td></tr>
+        <tr><td>Factories</td><td>Above 15 karma</td><td>The rarest bonus.</td></tr>
+        <tr><td>Nail breakers</td><td>Not rolled</td><td>Sized to balance the nail makers you were granted.</td></tr>
+      </table>
+      <p>Below a bonus's threshold you can still get a small token amount by luck, but not a real one. Breakers are deliberately not random: the game works out how many are needed to structurally balance your granted makers, and it also picks a fresh map sized so that those breakers need about a minute of mining to clear it. You never start a new life on a tiny map 1 with an unbalanced build.</p>
+      <h3>Titles and Nirvana</h3>
+      <p>A separate roll (five independent rolls whose results rise with karma) decides the title of your next life. Mostly it is flavour, in rising order: <em>a quiet beginning</em>, <em>an encouraging start</em>, <em>an established workshop</em>, <em>a name people know</em>, <em>an empire already in motion</em>, and finally <strong>Nirvana</strong>.</p>
+      <p>Nirvana is a permanent achievement. Once reached, it survives everything, including ending a run and losing your karma. It is the game's closest thing to a victory, but it does not stop you: you can keep playing.</p>
+      <h3>Tao at the start of the next life</h3>
+      <p>You are given a modest head start in tao: 1 normally, 2 once your total karma reaches 13, and 3 if the life is Nirvana.</p>
+      <h3>What carries over and what does not</h3>
+      <ul>
+        <li><strong>Carried over:</strong> your total karma; Nirvana; the unlocks for machinery, the map, yin &amp; yang and the skyline; your yin and yang bar progress; the guide's read marks; and your auto-next-map setting.</li>
+        <li><strong>Reset:</strong> funds, iron, copper, all machines, marketing, price, the map (replaced with the one chosen for your new start), the swarm unlock (you must earn it again), factory&sup2; and nailbomb progress.</li>
+      </ul>
+      <p>Reincarnating submits your final nail count to the leaderboard and deletes your old saves, so you cannot load your way back. You are asked to confirm first, because it cannot be undone.</p>
+
+      <h2 id="g-swarm">13. The foundry swarm</h2>
+      <h3>Unlocking</h3>
+      <p>The swarm panel appears when you hold <strong>at least 1 tao and own at least one factory</strong>. Getting to 1 tao already proves you can balance; the factory proves you have an automated economy for the swarm to correct.</p>
+      <h3>What the dots are</h3>
+      <p>The swarm is 30 dots drifting around a small field. It is a live picture of your economy: the proportion of white dots is the makers' share of your iron rate, and the proportion of black dots is the breakers' share. Fifteen white and fifteen black means true balance. Mostly white means making outweighs breaking; mostly black means the reverse. Within 5% of true balance the swarm counts as balanced. Beneath the field the panel shows your current iron rates, your maker and breaker counts, and a hint line.</p>
+      <p>The dots also shy away from your cursor when you get near them. The more imbalanced your economy, the harder they dodge; at true balance they barely react, so balance is the easy state. After you land a click, that dot is briefly stunned so you can chain hits fairly.</p>
+      <h3>Clicking</h3>
+      <p>Clicking a dot flips its colour and <strong>buys machines of the opposite type</strong> so that your real iron rates match the new dot split. In practice: if you have too much of one colour, click a dot of that colour. A click on a white dot makes it black and buys breakers; a click on a black dot makes it white and buys makers. The number of machines bought is exactly the number needed to move the split by one dot, which at large scale can be a lot of machines.</p>
+      <p>Machines bought this way are paid for in <strong>copper</strong>: 100 g for each maker and 1,000 g for each breaker (the same per-unit costs as a factory). If you cannot afford it, the hint line tells you the price and how many machines it would have bought. Clicks have a quarter-second cooldown.</p>
+      <p>This makes the swarm a balancing tool, not a growth engine: it spends copper to pull you toward true balance, and that is useful for earning tao.</p>
+
+      <h2 id="g-collapse">14. Collapse and unstable cores</h2>
+      <p>If you push your economy far enough out of balance and leave it there, the swarm collapses.</p>
+      <h3>The trigger</h3>
+      <ul>
+        <li>Both sides must exist: your iron demand and your iron supply must both be above zero. Not having built the other side yet is not instability.</li>
+        <li>The imbalance reading (section 10) must reach <strong>0.32 or more</strong> in either direction. That is roughly a two-to-one split between the two sides.</li>
+        <li>It must stay there for <strong>1.5 seconds</strong>. While it does, the swarm greys out as a warning.</li>
+      </ul>
+      <p>If the imbalance dips back under the line, the timer does not reset to zero; it drains at twice the speed it filled. A single momentary dip does not erase your progress, but a sustained correction does.</p>
+      <h3>What happens</h3>
+      <p>The swarm collapses. The game <strong>destroys enough of the over-represented machine type to bring your real iron rates back to true balance</strong> (as close as whole machines allow), banks <strong>one unstable core</strong>, and unlocks the skyline panel the first time it happens. The destruction is real: those machines are gone.</p>
+      <p>Unstable cores have exactly one use: they are the key ingredient for nailbombs.</p>
+
+      <h2 id="g-skyline">15. The skyline and nailbombs</h2>
+      <h3>The skyline</h3>
+      <p>The skyline panel appears the first time the swarm collapses. It is a slowly scrolling city that is a direct picture of your economy: buildings for nail makers, nail breakers and factories are generated in proportion to your real counts, so too many breakers (or makers, or factories) shows up as a skyline dominated by that kind of building. Pedestrians walk the ground and run when something terrible happens.</p>
+      <h3>The foundry core and nailbomb cost</h3>
+      <p>Under the skyline is the foundry core, which shows what the next nailbomb needs:</p>
+      <ul>
+        <li><strong>1 unstable core</strong>, always exactly one, however many bombs you have dropped.</li>
+        <li><strong>Unsold nails</strong>: 50,000 for the first, and each bomb multiplies the price of the next by 2.3. The bombs cost <code>50,000 &times; 2.3<sup>bombs already dropped</sup></code> nails.</li>
+      </ul>
+      <p>When both bars are full, the <strong>launch nailbomb</strong> button works. Its hint line says what is going to happen.</p>
+      <h3>What a nailbomb does</h3>
+      <p>The bomb falls in from above the entire page onto the middle of the skyline, and the whole page shakes. Then:</p>
+      <ul>
+        <li><strong>Damage to the buildings.</strong> Buildings within a radius of <code>1 + 0.6 &times; bombs dropped</code> building-widths of the target lose units, and the share destroyed is <code>0.5 + 0.18 &times; bombs dropped</code> at ground zero, fading with distance. This removes your real machinery.</li>
+        <li><strong>A small system-wide loss.</strong> Every active category (makers, breakers, factories) also loses a little regardless of where the bomb landed, a few percent at most (capped at 15%), and never less than one machine.</li>
+        <li><strong>Fever.</strong> A temporary demand boost: each bomb adds fever points that grow 2.3&times; larger for every bomb before it, up to a ceiling that grows the same way. Each fever point gives +35% public demand, and fever decays with a half-life of 40 seconds.</li>
+        <li><strong>Panic.</strong> The street panic-buys: a short +50% demand spike that is back to nothing within seconds (half-life 5 seconds).</li>
+        <li><strong>The market scar.</strong> A <em>permanent</em> demand increase of +50% per bomb, capped at +1000% in total. It never decays and it stacks with everything else.</li>
+        <li><strong>Karma locks at &minus;1.</strong> Your karma becomes &minus;1 and stays that way for the rest of this life. Reincarnation is disabled: the button reads that karma is locked and this life cannot be reincarnated.</li>
+      </ul>
+      <p>The skyline's status line tells you what is currently active: the street panicking, the temporary demand bonus, and the permanent scar.</p>
+      <p>Nailbombing is the opposite bargain from balance. You give up reincarnation, and all the karma you would have built, in return for huge demand that only ever grows. It is a legitimate path for chasing a high nail count, and the only way off it is ending the run.</p>
+
+      <h2 id="g-paths">16. Ending a life: all the ways</h2>
+      <table>
+        <tr><th>Path</th><th>How</th><th>What you keep</th><th>What you lose</th></tr>
+        <tr>
+          <td><strong>Reincarnate</strong></td>
+          <td>Hold 3 or more tao, press <em>reincarnate</em>.</td>
+          <td>All karma (plus the new karma), Nirvana, panel unlocks, yin and yang bars, and a rolled starting package including 1 to 3 tao.</td>
+          <td>The economy of the life you are leaving. Disabled if you nailbombed.</td>
+        </tr>
+        <tr>
+          <td><strong>End run</strong></td>
+          <td>Press <em>end run</em> at the top of the page.</td>
+          <td>Only Nirvana, if you ever reached it. Your score is banked on the leaderboard.</td>
+          <td>Everything else, including all karma. You start exactly like a brand new player.</td>
+        </tr>
+        <tr>
+          <td><strong>Nailbomb lock</strong></td>
+          <td>Drop a nailbomb.</td>
+          <td>You keep playing this life with permanently higher demand.</td>
+          <td>Karma goes to &minus;1 and reincarnation is shut off for the rest of the life. The only exit is ending the run.</td>
+        </tr>
+      </table>
+      <p>Both ending options ask you to confirm. Both submit your lifetime nail count to the leaderboard and delete your local and cloud saves so the old life cannot be reloaded. Ending a run with karma in the bank warns you plainly that the karma will be lost.</p>
+
+      <h2 id="g-saving">17. Saving, accounts and the leaderboard</h2>
+      <h3>Local saving</h3>
+      <p>The <strong>save</strong> button stores your game in your browser. The <strong>load</strong> button restores it. Old saves are upgraded automatically when loaded. Clearing your browser's data, or playing in a different browser, means the local save is not there.</p>
+      <h3>Accounts and cloud saves</h3>
+      <p>Use the button at the bottom-right to sign up or log in. An account is just a username (at least 3 characters) and a password (at least 6). When you are logged in:</p>
+      <ul>
+        <li>Your game saves to the cloud automatically every 30 seconds, and once more when you close or reload the tab.</li>
+        <li>When you log in, your cloud save loads automatically, replacing whatever you were playing. This is how progress follows you between devices.</li>
+        <li>Your account name is used automatically on the leaderboard.</li>
+      </ul>
+      <h3>The leaderboard</h3>
+      <p>Your score is your lifetime nail count for the life you just ended, and it is submitted when you end a run or reincarnate. Not logged in, the leaderboard is a top-100 list local to your browser. Logged in, it is a global top-100 list with one row per player showing their personal best. A new run only replaces your global entry if it beats your previous best. The panel can be hidden if it is in your way.</p>
+
+      <h2 id="g-tips">18. Strategy notes</h2>
+      <ul>
+        <li><strong>Early game.</strong> Make your first 100 nails by hand, buy iron, and buy nail makers as soon as you can: they are only $5 each. Hit 250 nails to open the machinery panel, then get a breaker as soon as you can afford $75 so that iron starts coming from the ground rather than from your wallet.</li>
+        <li><strong>Watch your inventory.</strong> Piling-up unsold nails mean your price is too high or your marketing too low. An inventory at zero with iron to spare means you can raise the price.</li>
+        <li><strong>Feed the factories.</strong> Copper is worth far more as machines than as cash. Buy a factory early and keep it supplied. The slider decides what you get, and cheaper makers get you more machines per gram of copper.</li>
+        <li><strong>Learn to cross balance.</strong> Tao is the point of the middle game. Fill yin and yang by deliberately leaning your factories one way and then the other. The percentages above the slider tell you what you are building. The swarm's copper-for-balance clicks help when you overshoot.</li>
+        <li><strong>Mind the map.</strong> Your breakers' output depends on how many iron deposits the current map has, so a new map can shift your balance on its own.</li>
+        <li><strong>Choose your path deliberately.</strong> Reincarnation compounds across lives and leads toward Nirvana. Nailbombing gives immense demand now at the cost of that entire future. Everything you do to the swarm on the way to a collapse costs you real machines.</li>
+        <li><strong>Save before you experiment.</strong> Collapses and nailbombs destroy things and cannot be undone. The save button is a cheap safety net, and nothing here is automatic except cloud saving when you are logged in.</li>
+      </ul>
+
+      <h2 id="g-numbers">19. Reference numbers</h2>
+      <table>
+        <tr><th>Thing</th><th>Value</th></tr>
+        <tr><td>Starting funds / iron / price</td><td>$25.00 / 100 g / $0.08</td></tr>
+        <tr><td>Iron per nail</td><td>1 g</td></tr>
+        <tr><td>Buy iron</td><td>$1.00 for 100 g</td></tr>
+        <tr><td>Machinery unlocks</td><td>250 lifetime nails</td></tr>
+        <tr><td>Marketing</td><td>$25 &times; 2<sup>level</sup>; each level &times;1.4 demand</td></tr>
+        <tr><td>Nail maker</td><td>$5 flat; 1 nail/s; 1 g iron/s; 1 s between buys</td></tr>
+        <tr><td>Nail breaker</td><td>$75 flat; 1 nail/s ammo; 1 s between buys</td></tr>
+        <tr><td>Map</td><td>10 &times; 21; 15 deposits; map 1 deposits are 2,000 g; &times;1.2 per map</td></tr>
+        <tr><td>Copper sells for</td><td>$0.05 per gram</td></tr>
+        <tr><td>Factory</td><td>$1,000 &times; 1.4<sup>owned</sup>; 1 s cycle; 100 g copper per maker, 1,000 g per breaker</td></tr>
+        <tr><td>Factory&sup2;</td><td>Unlocks at 100,000 makers and 100,000 breakers; $1,000,000,000 &times; 1.1<sup>owned</sup>; 10,000,000 g copper per factory built</td></tr>
+        <tr><td>Yin &amp; yang</td><td>Unlocks with 1 maker + 1 breaker; one bar +1 per second; both at 100 = 1 tao</td></tr>
+        <tr><td>Each held tao</td><td>+50% maker and breaker rate, +10% public demand</td></tr>
+        <tr><td>Karma</td><td>1 per 3 tao at reincarnation</td></tr>
+        <tr><td>Swarm unlocks</td><td>1 tao held + 1 factory</td></tr>
+        <tr><td>Swarm click</td><td>Costs 100 g copper per maker or 1,000 g per breaker bought; 0.25 s cooldown</td></tr>
+        <tr><td>Collapse</td><td>Imbalance &ge; 0.32 for 1.5 s; yields 1 unstable core; unlocks the skyline</td></tr>
+        <tr><td>Nailbomb nails</td><td>50,000 &times; 2.3<sup>bombs dropped</sup>, plus 1 unstable core</td></tr>
+        <tr><td>Nailbomb permanent scar</td><td>+50% demand per bomb, capped at +1000%</td></tr>
+        <tr><td>Fever / panic</td><td>+35% demand per fever point (half-life 40 s) / up to +50% (half-life 5 s)</td></tr>
+        <tr><td>Cloud autosave</td><td>Every 30 seconds while logged in</td></tr>
+      </table>
+
     </div>
   </div>
 </div>
@@ -487,9 +862,9 @@
       </div>
     </div>
 
-    <button id="btnMakeNail" style="width:320px;">make nail</button>
+    <button id="btnMakeNail" style="width:var(--col-w);">make nail</button>
 
-    <div class="panel" id="machinerySection" style="margin-top:14px; display:none;">
+    <div class="panel" id="machinerySection" style="margin-top:var(--gap); display:none;">
       <div class="panel-header">machinery</div>
       <div class="panel-body">
 
@@ -533,8 +908,8 @@
 
             <div class="balance-slider-wrap" id="factoryBalanceSliderWrap" style="display:none;">
               <div class="balance-slider-labels">
-                <span>&#9679; nail breaker leaning</span>
-                <span>nail maker leaning &#9675;</span>
+                <span>&#9679; breakers <b id="valFactoryBreakerPct">50%</b></span>
+                <span><b id="valFactoryMakerPct">50%</b> makers &#9675;</span>
               </div>
               <input type="range" id="sliderFactoryBalance" min="0" max="100" step="5" value="50">
               <div class="hint" id="valFactoryMaterialUse" style="text-align:center; margin-top:4px;">consuming 0 g copper/s</div>
@@ -549,7 +924,7 @@
       </div>
     </div>
 
-    <div class="panel" id="factorySquaredSection" style="margin-top:14px; display:none;">
+    <div class="panel" id="factorySquaredSection" style="margin-top:0; display:none;">
       <div class="panel-header">factory&sup2;</div>
       <div class="panel-body">
         <div class="hint" style="margin-top:0;">a factory that builds factories. unlocked once your economy is big enough to feed it.</div>
@@ -572,20 +947,20 @@
   <div id="mapSection" style="display:none;">
     <div class="map-layout">
       <div class="map-column">
-        <div style="flex:none;">
-          <div class="map-readout">
-          <div class="panel-header" style="width:100%; border:1px solid var(--ink); border-bottom:none;">extraction &mdash; map <span id="mapIndexLabel">1</span></div>
-          <div id="mapDisplay"></div>
-          <div class="map-health">
-            <div class="map-health-text" id="mapHealthText">0 / 0</div>
-            <div class="map-health-track"><div class="map-health-fill" id="mapHealthFill"></div></div>
+        <div class="panel" id="mapPanel">
+          <div class="panel-header">extraction &mdash; map <span id="mapIndexLabel">1</span></div>
+          <div class="panel-body">
+            <div id="mapDisplay"></div>
+            <div class="map-health">
+              <div class="map-health-text" id="mapHealthText">0 / 0</div>
+              <div class="map-health-track"><div class="map-health-fill" id="mapHealthFill"></div></div>
+            </div>
+            <div class="hint" id="mapMaterials">iron: 0 g &middot; copper: 0 g</div>
+            <div class="hint">i/c = iron/copper &nbsp; I/C = worked by breaker &nbsp; . = drained/empty</div>
           </div>
-          <div class="hint" id="mapMaterials">iron: 0 g &middot; copper: 0 g</div>
-          </div>
-          <div class="hint" style="margin-top:0;">i/c = iron/copper &nbsp; I/C = worked by breaker &nbsp; . = drained/empty</div>
         </div>
 
-        <div class="panel" id="yinYangSection" style="margin-top:0; display:none; width:320px; flex:none;">
+        <div class="panel" id="yinYangSection" style="margin-top:0; display:none;">
           <div class="panel-header">yin &amp; yang</div>
           <div class="panel-body">
             <div class="row"><span class="label">yin (breaking):</span><span class="value" id="valYin">0.0</span></div>
@@ -609,7 +984,7 @@
       </div>
 
       <div class="city-column">
-      <div class="panel" id="citySection" style="display:none; margin-top:0; width:280px; flex:none;">
+      <div class="panel" id="citySection" style="display:none; margin-top:0;">
           <div class="panel-header">the skyline</div>
           <div class="panel-body">
             <canvas id="cityCanvas" width="380" height="120" style="width:100%; height:120px; display:block; background:var(--paper); border:1px solid var(--ink);"></canvas>
@@ -626,7 +1001,7 @@
           </div>
       </div>
 
-      <div class="panel" id="swarmSection" style="margin-top:0; display:none; width:320px; flex:none;">
+      <div class="panel" id="swarmSection" style="margin-top:0; display:none;">
           <div class="panel-header">the foundry swarm</div>
           <div class="panel-body">
             <canvas id="swarmCanvas" width="288" height="224" style="width:100%; height:224px; display:block; background:var(--paper); border:1px solid var(--ink); cursor:crosshair;"></canvas>
@@ -639,7 +1014,7 @@
     </div>
   </div>
 
-  <div class="panel" id="leaderboardSection" style="width:280px; position:fixed; top:20px; right:20px; z-index:10;">
+  <div class="panel" id="leaderboardSection" style="position:fixed; top:20px; right:20px; z-index:10;">
     <div class="panel-header" style="display:flex; justify-content:space-between; align-items:center;">
       <span>leaderboard</span>
       <button id="btnToggleLeaderboard" style="font-size:10px; padding:2px 6px;">hide</button>

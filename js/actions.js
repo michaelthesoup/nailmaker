@@ -131,25 +131,27 @@ el.btnLoad.addEventListener("click", function () {
 el.btnGuide.addEventListener("click", function () {
   markGuideRead();
   renderGuide();
-  el.guideOverlay.style.display = "flex";
-});
-
-el.btnGuideStory.addEventListener("click", function () {
-  el.guideStorySheet.style.display = "block";
-  el.guideMechanicsSheet.style.display = "none";
-  el.btnGuideStory.classList.add("active");
-  el.btnGuideMechanics.classList.remove("active");
-});
-
-el.btnGuideMechanics.addEventListener("click", function () {
-  el.guideStorySheet.style.display = "none";
-  el.guideMechanicsSheet.style.display = "block";
-  el.btnGuideStory.classList.remove("active");
-  el.btnGuideMechanics.classList.add("active");
+  el.guideOverlay.style.display = "block";
+  el.guideOverlay.scrollTop = 0;
 });
 
 el.btnGuideClose.addEventListener("click", function () {
   el.guideOverlay.style.display = "none";
+});
+
+document.addEventListener("keydown", function (e) {
+  if (e.key === "Escape" && el.guideOverlay.style.display === "block") {
+    el.guideOverlay.style.display = "none";
+  }
+});
+
+// Table-of-contents links scroll the guide itself, not the page behind it.
+el.guideOverlay.addEventListener("click", function (e) {
+  var link = e.target.closest("a[data-goto]");
+  if (!link) return;
+  e.preventDefault();
+  var target = document.getElementById(link.getAttribute("data-goto"));
+  if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
 });
 
 function guideUnlocks() {

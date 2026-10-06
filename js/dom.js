@@ -34,10 +34,6 @@ var el = {
   btnDarkMode: document.getElementById("btnDarkMode"),
   guideOverlay: document.getElementById("guideOverlay"),
   btnGuideClose: document.getElementById("btnGuideClose"),
-  btnGuideStory: document.getElementById("btnGuideStory"),
-  btnGuideMechanics: document.getElementById("btnGuideMechanics"),
-  guideStorySheet: document.getElementById("guideStorySheet"),
-  guideMechanicsSheet: document.getElementById("guideMechanicsSheet"),
 
   valKarma: document.getElementById("valKarma"),
   btnReincarnate: document.getElementById("btnReincarnate"),
@@ -71,6 +67,8 @@ var el = {
   factoryMaterialUse: document.getElementById("valFactoryMaterialUse"),
   factoryOutputRate: document.getElementById("valFactoryOutputRate"),
   sliderFactoryBalance: document.getElementById("sliderFactoryBalance"),
+  factoryBreakerPct: document.getElementById("valFactoryBreakerPct"),
+  factoryMakerPct: document.getElementById("valFactoryMakerPct"),
 
   factorySquaredSection: document.getElementById("factorySquaredSection"),
   factorySquaredCount: document.getElementById("valFactorySquaredCount"),
