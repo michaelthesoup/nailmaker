@@ -246,6 +246,35 @@
     margin-top: 20px;
   }
 
+  .ach-row {
+    display: flex;
+    gap: 10px;
+    align-items: baseline;
+    padding: 5px 0;
+    border-bottom: 1px dotted var(--ink);
+    font-size: 13px;
+  }
+
+  .ach-row.locked { opacity: 0.45; }
+  .ach-mark { width: 16px; flex: none; }
+  .ach-text { flex: 1; }
+  .ach-date { font-size: 11px; color: #888; flex: none; }
+
+  .achievement-toast {
+    position: fixed;
+    left: 50%;
+    bottom: 48px;
+    transform: translateX(-50%);
+    z-index: 130;
+    background: var(--paper);
+    color: var(--ink);
+    border: 1px solid var(--ink);
+    padding: 10px 18px;
+    font-size: 14px;
+    font-weight: bold;
+    box-shadow: 4px 4px 0 var(--ink);
+  }
+
   .lives-wrap {
     overflow-x: auto;
     margin-top: 14px;
@@ -561,11 +590,14 @@
 <div id="pageShakeWrap">
 <h1 id="titleCount">nails: 0</h1>
 
-<div class="top-buttons">
+<div class="top-buttons" style="margin-bottom:6px;">
   <button id="btnSave">save</button>
   <button id="btnLoad">load</button>
   <button id="btnEndRun">end run</button>
   <button id="btnGuide">guide</button>
+</div>
+<div class="top-buttons">
+  <button id="btnStats">stats &amp; achievements (0/0)</button>
 </div>
 
 <button id="btnDarkMode" style="position:fixed; bottom:12px; left:12px; font-size:10px; padding:2px 6px; opacity:0.7; z-index:5;">dark mode</button>
@@ -856,6 +888,8 @@
         <li>When you log in, your cloud save loads automatically, replacing whatever you were playing. This is how progress follows you between devices.</li>
         <li>Your account name is used automatically on the leaderboard.</li>
       </ul>
+      <h3>Lifetime stats and achievements</h3>
+      <p>The <em>stats &amp; achievements</em> button under the top buttons opens your lifetime record: runs ended, lives lived, total nails, best life and best run, nailbombs, highest karma and tao, and more, including the life you are currently playing. A <strong>run</strong> is a chain of lives that finishes when you end the run; reincarnating continues the same run. Unlike your karma and the past lives log, these stats are <strong>not</strong> erased when you end a run. Below them are the achievements: each unlocks once, shows a notification, and is remembered permanently. Logged in, they sync to your account; logged out, they are saved in this browser only.</p>
       <h3>The leaderboard</h3>
       <p>Your score is your lifetime nail count for the life you just ended, and it is submitted when you end a run or reincarnate. Not logged in, the leaderboard is a top-100 list local to your browser. Logged in, it is a global top-100 list with one row per player showing their personal best. A new run only replaces your global entry if it beats your previous best. The panel can be hidden if it is in your way.</p>
 
@@ -905,6 +939,14 @@
   <div class="sheet-box">
     <div id="endScreenBody"></div>
     <div class="sheet-actions"><button id="btnEndScreenClose">continue</button></div>
+  </div>
+</div>
+
+<div id="statsOverlay" class="sheet-overlay">
+  <div class="sheet-box">
+    <div class="sheet-title">stats &amp; achievements</div>
+    <div id="statsBody"></div>
+    <div class="sheet-actions"><button id="btnStatsClose">close</button></div>
   </div>
 </div>
 
@@ -1173,6 +1215,8 @@
 <script src="js/cloudsave.js"></script>
 <script src="js/reincarnation.js"></script>
 <script src="js/lives.js"></script>
+<script src="js/lifetime.js"></script>
+<script src="js/achievements.js"></script>
 <script src="js/engine.js"></script>
 
 </div>

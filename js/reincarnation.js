@@ -283,6 +283,7 @@ el.btnReincarnateConfirm.addEventListener("click", function () {
     nirvana: !!ritual.title.isNirvana
   });
   var pastLivesCarried = (state.pastLives || []).concat([endedLife]).slice(-PAST_LIVES_MAX);
+  recordLifeEnd(endedLife, "reincarnated", null, endedLife.karmaTotal);
 
   deleteAllSaves();
   state = defaultState();

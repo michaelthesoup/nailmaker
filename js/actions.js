@@ -208,6 +208,7 @@ el.btnEndRun.addEventListener("click", function () {
   var endedLife = buildLifeRecord({ how: "ended" });
   var allLives = (state.pastLives || []).concat([endedLife]);
   var karmaLost = Math.max(0, state.karma);
+  recordLifeEnd(endedLife, "ended", allLives, karmaLost); // lifetime stats survive the wipe below
 
   var nirvanaCarried = state.nirvanaAchieved; // a real achievement -- survives even this
   state = defaultState();
