@@ -196,6 +196,75 @@
     min-width: 120px;
   }
 
+  /* ---- end-of-life screen and past lives log ---- */
+  .sheet-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 110;
+    background: rgba(0, 0, 0, 0.55);
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+
+  .sheet-box {
+    background: var(--paper);
+    border: 1px solid var(--ink);
+    width: 100%;
+    max-width: 720px;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 22px 24px;
+  }
+
+  .sheet-title {
+    font-size: 24px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    text-align: center;
+    margin-bottom: 6px;
+  }
+
+  .sheet-sub {
+    color: var(--ink);
+    font-size: 13px;
+    line-height: 1.6;
+    margin: 6px 0;
+  }
+
+  .sheet-heading {
+    font-weight: bold;
+    margin: 18px 0 6px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--ink);
+  }
+
+  .sheet-actions {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+  }
+
+  .lives-wrap {
+    overflow-x: auto;
+    margin-top: 14px;
+  }
+
+  .lives-table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 12px;
+  }
+
+  .lives-table th,
+  .lives-table td {
+    border: 1px solid var(--ink);
+    padding: 4px 7px;
+    text-align: left;
+    white-space: nowrap;
+  }
+
   .bonus-note {
     color: #999;
     font-weight: normal;
@@ -708,7 +777,7 @@
       <p>The swarm panel appears when you hold <strong>at least 1 tao and own at least one factory</strong>. Getting to 1 tao already proves you can balance; the factory proves you have an automated economy for the swarm to correct.</p>
       <h3>What the dots are</h3>
       <p>The swarm is 30 dots drifting around a small field. It is a live picture of your economy: the proportion of white dots is the makers' share of your iron rate, and the proportion of black dots is the breakers' share. Fifteen white and fifteen black means true balance. Mostly white means making outweighs breaking; mostly black means the reverse. Within 5% of true balance the swarm counts as balanced. Beneath the field the panel shows your current iron rates, your maker and breaker counts, and a hint line.</p>
-      <p>The dots also shy away from your cursor when you get near them. The more imbalanced your economy, the harder they dodge; at true balance they barely react, so balance is the easy state. After you land a click, that dot is briefly stunned so you can chain hits fairly.</p>
+      <p>The dots also shy away from your cursor when you get near them. The more imbalanced your economy, the harder they dodge and the faster every dot moves (up to 1.5&times; at the collapse line); at true balance they drift slowly and barely react, so balance is the easy state. After you land a click, that dot is briefly stunned so you can chain hits fairly.</p>
       <h3>Clicking</h3>
       <p>Clicking a dot flips its colour and <strong>buys machines of the opposite type</strong> so that your real iron rates match the new dot split. In practice: if you have too much of one colour, click a dot of that colour. A click on a white dot makes it black and buys breakers; a click on a black dot makes it white and buys makers. The number of machines bought is exactly the number needed to move the split by one dot, which at large scale can be a lot of machines.</p>
       <p>Machines bought this way are paid for in <strong>copper</strong>: 100 g for each maker and 1,000 g for each breaker (the same per-unit costs as a factory). If you cannot afford it, the hint line tells you the price and how many machines it would have bought. Clicks have a quarter-second cooldown.</p>
@@ -719,7 +788,7 @@
       <h3>The trigger</h3>
       <ul>
         <li>Both sides must exist: your iron demand and your iron supply must both be above zero. Not having built the other side yet is not instability.</li>
-        <li>The imbalance reading (section 10) must reach <strong>0.32 or more</strong> in either direction. That is roughly a two-to-one split between the two sides.</li>
+        <li>The imbalance reading (section 10) must reach <strong>0.5 or more</strong> in either direction. That is a three-to-one split between the two sides (for example, 22 white dots against 8 black).</li>
         <li>It must stay there for <strong>1.5 seconds</strong>. While it does, the swarm greys out as a warning.</li>
       </ul>
       <p>If the imbalance dips back under the line, the timer does not reset to zero; it drains at twice the speed it filled. A single momentary dip does not erase your progress, but a sustained correction does.</p>
@@ -733,7 +802,7 @@
       <h3>The foundry core and nailbomb cost</h3>
       <p>Under the skyline is the foundry core, which shows what the next nailbomb needs:</p>
       <ul>
-        <li><strong>1 unstable core</strong>, always exactly one, however many bombs you have dropped.</li>
+        <li><strong>Unstable cores</strong>: as many as the number of the bomb. The first needs 1, the second needs 2, the fifth needs 5, and so on. Each collapse banks only one, so later bombs take many collapses.</li>
         <li><strong>Unsold nails</strong>: 50,000 for the first, and each bomb multiplies the price of the next by 2.3. The bombs cost <code>50,000 &times; 2.3<sup>bombs already dropped</sup></code> nails.</li>
       </ul>
       <p>When both bars are full, the <strong>launch nailbomb</strong> button works. Its hint line says what is going to happen.</p>
@@ -773,6 +842,9 @@
         </tr>
       </table>
       <p>Both ending options ask you to confirm. Both submit your lifetime nail count to the leaderboard and delete your local and cloud saves so the old life cannot be reloaded. Ending a run with karma in the bank warns you plainly that the karma will be lost.</p>
+      <h3>The end screen and the past lives log</h3>
+      <p>Whenever a life ends, by reincarnation or by ending the run, an end screen summarizes it: your final nail count, time lived, money earned, the machines you ended with, marketing level, map reached, swarm collapses, nailbombs dropped and tao, plus totals across all your lives. A reincarnation also shows the karma you gained and the starting bonuses of your next life. The NIRVANA message appears here too.</p>
+      <p>Each reincarnation adds that life to your <strong>past lives</strong> log, opened with the <em>past lives</em> button at the bottom of the yin &amp; yang panel. The log is saved with your game and follows you from life to life. <strong>Ending a run erases it</strong>, along with your karma.</p>
 
       <h2 id="g-saving">17. Saving, accounts and the leaderboard</h2>
       <h3>Local saving</h3>
@@ -817,8 +889,8 @@
         <tr><td>Karma</td><td>1 per 3 tao at reincarnation; every 3 tao below zero is &minus;1 on the counter</td></tr>
         <tr><td>Swarm unlocks</td><td>1 tao held + 1 factory</td></tr>
         <tr><td>Swarm click</td><td>Costs 100 g copper per maker or 1,000 g per breaker bought; 0.25 s cooldown</td></tr>
-        <tr><td>Collapse</td><td>Imbalance &ge; 0.32 for 1.5 s; yields 1 unstable core; unlocks the skyline</td></tr>
-        <tr><td>Nailbomb nails</td><td>50,000 &times; 2.3<sup>bombs dropped</sup>, plus 1 unstable core</td></tr>
+        <tr><td>Collapse</td><td>Imbalance &ge; 0.5 (3-to-1) for 1.5 s; yields 1 unstable core; unlocks the skyline</td></tr>
+        <tr><td>Nailbomb nails</td><td>50,000 &times; 2.3<sup>bombs dropped</sup>, plus (bomb number) unstable cores</td></tr>
         <tr><td>Nailbomb permanent scar</td><td>+50% demand per bomb (added to the tao bonus), capped at +1000%</td></tr>
         <tr><td>Nailbomb tao drain</td><td>round(6 &times; bomb power): 3 for the first bomb, rising with each bigger one</td></tr>
         <tr><td>Fever / panic</td><td>+35% demand per fever point (half-life 40 s) / up to +50% (half-life 5 s)</td></tr>
@@ -826,6 +898,21 @@
       </table>
 
     </div>
+  </div>
+</div>
+
+<div id="endScreenOverlay" class="sheet-overlay">
+  <div class="sheet-box">
+    <div id="endScreenBody"></div>
+    <div class="sheet-actions"><button id="btnEndScreenClose">continue</button></div>
+  </div>
+</div>
+
+<div id="pastLivesOverlay" class="sheet-overlay">
+  <div class="sheet-box">
+    <div class="sheet-title">past lives</div>
+    <div id="pastLivesBody"></div>
+    <div class="sheet-actions"><button id="btnPastLivesClose">close</button></div>
   </div>
 </div>
 
@@ -988,6 +1075,7 @@
             <div class="row"><span class="label">karma:</span><span class="value" id="valKarma">0</span></div>
             <div class="hint" id="reincarnateHint">reach 3 tao to end this life and be reborn</div>
             <button id="btnReincarnate" style="width:100%; margin-top:6px;" disabled>reincarnate</button>
+            <button id="btnPastLives" style="width:100%; margin-top:6px;">past lives (0)</button>
           </div>
         </div>
       </div>
@@ -1006,7 +1094,7 @@
             <div class="map-health-track"><div class="map-health-fill" id="coreIsotopesFill" style="background:var(--ink);"></div></div>
 
             <button id="btnCityBomb" style="width:100%; margin-top:6px;">launch nailbomb</button>
-            <div class="hint">launches down the middle. one unstable core per nailbomb; demand spikes briefly and the market scar permanently raises demand further -- but every bomb drains tao (3 for the first, more for bigger bombs).</div>
+            <div class="hint">launches down the middle. the Nth nailbomb needs N unstable cores; demand spikes briefly and the market scar permanently raises demand further -- but every bomb drains tao (3 for the first, more for bigger bombs).</div>
           </div>
       </div>
 
@@ -1084,6 +1172,7 @@
 <script src="js/actions.js"></script>
 <script src="js/cloudsave.js"></script>
 <script src="js/reincarnation.js"></script>
+<script src="js/lives.js"></script>
 <script src="js/engine.js"></script>
 
 </div>

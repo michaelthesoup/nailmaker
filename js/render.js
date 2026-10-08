@@ -115,6 +115,7 @@ function render() {
     // Negative tao counts against your karma standing: every 3 tao below zero is -1 karma.
     var negativeKarma = state.tao < 0 ? Math.trunc(state.tao / KARMA_TAO_THRESHOLD) : 0;
     el.valKarma.textContent = fmtInt(state.karma + negativeKarma);
+    el.btnPastLives.textContent = "past lives (" + (state.pastLives ? state.pastLives.length : 0) + ")";
     var karmaAvailable = Math.floor(state.tao / KARMA_TAO_THRESHOLD);
     if (state.tao < 0) {
       el.btnReincarnate.disabled = true;

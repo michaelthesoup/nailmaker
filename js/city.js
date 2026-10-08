@@ -200,8 +200,9 @@ function cityBombCost() {
   return Math.round(CITY_BOMB_BASE_NAILS * Math.pow(CITY_BOMB_COST_GROWTH, state.cityBombs));
 }
 
+// The Nth nailbomb needs N unstable cores (1st: 1, 2nd: 2, 5th: 5, ...).
 function cityIsotopesNeeded() {
-  return CORE_ISOTOPES_BASE;
+  return CORE_ISOTOPES_BASE + state.cityBombs;
 }
 
 function cityBombRadius() {
@@ -606,7 +607,7 @@ function renderCity() {
     el.btnCityBomb.textContent = "falling...";
     el.btnCityBomb.disabled = true;
   } else if (!haveEnough) {
-    el.btnCityBomb.textContent = "not enough nails / 1 unstable core";
+    el.btnCityBomb.textContent = "not enough nails / " + isoCost + " unstable core" + (isoCost === 1 ? "" : "s");
     el.btnCityBomb.disabled = true;
   } else {
     el.btnCityBomb.textContent = "launch nailbomb";

@@ -273,8 +273,20 @@ el.btnReincarnateConfirm.addEventListener("click", function () {
 
   var justReachedNirvana = ritual.title.isNirvana && !state.nirvanaAchieved;
 
+  // Log the life that's ending (karma was already added in startReincarnation).
+  var karmaGained = Math.floor(state.tao / KARMA_TAO_THRESHOLD);
+  var endedLife = buildLifeRecord({
+    how: "reincarnated",
+    karmaGained: karmaGained,
+    karmaTotal: state.karma,
+    title: ritual.title.label,
+    nirvana: !!ritual.title.isNirvana
+  });
+  var pastLivesCarried = (state.pastLives || []).concat([endedLife]).slice(-PAST_LIVES_MAX);
+
   deleteAllSaves();
   state = defaultState();
+  state.pastLives = pastLivesCarried;
   state.karma = karmaCarried;
   state.nirvanaAchieved = nirvanaCarried;
   state.unlockedMap = unlocksCarried.unlockedMap;
@@ -301,12 +313,12 @@ el.btnReincarnateConfirm.addEventListener("click", function () {
   render();
   if (typeof currentAuthUser === "function" && currentAuthUser()) cloudSaveState();
 
-  if (justReachedNirvana) {
-    window.alert(
-      "NIRVANA.\n\n" +
-      "Across every life you've lived, your karma has finally carried you all the way through. " +
-      "This is as close to beating Nail Maker as the game gets.\n\n" +
-      "You can keep playing -- there's no wall here, just the quiet feeling of having made it."
-    );
-  }
+  // The end screen replaces the old NIRVANA alert (it carries the same message).
+  showEndScreen({
+    kind: "reincarnated",
+    life: endedLife,
+    allLives: pastLivesCarried,
+    ritual: ritual,
+    nirvanaJustReached: justReachedNirvana
+  });
 });

@@ -392,9 +392,9 @@ var CITY_PANIC_DEMAND_MAX = 0.5; // +50% public demand at maximum panic, decayin
 
 // ----------------------------------------------------------------
 // The foundry core: a nailbomb now has to be CRAFTED, not just bought.
-// It still needs unsold nails -- the same cost curve as before,
-// cityBombCost() in city.js -- plus one unstable core, which
-// only comes from the swarm (see swarm.js). Only the nail cost scales.
+// It needs unsold nails (cityBombCost() in city.js) PLUS unstable cores,
+// which only come from the swarm (see swarm.js). The Nth nailbomb needs
+// N cores: CORE_ISOTOPES_BASE + bombs already dropped.
 // ----------------------------------------------------------------
 var CORE_ISOTOPES_BASE = 1;
 
@@ -409,7 +409,10 @@ var CORE_ISOTOPES_BASE = 1;
 // ----------------------------------------------------------------
 var SWARM_MAJORITY_TOLERANCE = 0.05; // matches YINYANG_BALANCE_TOLERANCE's definition of real parity
 var SWARM_MAJORITY_SPEED_MULT = 1; // TESTING: temporarily disabled -- all dots move at the same base speed regardless of majority/minority. Restore to something like 2.4 once the rest of the loop is confirmed to feel right.
-var SWARM_COLLAPSE_IMBALANCE_THRESHOLD = 0.32; // |imbalance| has to cross this -- eased down from 0.85 (nearly every dot one color), then from 0.4 (which was still easy to hover just under during active play). Now a clear ~2-to-1 majority is enough.
+var SWARM_COLLAPSE_IMBALANCE_THRESHOLD = 0.5; // 0.5 = a 3-to-1 split between the two sides (0.43 would be 2.5-to-1, 0.33 is 2-to-1). Raised from 0.32 (~2-to-1) to make collapse a real commitment. Old note:  // |imbalance| has to cross this -- eased down from 0.85 (nearly every dot one color), then from 0.4 (which was still easy to hover just under during active play). Now a clear ~2-to-1 majority is enough.
+// All dots move faster the further out of balance you are: speed x (1 + this * |imbalance|).
+// At the collapse line (0.5) that is 1.5x; at total one-sided imbalance it is 2x.
+var SWARM_IMBALANCE_SPEED_BONUS = 1;
 var SWARM_COLLAPSE_SUSTAIN_SEC = 1.5; // ...and stay there this long (the grey-out) before it actually collapses
 var SWARM_COLLAPSE_FUEL_GAIN = 1; // unstable core banked per collapse
 
@@ -479,6 +482,11 @@ function defaultState() {
     yinYangAccum: 0,
 
     simTime: 0, // seconds of game time elapsed
+
+    // Stats for the end-of-life screen and the past lives log.
+    totalEarned: 0, // lifetime money earned from selling nails this life
+    swarmCollapses: 0, // times the swarm has collapsed this life
+    pastLives: [], // log of lives ended by reincarnation; erased by ending a run (see lives.js)
 
     // The skyline (see tunables above). Buildings themselves are never
     // stored -- they're computed fresh from nailMakers/breakers/factories

@@ -39,6 +39,13 @@ var el = {
 
   valKarma: document.getElementById("valKarma"),
   btnReincarnate: document.getElementById("btnReincarnate"),
+  btnPastLives: document.getElementById("btnPastLives"),
+  pastLivesOverlay: document.getElementById("pastLivesOverlay"),
+  pastLivesBody: document.getElementById("pastLivesBody"),
+  btnPastLivesClose: document.getElementById("btnPastLivesClose"),
+  endScreenOverlay: document.getElementById("endScreenOverlay"),
+  endScreenBody: document.getElementById("endScreenBody"),
+  btnEndScreenClose: document.getElementById("btnEndScreenClose"),
   reincarnateHint: document.getElementById("reincarnateHint"),
   reincarnateOverlay: document.getElementById("reincarnateOverlay"),
   reincarnateGrid: document.getElementById("reincarnateGrid"),

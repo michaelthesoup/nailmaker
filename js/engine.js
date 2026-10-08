@@ -55,6 +55,7 @@ function tick(dt, skipRender) {
       var sold = Math.min(state.unsold, soldPerSec * settleInterval);
       state.unsold -= sold;
       state.funds += sold * state.price;
+      state.totalEarned += sold * state.price;
     }
   }
 

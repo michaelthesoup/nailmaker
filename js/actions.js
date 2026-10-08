@@ -202,11 +202,19 @@ el.btnEndRun.addEventListener("click", function () {
   submitScore(name, Math.floor(state.totalNailsMade));
   deleteAllSaves();
 
+  // Capture this life (and the whole run) for the end screen before the
+  // reset below wipes it -- including the past lives log, which ending a
+  // run destroys.
+  var endedLife = buildLifeRecord({ how: "ended" });
+  var allLives = (state.pastLives || []).concat([endedLife]);
+  var karmaLost = Math.max(0, state.karma);
+
   var nirvanaCarried = state.nirvanaAchieved; // a real achievement -- survives even this
   state = defaultState();
   state.nirvanaAchieved = nirvanaCarried;
 
   render();
+  showEndScreen({ kind: "ended", life: endedLife, allLives: allLives, karmaLost: karmaLost });
 });
 
 function migrateLoadedState() {
@@ -256,6 +264,8 @@ function migrateLoadedState() {
   // made under the old rule has karma stuck at -1 -- reset it to 0.
   if (state.cityKarmaLocked && state.karma < 0) state.karma = 0;
   delete state.cityKarmaLocked;
+
+  if (!Array.isArray(state.pastLives)) state.pastLives = [];
 }
 
 function flashButton(btn, text) {

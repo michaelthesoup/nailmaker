@@ -201,6 +201,7 @@ function swarmCollapse() {
   }
 
   state.isotopeStock += SWARM_COLLAPSE_FUEL_GAIN;
+  state.swarmCollapses = (state.swarmCollapses || 0) + 1;
   state.unlockedCity = true; // the skyline unlocks the first time the player destabilizes the swarm this hard
 
   swarmFlashHint("unstable core formed -- destroyed " + fmtInt(destroyed) + " " + majority + "s", 2000);
@@ -222,6 +223,7 @@ function swarmStep(nowMs) {
   swarmUpdateCollapse(dt);
 
   var fleeMult = swarmFleeMultiplier();
+  var imbalanceSpeedMult = 1 + SWARM_IMBALANCE_SPEED_BONUS * Math.abs(ironStructuralImbalance());
   var now = Date.now();
 
   if (el.swarmIronRates) {
@@ -263,7 +265,7 @@ function swarmStep(nowMs) {
       }
     }
 
-    var dotSpeedMult = d.speedy ? SWARM_MAJORITY_SPEED_MULT : 1;
+    var dotSpeedMult = (d.speedy ? SWARM_MAJORITY_SPEED_MULT : 1) * imbalanceSpeedMult;
     d.x += d.vx * dotSpeedMult;
     d.y += d.vy * dotSpeedMult;
 
