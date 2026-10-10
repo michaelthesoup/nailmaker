@@ -108,6 +108,15 @@ var el = {
   yinYangStatus: document.getElementById("valYinYangStatus"),
   yinYangHint: document.getElementById("yinYangHint"),
 
+  communitySection: document.getElementById("communitySection"),
+  communityCanvas: document.getElementById("communityCanvas"),
+  communityMembers: document.getElementById("valCommunityMembers"),
+  communityHarmony: document.getElementById("valCommunityHarmony"),
+  communityRate: document.getElementById("valCommunityRate"),
+  communityMerit: document.getElementById("valCommunityMerit"),
+  btnRecruitMember: document.getElementById("btnRecruitMember"),
+  communityHint: document.getElementById("communityHint"),
+
   swarmSection: document.getElementById("swarmSection"),
   swarmCanvas: document.getElementById("swarmCanvas"),
   swarmIronRates: document.getElementById("swarmIronRates"),

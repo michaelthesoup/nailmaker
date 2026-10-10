@@ -145,6 +145,7 @@ function render() {
   renderGuide();
   renderMap();
   if (typeof renderCity === "function") renderCity();
+  if (typeof renderCommunity === "function") renderCommunity();
 }
 
 function renderGuide() {

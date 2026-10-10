@@ -244,7 +244,7 @@ function migrateLoadedState() {
   if (!state.mapTotalWeight) {
     state.mapTotalWeight = Math.max(
       mapRemainingWeight(state.mapTiles),
-      depositCapacityForMap(state.mapIndex) * DEPOSITS_PER_MAP
+      depositCapacityForMap(state.mapIndex) * mapDepositCount()
     );
   }
   delete state.playerRow;

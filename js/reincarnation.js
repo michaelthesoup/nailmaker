@@ -78,9 +78,9 @@ function runReincarnationRitual(result) {
   var ironDemand = granted.nailMakers * newLifeMakerRate * IRON_PER_NAIL;
 
   // Pass 1: rough breaker estimate using an EXPECTED iron-tile count
-  // (maps are ~50/50 iron/copper, so about half of DEPOSITS_PER_MAP) --
+  // (maps are ~50/50 iron/copper, so about half of the map's deposits) --
   // just enough to pick a map size in the right ballpark.
-  var expectedIronTiles = DEPOSITS_PER_MAP / 2;
+  var expectedIronTiles = mapDepositCount() / 2;
   var roughBreakers = Math.max(1, Math.round(ironDemand / (newLifeBreakerRate * expectedIronTiles)));
 
   var desiredClearSeconds = 60;

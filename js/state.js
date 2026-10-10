@@ -70,7 +70,13 @@ var TICK_MS = 100;
 
 var MAP_ROWS = 10;
 var MAP_COLS = 21;
-var DEPOSITS_PER_MAP = 15;
+var DEPOSITS_PER_MAP = 15; // base: deposits on a map for a player with no karma
+// Karma enriches the ground. Any karma at all adds the first bonus, then each
+// further karma adds a little more (rounded down), up to a hard cap.
+//   0 karma: 15   1 karma: 20   3 karma: 21   11 karma: 25   ...   cap: 60
+var DEPOSITS_FIRST_KARMA_BONUS = 5;
+var DEPOSITS_PER_EXTRA_KARMA = 0.5;
+var DEPOSITS_MAX = 60;
 
 // Progressive UI reveal. Map stays hidden until the first breaker
 // is bought -- before that, there's nothing on it for anything to do.
@@ -256,6 +262,16 @@ function depositCapacityForMap(mapIndex) {
   return DEPOSIT_CAPACITY_BASE * Math.pow(DEPOSIT_CAPACITY_GROWTH, mapIndex - 1);
 }
 
+// How many deposits a map gets, from banked karma. Reads the live game
+// state; before it exists (the very first defaultState() call) or for a
+// karma-less player it's just the base count.
+function mapDepositCount() {
+  var karma = (typeof state !== "undefined" && state && typeof state.karma === "number") ? state.karma : 0;
+  if (karma < 1) return DEPOSITS_PER_MAP;
+  var extra = DEPOSITS_FIRST_KARMA_BONUS + Math.floor((karma - 1) * DEPOSITS_PER_EXTRA_KARMA);
+  return Math.min(DEPOSITS_MAX, DEPOSITS_PER_MAP + extra);
+}
+
 function generateMapTiles(mapIndex) {
   var rand = mulberry32(mapIndex * 7919 + 13);
   var capacity = depositCapacityForMap(mapIndex);
@@ -270,7 +286,8 @@ function generateMapTiles(mapIndex) {
 
   var placed = 0;
   var attempts = 0;
-  while (placed < DEPOSITS_PER_MAP && attempts < 1000) {
+  var depositTarget = mapDepositCount();
+  while (placed < depositTarget && attempts < 1000) {
     attempts++;
     var r = Math.floor(rand() * MAP_ROWS);
     var c = Math.floor(rand() * MAP_COLS);
@@ -485,6 +502,9 @@ function defaultState() {
 
     // Stats for the end-of-life screen and the past lives log.
     totalEarned: 0, // lifetime money earned from selling nails this life
+    members: 0, // the community's size (see community.js) -- demo feature
+    merit: 0,   // progress toward the next tao from the community
+    harmony: 0, // how settled the community is (0..1); chases the economy's balance with inertia
     swarmCollapses: 0, // times the swarm has collapsed this life
     pastLives: [], // log of lives ended by reincarnation; erased by ending a run (see lives.js)
 

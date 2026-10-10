@@ -78,6 +78,7 @@
   #citySection    { grid-column: 2; grid-row: 1; }
   #yinYangSection { grid-column: 1; grid-row: 2; }
   #swarmSection   { grid-column: 2; grid-row: 2; }
+  #communitySection { grid-column: 1; grid-row: 3; }
 
   .row {
     display: flex;
@@ -704,7 +705,7 @@
       <h2 id="g-breakers">6. Nail breakers and the extraction map</h2>
       <p>A <strong>nail breaker</strong> is the opposite of a nail maker. It costs <strong>$75</strong> with a one-second pause between purchases. Each breaker fires <strong>1 nail per second</strong> from your unsold inventory into the ground, and what comes back is iron and copper. Buying your first breaker reveals the <strong>extraction map</strong> and the copper and factory controls.</p>
       <h3>How mining works</h3>
-      <p>The map is a grid of 10 rows by 21 columns holding 15 deposits, each randomly iron or copper (about half and half). One nail hits <strong>every active deposit once</strong>. Each hit removes 1 g from that deposit and hands you 1 g of that deposit's material. So if the map currently has 8 iron deposits and 7 copper deposits, one nail returns 8 g of iron and 7 g of copper. A nail costs you one nail and returns a lot more material than that, which is why breakers are so powerful.</p>
+      <p>The map is a grid of 10 rows by 21 columns. A player with no karma gets 15 deposits per map, each randomly iron or copper (about half and half). Karma enriches the ground: 1 karma raises it to 20 deposits, and each additional karma adds a little more (about one per two karma), up to a maximum of 60. The extra deposits are added to the same layout, so the original 15 stay where they were. One nail hits <strong>every active deposit once</strong>. Each hit removes 1 g from that deposit and hands you 1 g of that deposit's material. So if the map currently has 8 iron deposits and 7 copper deposits, one nail returns 8 g of iron and 7 g of copper. A nail costs you one nail and returns a lot more material than that, which is why breakers are so powerful. More deposits means more material from every single nail, so karma makes mining directly more productive, not just your starting bonuses.</p>
       <p>Since every nail hits every deposit equally, all the deposits on a map drain together and run out at the same moment. Map 1's deposits hold 2,000 g each, so 2,000 nails of ammunition clear the entire map.</p>
       <h3>Reading the map</h3>
       <ul>
@@ -803,6 +804,16 @@
         <li><strong>Reset:</strong> funds, iron, copper, all machines, marketing, price, the map (replaced with the one chosen for your new start), the swarm unlock (you must earn it again), factory&sup2; and nailbomb progress.</li>
       </ul>
       <p>Reincarnating submits your final nail count to the leaderboard and deletes your old saves, so you cannot load your way back. You are asked to confirm first, because it cannot be undone.</p>
+
+      <h3>The community</h3>
+      <p>Your first reincarnation unlocks the <strong>community</strong> panel, beneath yin &amp; yang. It is drawn from a diagram in Buddhist teaching with three labels: the dot at the top is <em>&#3593;&#3633;&#3609;</em> ("I"), the spinning yin-yang in the center is <em>&#3648;&#3619;&#3634;</em> ("we"), and the big circle is <em>&#3607;&#3633;&#3657;&#3591;&#3627;&#3617;&#3604;</em> ("the whole"). It lasts as long as you hold any karma, so ending a run takes it away until you reincarnate again.</p>
+      <ul>
+        <li><strong>The dot is your karma.</strong> It drifts from the top of the panel toward the center as your karma grows, and reaches it at 80 karma, which is roughly where Nirvana becomes about as likely as not.</li>
+        <li><strong>The center is your members.</strong> Recruit members with unsold nails: 50 for the first, with each one costing 1.4&times; more than the last. The room for members is 1 plus 2 for every karma you hold. Each member makes 0.25 merit per second, and the more members, the larger and faster the center spins. Members reset when you reincarnate or end a run.</li>
+        <li><strong>The ring is merit.</strong> It fills around the big circle. At 100 merit you gain <strong>1 tao</strong> and the ring resets. This is real tao: it gives the same +50% machine speed and +10% demand as tao you earn by hand, and it also raises negative tao back toward zero.</li>
+        <li><strong>Harmony multiplies merit.</strong> Harmony is a meter from 0% to 100% that follows how balanced your economy is (section 10): 100% at perfect balance, 0% at the 3-to-1 collapse line. It <em>climbs slowly</em> (about 50 seconds from nothing to full) but <em>falls faster</em>, so a stretch of imbalance costs you, and fixing your build restores it gradually, not instantly. The arrow beside the percentage shows which way it is heading.</li>
+      </ul>
+      <p>The community does not replace balancing by hand. It earns tao quietly while you keep a balanced economy, and the yin and yang bars still give you tao the active way. Doing both together is the fastest.</p>
 
       <h2 id="g-swarm">13. The foundry swarm</h2>
       <h3>Unlocking</h3>
@@ -914,13 +925,14 @@
         <tr><td>Marketing</td><td>$25 &times; 2<sup>level</sup>; each level &times;1.4 demand</td></tr>
         <tr><td>Nail maker</td><td>$5 flat; 1 nail/s; 1 g iron/s; 1 s between buys</td></tr>
         <tr><td>Nail breaker</td><td>$75 flat; 1 nail/s ammo; 1 s between buys</td></tr>
-        <tr><td>Map</td><td>10 &times; 21; 15 deposits; map 1 deposits are 2,000 g; &times;1.2 per map</td></tr>
+        <tr><td>Map</td><td>10 &times; 21; 15 deposits (20 at 1 karma, +1 per 2 more, max 60); map 1 deposits are 2,000 g; &times;1.2 per map</td></tr>
         <tr><td>Copper sells for</td><td>$0.05 per gram</td></tr>
         <tr><td>Factory</td><td>$1,000 &times; 1.4<sup>owned</sup>; 1 s cycle; 100 g copper per maker, 1,000 g per breaker</td></tr>
         <tr><td>Factory&sup2;</td><td>Unlocks at 100,000 makers and 100,000 breakers; $1,000,000,000 &times; 1.1<sup>owned</sup>; 10,000,000 g copper per factory built</td></tr>
         <tr><td>Yin &amp; yang</td><td>Unlocks with 1 maker + 1 breaker; one bar +1 per second; both at 100 = 1 tao</td></tr>
         <tr><td>Each held tao</td><td>+50% maker and breaker rate, +10% public demand</td></tr>
         <tr><td>Karma</td><td>1 per 3 tao at reincarnation; every 3 tao below zero is &minus;1 on the counter</td></tr>
+        <tr><td>Community</td><td>Unlocks with any karma; member cost 50 nails &times; 1.4<sup>members</sup>; room 1 + 2 per karma; 0.25 merit/s per member &times; harmony; 100 merit = 1 tao; harmony +2%/s up, &minus;5%/s down</td></tr>
         <tr><td>Swarm unlocks</td><td>1 tao held + 1 factory</td></tr>
         <tr><td>Swarm click</td><td>Costs 100 g copper per maker or 1,000 g per breaker bought; 0.25 s cooldown</td></tr>
         <tr><td>Collapse</td><td>Imbalance &ge; 0.5 (3-to-1) for 1.5 s; yields 1 unstable core; unlocks the skyline</td></tr>
@@ -1084,6 +1096,19 @@
 
   <div id="mapSection" style="display:none;">
     <div class="map-layout">
+        <div class="panel" id="communitySection" style="display:none;">
+          <div class="panel-header">the community</div>
+          <div class="panel-body">
+            <canvas id="communityCanvas" width="300" height="330" style="width:100%; display:block;"></canvas>
+            <div class="row"><span class="label">members:</span><span class="value" id="valCommunityMembers">0 / 0</span></div>
+            <div class="row"><span class="label">harmony:</span><span class="value" id="valCommunityHarmony">0%</span></div>
+            <div class="row"><span class="label">merit rate:</span><span class="value" id="valCommunityRate">none</span></div>
+            <div class="row"><span class="label">merit:</span><span class="value" id="valCommunityMerit">0 / 100</span></div>
+            <button id="btnRecruitMember" style="width:100%; margin-top:6px;">recruit</button>
+            <div class="hint" id="communityHint"></div>
+          </div>
+        </div>
+
       <div class="map-column">
         <div class="panel" id="mapPanel">
           <div class="panel-header">extraction &mdash; map <span id="mapIndexLabel">1</span></div>
@@ -1217,6 +1242,7 @@
 <script src="js/lives.js"></script>
 <script src="js/lifetime.js"></script>
 <script src="js/achievements.js"></script>
+<script src="js/community.js"></script>
 <script src="js/engine.js"></script>
 
 </div>

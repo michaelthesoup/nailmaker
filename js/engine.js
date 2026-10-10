@@ -14,6 +14,7 @@ var SETTLE_INTERVAL_FLOOR_SEC = 0.05; // never settle faster than 20x/sec
 function tick(dt, skipRender) {
   state.simTime += dt;
   cityTick(dt);
+  if (typeof communityTick === "function") communityTick(dt);
 
   // Production: nail makers turn iron into unsold nails. The "nail
   // makers: ON/OFF" tuning toggle folds into nailMakerRateEffective().
