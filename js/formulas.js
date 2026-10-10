@@ -76,12 +76,12 @@ function breakerBuildCostEffective() {
 
 function nailMakerRateEffective() {
   if (!state.nailMakersOn) return 0;
-  return NAILMAKER_RATE * productionRateBonusMultiplier();
+  return NAILMAKER_RATE * (1 + makerRateBonus());
 }
 
 function breakerIntakeEffective() {
   if (!state.breakersOn) return 0;
-  return BREAKER_INTAKE_RATE * productionRateBonusMultiplier();
+  return BREAKER_INTAKE_RATE * (1 + breakerRateBonus());
 }
 
 // Theoretical rates, computed straight from current state -- always
@@ -262,6 +262,20 @@ function taoRateBonus() {
 
 function productionRateBonusMultiplier() {
   return 1 + taoRateBonus();
+}
+
+// The monastery (monastery.js) leans the tao bonus between the two sides
+// without changing the total: +lean favors makers, -lean favors breakers.
+function monkLean() {
+  return Math.max(-1, Math.min(1, state.monkShift || 0));
+}
+
+function makerRateBonus() {
+  return taoRateBonus() * (1 + monkLean());
+}
+
+function breakerRateBonus() {
+  return taoRateBonus() * (1 - monkLean());
 }
 
 function yinYangTickAmount() {

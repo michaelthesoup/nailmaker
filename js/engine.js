@@ -15,6 +15,7 @@ function tick(dt, skipRender) {
   state.simTime += dt;
   cityTick(dt);
   if (typeof communityTick === "function") communityTick(dt);
+  if (typeof monasteryTick === "function") monasteryTick(dt);
 
   // Production: nail makers turn iron into unsold nails. The "nail
   // makers: ON/OFF" tuning toggle folds into nailMakerRateEffective().

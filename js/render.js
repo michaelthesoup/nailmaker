@@ -14,9 +14,11 @@ function render() {
   var demandBonusPct = Math.round(permanentDemandBonus() * 100);
   el.demandYYNote.textContent = demandBonusPct > 0 ? "+" + demandBonusPct + "%" : "";
   // Same idea for machine speed: the tao rate bonus applies to makers and breakers alike.
-  var rateBonusPct = Math.round(taoRateBonus() * 100);
-  el.nailMakerBonus.textContent = rateBonusPct > 0 ? "+" + rateBonusPct + "%" : "";
-  el.breakerBonus.textContent = rateBonusPct > 0 ? "+" + rateBonusPct + "%" : "";
+  // (the monastery can lean it between the two, so they may differ)
+  var makerBonusPct = Math.round(makerRateBonus() * 100);
+  var breakerBonusPct = Math.round(breakerRateBonus() * 100);
+  el.nailMakerBonus.textContent = makerBonusPct > 0 ? "+" + makerBonusPct + "%" : "";
+  el.breakerBonus.textContent = breakerBonusPct > 0 ? "+" + breakerBonusPct + "%" : "";
   el.marketing.textContent = state.marketingLevel;
   el.iron.textContent = fmtWeight(state.ironAmt);
   el.copper.textContent = fmtWeight(state.copperAmt);
@@ -146,6 +148,7 @@ function render() {
   renderMap();
   if (typeof renderCity === "function") renderCity();
   if (typeof renderCommunity === "function") renderCommunity();
+  if (typeof renderMonastery === "function") renderMonastery();
 }
 
 function renderGuide() {

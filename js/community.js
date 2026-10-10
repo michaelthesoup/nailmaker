@@ -58,8 +58,11 @@ function communityHarmony() {
   return Math.max(0, Math.min(1, state.harmony || 0));
 }
 
+// Only members who are meditating make merit; monks (see monastery.js) are
+// members working in the monastery instead.
 function communityMeritRate() {
-  return state.members * COMMUNITY_MERIT_PER_MEMBER_SEC * communityHarmony();
+  var meditating = Math.max(0, state.members - state.monks);
+  return meditating * COMMUNITY_MERIT_PER_MEMBER_SEC * communityHarmony();
 }
 
 // Called every game tick (engine.js).
@@ -96,7 +99,7 @@ function renderCommunity() {
   var cap = communityCapacity();
   var harmony = communityHarmony();
   var rate = communityMeritRate();
-  el.communityMembers.textContent = state.members + " / " + cap;
+  el.communityMembers.textContent = state.members + " / " + cap + (state.monks > 0 ? " (" + (state.members - state.monks) + " meditating)" : "");
   var harmonyTarget = communityHarmonyTarget();
   var trend = harmonyTarget > harmony + 0.005 ? " \u2191" : (harmonyTarget < harmony - 0.005 ? " \u2193" : "");
   el.communityHarmony.textContent = Math.round(harmony * 100) + "%" + trend;

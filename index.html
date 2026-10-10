@@ -38,33 +38,24 @@
     margin: 0 0 12px 0;
   }
 
+  /* One grid for the whole page body: three equal columns. The left stack
+     (business, make nail, machinery) sits in column 1 beside the first two
+     rows; the map, yin & yang and community stack in column 2; the skyline
+     and swarm in column 3. The monastery and factory-squared sit in column 1
+     under the left stack, level with the community. #mapSection and
+     .map-layout are only wrappers (JS shows/hides #mapSection), so
+     "contents" lets their panels be grid items of .columns directly. */
   .columns {
-    display: flex;
-    gap: var(--gap);
-    align-items: flex-start;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-  }
-
-  /* #mapSection and .map-layout are only wrappers (JS shows/hides
-     #mapSection) -- "contents" lets the map column and skyline column
-     sit directly in .columns as siblings of the business column, so all
-     three share one row, one width and one gap. */
-  #mapSection {
-    display: contents;
-  }
-
-  /* Left column (map, then yin & yang) stays put; the skyline sits
-     beside the map and the swarm beside yin & yang, each pair stretched
-     to the same height so they line up top and bottom. */
-  .map-layout {
     display: grid;
-    grid-template-columns: var(--col-w) var(--col-w);
+    grid-template-columns: repeat(3, var(--col-w));
     gap: var(--gap);
     align-items: stretch;
     align-content: start;
+    overflow-x: auto;
   }
 
+  #mapSection,
+  .map-layout,
   .map-column,
   .city-column {
     display: contents;
@@ -74,11 +65,25 @@
     margin-bottom: 0;
   }
 
-  #mapPanel       { grid-column: 1; grid-row: 1; }
-  #citySection    { grid-column: 2; grid-row: 1; }
-  #yinYangSection { grid-column: 1; grid-row: 2; }
-  #swarmSection   { grid-column: 2; grid-row: 2; }
-  #communitySection { grid-column: 1; grid-row: 3; }
+  /* The left stack stretches to the full height of the first two rows, with
+     the machinery panel absorbing the extra, so its bottom edge lines up
+     with the bottom of yin & yang / the swarm and no gap opens up before
+     the monastery below it. */
+  #leftStack        { grid-column: 1; grid-row: 1 / span 2; align-self: stretch; display: flex; flex-direction: column; }
+  #machinerySection { flex: 1 1 auto; margin-bottom: 0; }
+  #mapPanel         { grid-column: 2; grid-row: 1; }
+  #citySection      { grid-column: 3; grid-row: 1; }
+  #yinYangSection   { grid-column: 2; grid-row: 2; }
+  #swarmSection     { grid-column: 3; grid-row: 2; }
+  #communitySection { grid-column: 2; grid-row: 3; align-self: start; }
+  #leftLower {
+    grid-column: 1;
+    grid-row: 3 / span 2;
+    align-self: start;
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap);
+  }
 
   .row {
     display: flex;
@@ -815,6 +820,16 @@
       </ul>
       <p>The community does not replace balancing by hand. It earns tao quietly while you keep a balanced economy, and the yin and yang bars still give you tao the active way. Doing both together is the fastest.</p>
 
+      <h3>The monastery</h3>
+      <p>The <strong>monastery</strong> sits in the machinery column under the machinery panel, level with the community. It unlocks once you have reincarnated at least once <em>and</em> hold 3 tao, and like the swarm it must be earned again in each life. Tao gives nail makers and nail breakers the same speed bonus. The monastery lets monks lean that bonus <em>between</em> the two sides without changing the total, until your makers' iron consumption matches your breakers' iron supply. It is drawn as the Wheel of the Dharma above a line called the Middle Way (<em>&#3607;&#3634;&#3591;&#3626;&#3634;&#3618;&#3585;&#3621;&#3634;&#3591;</em>): breaking on one end, making on the other, and a marker that walks toward the center.</p>
+      <ul>
+        <li><strong>Halls</strong> cost funds <em>and</em> a great many unsold nails: $10,000 and 100,000 nails for the first, with each next hall costing 2.5&times; more of both. Each hall seats 2 monks.</li>
+        <li><strong>Monks</strong> are community members you move out of meditation with the <em>+ monk</em> and <em>&minus; monk</em> buttons. A monk no longer makes merit, so every monk is tao the community is not producing.</li>
+        <li><strong>Speed:</strong> monks work in steps of exactly 1% of the bonus. One monk takes a step every second; two monks take a step every half second; four every quarter second, and so on. With no monks, the lean drifts back to neutral at a step every half second.</li>
+        <li><strong>Visible effect:</strong> the small percentages beside nail makers and nail breakers can now differ. For example, 4 tao normally gives +200% to each; leaned fully toward makers it would be +400% and +0%. The total never changes. With no tao there is nothing to steer.</li>
+      </ul>
+      <p>Because monks keep your iron in balance, they also push your yin and yang bars back and forth across zero and keep community harmony high.</p>
+
       <h2 id="g-swarm">13. The foundry swarm</h2>
       <h3>Unlocking</h3>
       <p>The swarm panel appears when you hold <strong>at least 1 tao and own at least one factory</strong>. Getting to 1 tao already proves you can balance; the factory proves you have an automated economy for the swarm to correct.</p>
@@ -979,7 +994,7 @@
 </div>
 
 <div class="columns">
-  <div>
+  <div id="leftStack">
     <div class="panel">
       <div class="panel-body">
         <div class="row"><span class="label">available funds:</span><span class="value" id="valFunds">$0.00</span></div>
@@ -1074,28 +1089,49 @@
       </div>
     </div>
 
-    <div class="panel" id="factorySquaredSection" style="margin-top:0; display:none;">
-      <div class="panel-header">factory&sup2;</div>
-      <div class="panel-body">
-        <div class="hint" style="margin-top:0;">a factory that builds factories. unlocked once your economy is big enough to feed it.</div>
-
-        <div class="row">
-          <span class="label">factory&sup2;:</span>
-          <span class="value" id="valFactorySquaredCount">0</span>
-          <button id="btnBuyFactorySquared">buy factory&sup2;</button>
-        </div>
-
-        <div class="hint" id="valFactorySquaredMaterialUse">consuming 0 g copper/s</div>
-        <div class="hint">
-          producing: <span id="valFactorySquaredOutputRate">0.0 factories/min</span>
-        </div>
-      </div>
-    </div>
 
   </div>
 
   <div id="mapSection" style="display:none;">
     <div class="map-layout">
+      <div id="leftLower">
+        <div class="panel" id="monasterySection" style="display:none;">
+          <div class="panel-header">the monastery</div>
+          <div class="panel-body">
+            <canvas id="monasteryCanvas" width="300" height="205" style="width:100%; display:block;"></canvas>
+            <div class="row"><span class="label">halls:</span><span class="value" id="valMonasteryHalls">0</span></div>
+            <button id="btnBuildHall" style="width:100%; margin:4px 0;">build hall</button>
+            <div class="row"><span class="label">monks:</span><span class="value" id="valMonasteryMonks">0 / 0</span></div>
+            <div style="display:flex; gap:6px; margin:4px 0;">
+              <button id="btnMonkRemove" style="flex:1;">&minus; monk</button>
+              <button id="btnMonkAdd" style="flex:1;">+ monk</button>
+            </div>
+            <div class="row"><span class="label">meditating:</span><span class="value" id="valMonasteryMeditating">0</span></div>
+            <div class="row"><span class="label">maker bonus:</span><span class="value" id="valMonasteryMakerBonus">+0%</span></div>
+            <div class="row"><span class="label">breaker bonus:</span><span class="value" id="valMonasteryBreakerBonus">+0%</span></div>
+            <div class="hint" id="monasteryHint"></div>
+          </div>
+        </div>
+
+      <div class="panel" id="factorySquaredSection" style="margin-top:0; display:none;">
+          <div class="panel-header">factory&sup2;</div>
+          <div class="panel-body">
+            <div class="hint" style="margin-top:0;">a factory that builds factories. unlocked once your economy is big enough to feed it.</div>
+
+            <div class="row">
+              <span class="label">factory&sup2;:</span>
+              <span class="value" id="valFactorySquaredCount">0</span>
+              <button id="btnBuyFactorySquared">buy factory&sup2;</button>
+            </div>
+
+            <div class="hint" id="valFactorySquaredMaterialUse">consuming 0 g copper/s</div>
+            <div class="hint">
+              producing: <span id="valFactorySquaredOutputRate">0.0 factories/min</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
         <div class="panel" id="communitySection" style="display:none;">
           <div class="panel-header">the community</div>
           <div class="panel-body">
@@ -1243,6 +1279,7 @@
 <script src="js/lifetime.js"></script>
 <script src="js/achievements.js"></script>
 <script src="js/community.js"></script>
+<script src="js/monastery.js"></script>
 <script src="js/engine.js"></script>
 
 </div>

@@ -505,6 +505,10 @@ function defaultState() {
     members: 0, // the community's size (see community.js) -- demo feature
     merit: 0,   // progress toward the next tao from the community
     harmony: 0, // how settled the community is (0..1); chases the economy's balance with inertia
+    unlockedMonastery: false, // earned per life: reincarnated at least once + 3 tao (see monastery.js)
+    monasteryHalls: 0, // halls bought with funds and unsold nails; each seats monks (see monastery.js)
+    monks: 0,          // community members working in the monastery instead of meditating
+    monkShift: 0,      // -1..+1: how far the tao rate bonus is leaned toward makers (+) or breakers (-)
     swarmCollapses: 0, // times the swarm has collapsed this life
     pastLives: [], // log of lives ended by reincarnation; erased by ending a run (see lives.js)
 
