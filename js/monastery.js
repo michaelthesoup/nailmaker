@@ -22,6 +22,11 @@
 //       breaker bonus = tao bonus * (1 - lean)
 //   - Monks only act on the tao bonus, so with no tao there is nothing
 //     to steer.
+//   - Leaning has a price: a heavy lean drains the community's harmony,
+//     which slows its automatic tao (community.js, communityLeanDrain).
+//   - Foremen are members who work the factories instead: each raises
+//     factory output per copper (a discount), and they share the halls'
+//     seats with the monks. A member can meditate, balance, or foreman.
 // ----------------------------------------------------------------
 
 var MONASTERY_UNLOCK_TAO = 3;           // held tao needed (plus having reincarnated at least once)
@@ -29,8 +34,8 @@ var MONASTERY_HALL_COST_BASE = 10000;   // funds for the first hall...
 var MONASTERY_HALL_NAILS_BASE = 100000; // ...and unsold nails for the first hall
 var MONASTERY_HALL_COST_GROWTH = 2.5;   // each further hall costs this much more of both
 var MONASTERY_SEATS_PER_HALL = 2;
-var MONK_STEP = 0.01;                   // a monk moves the lean by 1% of the pool per step
-var MONK_RELAX_STEPS_PER_SEC = 2;       // with no monks the lean drifts back to neutral, a step every 0.5s
+var MONK_STEP = 0.002;                  // a monk moves the lean by 0.2% of the pool per step
+var MONK_RELAX_STEPS_PER_SEC = 2;       // with no monks the lean drifts back to neutral, 2 steps a second
 
 var monkStepAccum = 0; // fractional monk steps carried between ticks (not saved)
 
@@ -72,6 +77,7 @@ function monasteryTick(dt) {
   monasteryCheckUnlock();
   if (!monasteryUnlocked()) return;
   if (state.monks > state.members) state.monks = state.members;
+  if ((state.foremen || 0) > state.members - state.monks) state.foremen = state.members - state.monks;
 
   if (taoRateBonus() <= 0) { state.monkShift = 0; monkStepAccum = 0; return; }
 
@@ -102,8 +108,14 @@ el.btnBuildHall.addEventListener("click", function () {
   render();
 });
 
+// Seats are shared by monks and foremen, and both come out of the community.
+function monasterySeatsFree() {
+  var staffed = state.monks + (state.foremen || 0);
+  return Math.min(monasterySeats() - staffed, state.members - staffed);
+}
+
 el.btnMonkAdd.addEventListener("click", function () {
-  if (state.monks >= monasterySeats() || state.monks >= state.members) return;
+  if (monasterySeatsFree() <= 0) return;
   state.monks += 1;
   render();
 });
@@ -111,6 +123,18 @@ el.btnMonkAdd.addEventListener("click", function () {
 el.btnMonkRemove.addEventListener("click", function () {
   if (state.monks <= 0) return;
   state.monks -= 1;
+  render();
+});
+
+el.btnForemanAdd.addEventListener("click", function () {
+  if (monasterySeatsFree() <= 0) return;
+  state.foremen += 1;
+  render();
+});
+
+el.btnForemanRemove.addEventListener("click", function () {
+  if (state.foremen <= 0) return;
+  state.foremen -= 1;
   render();
 });
 
@@ -125,30 +149,46 @@ function renderMonastery() {
   if (!monasteryUnlocked()) return;
 
   var seats = monasterySeats();
+  var staffed = state.monks + (state.foremen || 0);
   var cost = monasteryHallCost();
   var hallNails = monasteryHallNailCost();
   el.monasteryHalls.textContent = state.monasteryHalls;
   el.btnBuildHall.textContent = "build hall (" + fmtMoney(cost) + " + " + fmtInt(hallNails) + " nails)";
   el.btnBuildHall.disabled = state.funds < cost || state.unsold < hallNails;
-  el.monasteryMonks.textContent = state.monks + " / " + seats;
-  el.monasteryMeditating.textContent = String(state.members - state.monks);
+  el.monasterySeats.textContent = staffed + " / " + seats;
+  el.monasteryMonks.textContent = String(state.monks);
+  el.monasteryForemen.textContent = String(state.foremen || 0);
+  el.monasteryMeditating.textContent = String(state.members - staffed);
   el.monasteryMakerBonus.textContent = fmtBonusPct(makerRateBonus());
   el.monasteryBreakerBonus.textContent = fmtBonusPct(breakerRateBonus());
-  el.btnMonkAdd.disabled = state.monks >= seats || state.monks >= state.members;
+
+  var drainPct = Math.round(communityLeanDrain() * 100);
+  el.monasteryDrain.textContent = drainPct > 0 ? "\u2212" + drainPct + "% harmony" : "none";
+  el.monasteryFactoryBonus.textContent = "+" + Math.round(foremanOutputBonus() * 100) + "%";
+
+  var free = monasterySeatsFree();
+  el.btnMonkAdd.disabled = free <= 0;
   el.btnMonkRemove.disabled = state.monks <= 0;
+  el.btnForemanAdd.disabled = free <= 0;
+  el.btnForemanRemove.disabled = (state.foremen || 0) <= 0;
 
   var hint;
-  if (taoRateBonus() <= 0) {
-    hint = "Monks steer the tao bonus between makers and breakers. You hold no tao, so there is nothing to steer yet.";
-  } else if (state.monasteryHalls === 0) {
-    hint = "Build a hall (it costs funds and a great many unsold nails) to seat monks, then move members out of the community's meditation to fill it.";
-  } else if (state.monks === 0) {
-    hint = "No monks yet. Each one is a community member who stops making merit, and steers the tao bonus toward balance.";
-  } else {
+  if (state.monasteryHalls === 0) {
+    hint = "Build a hall (it costs funds and a great many unsold nails) to seat monks and foremen, then move members out of the community's meditation to fill it.";
+  } else if (staffed === 0) {
+    hint = "No one is staffing the monastery. Monks steer the tao bonus toward balance; foremen cut the copper factories need. Each is a member who stops making merit.";
+  } else if (state.monks > 0 && taoRateBonus() <= 0) {
+    hint = "Monks steer the tao bonus between makers and breakers, but you hold no tao, so there is nothing to steer yet.";
+  } else if (state.monks > 0) {
     var gap = Math.abs((state.monkShift || 0) - monasteryTargetLean());
     hint = gap < 0.01
       ? "The monks have found the middle way: makers and breakers are in step."
       : "The monks are walking the middle way \u2014 shifting bonus between makers and breakers.";
+    if (communityLeanDrain() >= 0.05) {
+      hint += " A heavy lean drains community harmony and slows its tao.";
+    }
+  } else {
+    hint = "The foremen are working the factories.";
   }
   el.monasteryHint.textContent = hint;
 }
@@ -210,7 +250,8 @@ function drawMonastery() {
   monasteryWheelAngle += dt * (0.08 + state.monks * 0.3);
 
   ctx.clearRect(0, 0, w, h);
-  drawDharmaWheel(ctx, w / 2, 62, 52, monasteryWheelAngle, ink, paper);
+  var shake = Math.pow(Math.abs(monkLean()), 2) * 3;
+  drawDharmaWheel(ctx, w / 2 + Math.sin(now / 55) * shake, 62 + Math.cos(now / 70) * shake, 52, monasteryWheelAngle, ink, paper);
 
   // the Middle Way: breaking on the left, making on the right, balance in the center
   var x0 = 38, x1 = w - 38, mid = w / 2, y = 148, half = (x1 - x0) / 2;

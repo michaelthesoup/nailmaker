@@ -341,7 +341,7 @@ function cityApplyImpact(targetWorldX) {
   state.breakers = Math.max(0, state.breakers - lost.breaker);
   if (lost.factory > 0) {
     state.factories = Math.max(0, state.factories - lost.factory);
-    while (state.factoryTimers.length > state.factories) state.factoryTimers.pop();
+    state.factoryProgress = Math.min(state.factoryProgress || 0, state.factories);
   }
 
   var gain = cityFeverGainForNextBomb();

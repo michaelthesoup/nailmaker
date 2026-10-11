@@ -65,9 +65,19 @@ function factoryMakerFraction() {
   return state.factoryBalance / 100;
 }
 
+// Foremen (monastery.js) raise factory output per gram of copper.
+function foremanOutputBonus() {
+  return (state.foremen || 0) * FOREMAN_PRODUCTIVITY_PER;
+}
+
 function factoryCopperCostEffective() {
   var f = factoryMakerFraction();
-  return FACTORY_COST_BREAKER_SIDE_COPPER * (1 - f) + FACTORY_COST_MAKER_SIDE_COPPER * f;
+  var base = FACTORY_COST_BREAKER_SIDE_COPPER * (1 - f) + FACTORY_COST_MAKER_SIDE_COPPER * f;
+  return base / (1 + foremanOutputBonus());
+}
+
+function factorySquaredCopperCostEffective() {
+  return FACTORY_SQUARED_COPPER_COST / (1 + foremanOutputBonus());
 }
 
 function breakerBuildCostEffective() {

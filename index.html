@@ -735,7 +735,7 @@
       <h3>Cost</h3>
       <p>The first factory costs <strong>$1,000</strong>. Each factory you own multiplies the price of the next by 1.4, so the price is <code>$1,000 &times; 1.4<sup>factories owned</sup></code>.</p>
       <h3>What a factory does</h3>
-      <p>Each factory has a cycle of one second. When a cycle completes, and you have enough copper, it spends that copper and produces exactly one machine: either a nail maker or a nail breaker. If you lack copper, the factory waits ready and builds as soon as you have enough, so a copper shortage pauses factories rather than breaking anything. The machinery panel shows how much copper per second your factories are consuming and how many units per minute they produce.</p>
+      <p>Each factory completes one cycle per second. Production is a continuous stream: with 1 factory you get a machine about every second, with 10 you get about ten a second spread evenly, and with 1,000 it becomes a rapid flood, not a single batch landing once a second. Every cycle spends copper and produces exactly one machine, either a nail maker or a nail breaker. If you lack copper, finished cycles wait (up to one per factory) and are built as soon as you have enough, so a copper shortage pauses factories rather than breaking anything. The machinery panel shows how much copper per second your factories are consuming and how many units per minute they produce.</p>
       <h3>The balance slider</h3>
       <p>Once you own a factory, a slider appears. It controls what factories build, from 0 (all nail breakers, black) to 100 (all nail makers, white), in steps of 5. The two percentages above the bar show the current split: the breaker share on the black side, the maker share on the white side. The split is exact over time, not just on average: a factory set to 90% makers produces nine makers for every breaker.</p>
       <h3>What it costs in copper</h3>
@@ -749,7 +749,7 @@
         <li><strong>Output:</strong> each factory&sup2; produces one regular factory per second.</li>
         <li><strong>Copper cost:</strong> 10,000,000 g (ten tonnes) of copper per production cycle, each.</li>
       </ul>
-      <p>Like regular factories, factory&sup2; units simply pause when there is not enough copper. Once you own one, the ordinary buy factory button disappears, because factory&sup2; has taken over that job.</p>
+      <p>Like regular factories, factory&sup2; units work as one continuous stream and simply pause when there is not enough copper. Once you own one, the ordinary buy factory button disappears, because factory&sup2; has taken over that job.</p>
 
       <h2 id="g-balance">10. Iron balance</h2>
       <p>Balance is the idea the whole late game is built on, so it is worth defining exactly. Your economy has two sides, and they are measured in iron per second:</p>
@@ -824,11 +824,13 @@
       <p>The <strong>monastery</strong> sits in the machinery column under the machinery panel, level with the community. It unlocks once you have reincarnated at least once <em>and</em> hold 3 tao, and like the swarm it must be earned again in each life. Tao gives nail makers and nail breakers the same speed bonus. The monastery lets monks lean that bonus <em>between</em> the two sides without changing the total, until your makers' iron consumption matches your breakers' iron supply. It is drawn as the Wheel of the Dharma above a line called the Middle Way (<em>&#3607;&#3634;&#3591;&#3626;&#3634;&#3618;&#3585;&#3621;&#3634;&#3591;</em>): breaking on one end, making on the other, and a marker that walks toward the center.</p>
       <ul>
         <li><strong>Halls</strong> cost funds <em>and</em> a great many unsold nails: $10,000 and 100,000 nails for the first, with each next hall costing 2.5&times; more of both. Each hall seats 2 monks.</li>
-        <li><strong>Monks</strong> are community members you move out of meditation with the <em>+ monk</em> and <em>&minus; monk</em> buttons. A monk no longer makes merit, so every monk is tao the community is not producing.</li>
-        <li><strong>Speed:</strong> monks work in steps of exactly 1% of the bonus. One monk takes a step every second; two monks take a step every half second; four every quarter second, and so on. With no monks, the lean drifts back to neutral at a step every half second.</li>
+        <li><strong>Monks and foremen</strong> are community members you move out of meditation with the <em>+ monk</em> and <em>&minus; monk</em> buttons. A monk no longer makes merit, so every monk is tao the community is not producing.</li>
+        <li><strong>Speed:</strong> monks work in steps of exactly 0.2% of the bonus. One monk takes a step every second; two monks take a step every half second; four every quarter second, and so on. Swinging from one extreme to the other takes 500 monk-seconds, so ten monks need about 50 seconds. With no monks, the lean drifts back to neutral at two steps a second.</li>
+        <li><strong>Harmony drain:</strong> a heavy lean also drains the <em>community</em>. Harmony is multiplied by 1 minus 75% of the lean squared, which slows your automatic tao: a lean of 0.4 costs about 12%, a lean of 0.7 about 37%, and a full lean about 75%. This is not a yin-and-yang drain; it only reduces how much merit the community makes. The panel shows the current drain, and the wheel shakes harder the more it is leaning.</li>
+        <li><strong>Foremen:</strong> a second job for community members. Each foreman raises the output of your factories and factory&sup2; per gram of copper by 10%, so ten foremen double it. The bonus is shown beside the factories and factory&sup2; counts in the machinery panel. Foremen share the halls' seats with the monks, and each is a member who is not meditating. Every member can therefore meditate for tao, balance machines as a monk, or speed up factories as a foreman.</li>
         <li><strong>Visible effect:</strong> the small percentages beside nail makers and nail breakers can now differ. For example, 4 tao normally gives +200% to each; leaned fully toward makers it would be +400% and +0%. The total never changes. With no tao there is nothing to steer.</li>
       </ul>
-      <p>Because monks keep your iron in balance, they also push your yin and yang bars back and forth across zero and keep community harmony high.</p>
+      <p>Because monks keep your iron in balance, they also push your yin and yang bars back and forth across zero and raise community harmony, but only up to the point where their own lean starts costing you more than it gains.</p>
 
       <h2 id="g-swarm">13. The foundry swarm</h2>
       <h3>Unlocking</h3>
@@ -1067,7 +1069,7 @@
           <div class="machinery-block">
             <div class="row">
               <span class="label">factories:</span>
-              <span class="value" id="valFactories">0</span>
+              <span class="value"><span id="valFactories">0</span><span class="bonus-note" id="valFactoryBonus"></span></span>
               <button id="btnBuyFactory">buy factory</button>
             </div>
 
@@ -1101,14 +1103,22 @@
             <canvas id="monasteryCanvas" width="300" height="205" style="width:100%; display:block;"></canvas>
             <div class="row"><span class="label">halls:</span><span class="value" id="valMonasteryHalls">0</span></div>
             <button id="btnBuildHall" style="width:100%; margin:4px 0;">build hall</button>
-            <div class="row"><span class="label">monks:</span><span class="value" id="valMonasteryMonks">0 / 0</span></div>
+            <div class="row"><span class="label">seats used:</span><span class="value" id="valMonasterySeats">0 / 0</span></div>
+            <div class="row"><span class="label">monks:</span><span class="value" id="valMonasteryMonks">0</span></div>
             <div style="display:flex; gap:6px; margin:4px 0;">
               <button id="btnMonkRemove" style="flex:1;">&minus; monk</button>
               <button id="btnMonkAdd" style="flex:1;">+ monk</button>
             </div>
+            <div class="row"><span class="label">foremen:</span><span class="value" id="valMonasteryForemen">0</span></div>
+            <div style="display:flex; gap:6px; margin:4px 0;">
+              <button id="btnForemanRemove" style="flex:1;">&minus; foreman</button>
+              <button id="btnForemanAdd" style="flex:1;">+ foreman</button>
+            </div>
             <div class="row"><span class="label">meditating:</span><span class="value" id="valMonasteryMeditating">0</span></div>
             <div class="row"><span class="label">maker bonus:</span><span class="value" id="valMonasteryMakerBonus">+0%</span></div>
             <div class="row"><span class="label">breaker bonus:</span><span class="value" id="valMonasteryBreakerBonus">+0%</span></div>
+            <div class="row"><span class="label">harmony drain:</span><span class="value" id="valMonasteryDrain">none</span></div>
+            <div class="row"><span class="label">factory output:</span><span class="value" id="valMonasteryFactoryBonus">+0%</span></div>
             <div class="hint" id="monasteryHint"></div>
           </div>
         </div>
@@ -1120,7 +1130,7 @@
 
             <div class="row">
               <span class="label">factory&sup2;:</span>
-              <span class="value" id="valFactorySquaredCount">0</span>
+              <span class="value"><span id="valFactorySquaredCount">0</span><span class="bonus-note" id="valFactorySquaredBonus"></span></span>
               <button id="btnBuyFactorySquared">buy factory&sup2;</button>
             </div>
 

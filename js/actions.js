@@ -70,7 +70,6 @@ el.btnBuyFactory.addEventListener("click", function () {
 
   state.funds -= cost;
   state.factories += 1;
-  state.factoryTimers.push(0);
   render();
 });
 el.btnBuyFactorySquared.addEventListener("click", function () {
@@ -79,7 +78,6 @@ el.btnBuyFactorySquared.addEventListener("click", function () {
 
   state.funds -= cost;
   state.factorySquared += 1;
-  state.factorySquaredTimers.push(0);
   render();
 });
 el.btnBuyBreaker.addEventListener("click", function () {
@@ -219,28 +217,15 @@ el.btnEndRun.addEventListener("click", function () {
 });
 
 function migrateLoadedState() {
-  if (Array.isArray(state.factories)) {
-    var old = state.factories;
-    state.factoryTimers = [];
-    for (var i = 0; i < old.length; i++) {
-      state.factoryTimers.push(old[i] && typeof old[i].timer === "number" ? old[i].timer : 0);
-    }
-    state.factories = old.length;
-  } else {
-    state.factories = Math.max(0, Math.floor(state.factories || 0));
-    if (!Array.isArray(state.factoryTimers)) state.factoryTimers = [];
-    while (state.factoryTimers.length < state.factories) state.factoryTimers.push(0);
-    if (state.factoryTimers.length > state.factories) {
-      state.factoryTimers = state.factoryTimers.slice(0, state.factories);
-    }
-  }
+  // Factories used to be an array (and later had a timer array); they are
+  // now just a count plus one pooled production progress value.
+  state.factories = Array.isArray(state.factories) ? state.factories.length : Math.max(0, Math.floor(state.factories || 0));
   state.unlockedMap = state.unlockedMap || state.breakers > 0;
-  if (!Array.isArray(state.factorySquaredTimers)) state.factorySquaredTimers = [];
   state.factorySquared = Math.max(0, Math.floor(state.factorySquared || 0));
-  while (state.factorySquaredTimers.length < state.factorySquared) state.factorySquaredTimers.push(0);
-  if (state.factorySquaredTimers.length > state.factorySquared) {
-    state.factorySquaredTimers = state.factorySquaredTimers.slice(0, state.factorySquared);
-  }
+  state.factoryProgress = Math.min(state.factories, Math.max(0, Number(state.factoryProgress) || 0));
+  state.factorySquaredProgress = Math.min(state.factorySquared, Math.max(0, Number(state.factorySquaredProgress) || 0));
+  delete state.factoryTimers;
+  delete state.factorySquaredTimers;
   if (!state.mapTotalWeight) {
     state.mapTotalWeight = Math.max(
       mapRemainingWeight(state.mapTiles),
@@ -313,8 +298,7 @@ el.cheatBox.addEventListener("keydown", function (e) {
         case "nailmakers": state.nailMakers = Math.max(0, Math.floor(amount)); break;
         case "factories":
           state.factories = Math.max(0, Math.floor(amount));
-          state.factoryTimers = [];
-          for (var i = 0; i < state.factories; i++) state.factoryTimers.push(0);
+          state.factoryProgress = Math.min(state.factoryProgress || 0, state.factories);
           break;
         case "breakers":
           state.breakers = Math.max(0, Math.floor(amount));

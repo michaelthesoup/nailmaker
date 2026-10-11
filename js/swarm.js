@@ -195,7 +195,7 @@ function swarmCollapse() {
 
   if (majority === "maker") {
     state.nailMakers = Math.max(0, state.nailMakers - destroyed);
-    while (state.factoryTimers && state.factoryTimers.length > state.factories) state.factoryTimers.pop();
+    state.factoryProgress = Math.min(state.factoryProgress || 0, state.factories);
   } else {
     state.breakers = Math.max(0, state.breakers - destroyed);
   }

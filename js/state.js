@@ -57,6 +57,9 @@ var FACTORY_SQUARED_COST_GROWTH = 1.1; // each factory-squared you own makes the
 var FACTORY_SQUARED_PERIOD_SEC = 1; // produces one factory per cycle, per owned factory-squared
 var FACTORY_SQUARED_COPPER_COST = 10000000; // 10 tonnes of copper, in grams, per production cycle
 
+// Each monastery foreman raises factory output per copper by this much (a copper discount).
+var FOREMAN_PRODUCTIVITY_PER = 0.10;
+
 var COPPER_SELL_PRICE = 0.05; // $ per gram
 
 // One nail hits every remaining deposit once. Yield is 1g per deposit,
@@ -449,12 +452,12 @@ function defaultState() {
     mapTiles: tiles,
     mapTotalWeight: mapRemainingWeight(tiles),
     factories: 0,
-    factoryTimers: [],
+    factoryProgress: 0, // factory cycles banked toward the next machine (see engine.js) -- production is a continuous stream, not per-factory batches
     factoryBalance: FACTORY_BALANCE_DEFAULT, // 0 = all breakers, 100 = all makers
     factoryAllocAccum: 0, // Bresenham-style accumulator so output matches the slider ratio exactly over time
 
     factorySquared: 0,
-    factorySquaredTimers: [],
+    factorySquaredProgress: 0, // same, for factory squared
 
     breakers: 0,
     breakerCooldownUntil: 0,
@@ -508,6 +511,7 @@ function defaultState() {
     unlockedMonastery: false, // earned per life: reincarnated at least once + 3 tao (see monastery.js)
     monasteryHalls: 0, // halls bought with funds and unsold nails; each seats monks (see monastery.js)
     monks: 0,          // community members working in the monastery instead of meditating
+    foremen: 0,        // members working as factory foremen (they also sit in the monastery's halls)
     monkShift: 0,      // -1..+1: how far the tao rate bonus is leaned toward makers (+) or breakers (-)
     swarmCollapses: 0, // times the swarm has collapsed this life
     pastLives: [], // log of lives ended by reincarnation; erased by ending a run (see lives.js)

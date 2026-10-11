@@ -29,6 +29,9 @@ var COMMUNITY_MEMBER_COST_GROWTH = 1.4;   // ...each further member costs this m
 var COMMUNITY_MERIT_PER_MEMBER_SEC = 0.25;
 var COMMUNITY_MERIT_PER_TAO = 100;
 var COMMUNITY_HARMONY_FALLOFF = 2;        // target harmony = 1 - |imbalance| * this (so 0 at 0.5 = the 3-to-1 collapse line)
+// A heavy monastery lean drains harmony: the target is multiplied by
+// (1 - this * lean^2), so a full lean leaves 25% and a gentle one costs little.
+var COMMUNITY_LEAN_DRAIN_MAX = 0.75;
 var COMMUNITY_HARMONY_RISE_PER_SEC = 0.02; // harmony climbs slowly toward a better target (~50s from nothing to full)
 var COMMUNITY_HARMONY_FALL_PER_SEC = 0.05; // ...and falls faster toward a worse one
 var COMMUNITY_NIRVANA_KARMA = 80;         // the dot reaches the center at this karma (nirvana is ~44% likely per rebirth there)
@@ -51,17 +54,24 @@ function communityUnlocked() {
 // exist yet (nothing to balance).
 function communityHarmonyTarget() {
   if (ironDemandRate() <= 0 || ironSupplyRate() <= 0) return 0;
-  return Math.max(0, 1 - Math.abs(ironStructuralImbalance()) * COMMUNITY_HARMONY_FALLOFF);
+  var balance = Math.max(0, 1 - Math.abs(ironStructuralImbalance()) * COMMUNITY_HARMONY_FALLOFF);
+  return balance * (1 - communityLeanDrain());
+}
+
+// How much harmony the monastery's lean is draining right now (0..0.75).
+function communityLeanDrain() {
+  var lean = monkLean();
+  return COMMUNITY_LEAN_DRAIN_MAX * lean * lean;
 }
 
 function communityHarmony() {
   return Math.max(0, Math.min(1, state.harmony || 0));
 }
 
-// Only members who are meditating make merit; monks (see monastery.js) are
-// members working in the monastery instead.
+// Only members who are meditating make merit; monks and foremen (see
+// monastery.js) are members working in the monastery instead.
 function communityMeritRate() {
-  var meditating = Math.max(0, state.members - state.monks);
+  var meditating = Math.max(0, state.members - state.monks - (state.foremen || 0));
   return meditating * COMMUNITY_MERIT_PER_MEMBER_SEC * communityHarmony();
 }
 
@@ -99,7 +109,8 @@ function renderCommunity() {
   var cap = communityCapacity();
   var harmony = communityHarmony();
   var rate = communityMeritRate();
-  el.communityMembers.textContent = state.members + " / " + cap + (state.monks > 0 ? " (" + (state.members - state.monks) + " meditating)" : "");
+  var working = state.monks + (state.foremen || 0);
+  el.communityMembers.textContent = state.members + " / " + cap + (working > 0 ? " (" + (state.members - working) + " meditating)" : "");
   var harmonyTarget = communityHarmonyTarget();
   var trend = harmonyTarget > harmony + 0.005 ? " \u2191" : (harmonyTarget < harmony - 0.005 ? " \u2193" : "");
   el.communityHarmony.textContent = Math.round(harmony * 100) + "%" + trend;
@@ -123,7 +134,9 @@ function renderCommunity() {
       ? "Recruit members: they make merit while your makers and breakers stay balanced. 100 merit = 1 tao."
       : (harmony <= 0.01
           ? "The community is unsettled. Balance your makers and breakers and its harmony will recover."
-          : "Harmony follows your balance, climbing slowly and falling fast. A full ring is +1 tao."));
+          : (communityLeanDrain() >= 0.05
+              ? "The monastery's heavy lean is straining the community (harmony \u2212" + Math.round(communityLeanDrain() * 100) + "%)."
+              : "Harmony follows your balance, climbing slowly and falling fast. A full ring is +1 tao.")));
 }
 
 // ---------------- drawing ----------------

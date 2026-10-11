@@ -70,59 +70,53 @@ function tick(dt, skipRender) {
     settleYinYang();
   }
 
-  // Factories: the yin-yang engine. Each completed cycle produces
-  // either one nail maker or one nail breaker -- decided by a
-  // Bresenham-style accumulator so the output ratio matches the
-  // balance slider exactly over time, not just on average.
-  if (state.factoriesOn) {
-    var period = FACTORY_PERIOD_SEC;
+  // Factories: the yin-yang engine. Production is one continuous stream:
+  // N factories complete N cycles per second, so owning more factories
+  // means machines arrive faster and faster instead of in one batch each
+  // second. Each completed cycle costs copper and produces either a nail
+  // maker or a nail breaker -- decided by a Bresenham-style accumulator so
+  // the output ratio matches the balance slider exactly over time. Cycles
+  // are banked (up to one per factory) while copper is short.
+  if (state.factoriesOn && state.factories > 0) {
     var cycleCopperCost = factoryCopperCostEffective();
-    while (state.factoryTimers.length < state.factories) state.factoryTimers.push(0);
-    for (var i = 0; i < state.factories; i++) {
-      var fTimer = state.factoryTimers[i];
-      if (fTimer < period) {
-        fTimer = Math.min(period, fTimer + dt);
-      }
-      if (fTimer >= period && state.copperAmt >= cycleCopperCost) {
-        state.copperAmt -= cycleCopperCost;
-        fTimer -= period;
+    state.factoryProgress = Math.min(state.factories, (state.factoryProgress || 0) + state.factories * dt / FACTORY_PERIOD_SEC);
+    var cycles = Math.floor(state.factoryProgress + 1e-9);
+    if (cycles > 0 && cycleCopperCost > 0) cycles = Math.min(cycles, Math.floor(state.copperAmt / cycleCopperCost));
+    if (cycles > 0) {
+      state.copperAmt -= cycles * cycleCopperCost;
+      state.factoryProgress -= cycles;
 
-        state.factoryAllocAccum += state.factoryBalance / 100;
-        if (state.factoryAllocAccum >= 1) {
-          state.factoryAllocAccum -= 1;
-          state.nailMakers += 1;
-        } else {
-          state.breakers += 1;
-          state.unlockedMap = true;
-        }
+      var allocTotal = (state.factoryAllocAccum || 0) + cycles * (state.factoryBalance / 100);
+      var madeMakers = Math.min(cycles, Math.floor(allocTotal + 1e-9));
+      state.factoryAllocAccum = allocTotal - madeMakers;
+      state.nailMakers += madeMakers;
+      if (cycles - madeMakers > 0) {
+        state.breakers += cycles - madeMakers;
+        state.unlockedMap = true;
       }
-      state.factoryTimers[i] = fTimer;
     }
+  } else {
+    state.factoryProgress = 0;
   }
 
   checkYinYangUnlock();
 
   // Factory Squared: each owned unit produces one regular factory per
-  // cycle, at a real copper cost -- same graceful "skip if you can't
-  // afford it this cycle" behavior as regular factories, so it just
-  // pauses rather than erroring if copper runs short.
-  if (state.unlockedFactorySquared) {
-    var fsPeriod = FACTORY_SQUARED_PERIOD_SEC;
-    var fsCopperCost = FACTORY_SQUARED_COPPER_COST;
-    while (state.factorySquaredTimers.length < state.factorySquared) state.factorySquaredTimers.push(0);
-    for (var k = 0; k < state.factorySquared; k++) {
-      var fsTimer = state.factorySquaredTimers[k];
-      if (fsTimer < fsPeriod) {
-        fsTimer = Math.min(fsPeriod, fsTimer + dt);
-      }
-      if (fsTimer >= fsPeriod && state.copperAmt >= fsCopperCost) {
-        state.copperAmt -= fsCopperCost;
-        fsTimer -= fsPeriod;
-        state.factories += 1;
-        state.factoryTimers.push(0); // keep the regular factory timer array in sync
-      }
-      state.factorySquaredTimers[k] = fsTimer;
+  // cycle, at a real copper cost. Like regular factories this is one
+  // continuous stream (N units = N factories per second) that banks cycles
+  // and simply pauses, rather than erroring, if copper runs short.
+  if (state.unlockedFactorySquared && state.factorySquared > 0) {
+    var fsCopperCost = factorySquaredCopperCostEffective();
+    state.factorySquaredProgress = Math.min(state.factorySquared, (state.factorySquaredProgress || 0) + state.factorySquared * dt / FACTORY_SQUARED_PERIOD_SEC);
+    var fsCycles = Math.floor(state.factorySquaredProgress + 1e-9);
+    if (fsCycles > 0 && fsCopperCost > 0) fsCycles = Math.min(fsCycles, Math.floor(state.copperAmt / fsCopperCost));
+    if (fsCycles > 0) {
+      state.copperAmt -= fsCycles * fsCopperCost;
+      state.factorySquaredProgress -= fsCycles;
+      state.factories += fsCycles;
     }
+  } else {
+    state.factorySquaredProgress = 0;
   }
 
   if (!mapHasDeposits(state.mapTiles)) {

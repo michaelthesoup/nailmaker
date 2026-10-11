@@ -24,6 +24,8 @@ function render() {
   el.copper.textContent = fmtWeight(state.copperAmt);
   el.nailMakers.textContent = state.nailMakers;
   el.factories.textContent = state.factories;
+  var foremanPct = Math.round(foremanOutputBonus() * 100); // foremen (monastery) raise factory output per copper
+  el.factoryBonus.textContent = foremanPct > 0 ? "+" + foremanPct + "%" : "";
   el.breakers.textContent = state.breakers;
   var theoreticalNailsPerSec = state.nailMakers * nailMakerRateEffective();
   el.nailMakerNailsRate.textContent = fmtDecimal(theoreticalNailsPerSec);
@@ -55,7 +57,8 @@ function render() {
 
   if (el.factorySquaredCount) {
     el.factorySquaredCount.textContent = state.factorySquared;
-    var fsCopperRate = state.factorySquared * (1 / FACTORY_SQUARED_PERIOD_SEC) * FACTORY_SQUARED_COPPER_COST;
+    el.factorySquaredBonus.textContent = foremanPct > 0 ? "+" + foremanPct + "%" : "";
+    var fsCopperRate = state.factorySquared * (1 / FACTORY_SQUARED_PERIOD_SEC) * factorySquaredCopperCostEffective();
     el.factorySquaredMaterialUse.textContent = "consuming " + fmtWeight(fsCopperRate) + " copper/s";
     el.factorySquaredOutputRate.textContent = fmtDecimal(state.factorySquared * (1 / FACTORY_SQUARED_PERIOD_SEC) * 60) + " factories/min";
     el.btnBuyFactorySquared.textContent = "buy (" + fmtMoney(factorySquaredBuildCostEffective()) + ")";
