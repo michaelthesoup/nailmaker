@@ -138,6 +138,9 @@ var el = {
 
   swarmSection: document.getElementById("swarmSection"),
   swarmCanvas: document.getElementById("swarmCanvas"),
+  swarmStatus: document.getElementById("swarmStatus"),
+  swarmAdvice: document.getElementById("swarmAdvice"),
+  swarmDotCounts: document.getElementById("swarmDotCounts"),
   swarmIronRates: document.getElementById("swarmIronRates"),
   swarmUnitCounts: document.getElementById("swarmUnitCounts"),
   swarmCostHint: document.getElementById("swarmCostHint"),

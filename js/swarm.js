@@ -35,6 +35,15 @@ var SWARM_DOT_RADIUS = 3;
 var SWARM_BASE_SPEED = 0.25; // px/frame -- the uniform speed BOTH colors move at when genuinely balanced, and the baseline for the minority color otherwise. Kept deliberately gentle: balance is meant to be the EASY state now, not a challenge.
 var SWARM_CLICK_COOLDOWN_MS = 250;
 
+// How lopsided the REAL economy has to be before the dots show it. The dot
+// split is drawn on a log scale of demand:supply, so it takes a seriously
+// lopsided build to leave only a few dots of one color: at
+// SWARM_FULL_SKEW_RATIO to 1 (default 50:1) exactly SWARM_MIN_MINORITY_DOTS
+// remain, and never fewer. (3:1, the collapse line, shows as roughly 18/12.)
+var SWARM_FULL_SKEW_RATIO = 50;
+var SWARM_MIN_MINORITY_DOTS = 3;
+var SWARM_REJECT_SPEED = 5; // px/frame a dot is flung away at when you can't afford its click
+
 // Flee behavior -- strongest at real imbalance, weakest at real parity.
 var SWARM_FLEE_RADIUS = 55; // px -- dots within this distance of the cursor start dodging
 // TESTING: still eased down from the original 0.05 / 1.0 / 0.9 while
@@ -99,11 +108,7 @@ function swarmSyncDots() {
     swarmDots.pop();
   }
 
-  var demand = ironDemandRate();
-  var supply = ironSupplyRate();
-  var total = demand + supply;
-  var makerFraction = total > 0 ? demand / total : 0.5;
-  var wantMakerDots = Math.round(makerFraction * SWARM_DISPLAY_DOTS);
+  var wantMakerDots = swarmWantedMakerDots();
 
   var haveMakerDots = swarmDots.filter(function (d) { return d.side === "maker"; }).length;
 
@@ -125,6 +130,54 @@ function swarmSyncDots() {
   for (i = 0; i < swarmDots.length; i++) {
     swarmDots[i].speedy = !balanced && swarmDots[i].side === majority;
   }
+}
+
+// -1 (all supply) .. 0 (balanced) .. +1 (all demand), on a log scale of
+// demand:supply so the dots only reach their extremes at SWARM_FULL_SKEW_RATIO.
+function swarmSkew() {
+  var demand = ironDemandRate();
+  var supply = ironSupplyRate();
+  if (demand <= 0 && supply <= 0) return 0;
+  if (supply <= 0) return 1;
+  if (demand <= 0) return -1;
+  return Math.max(-1, Math.min(1, Math.log(demand / supply) / Math.log(SWARM_FULL_SKEW_RATIO)));
+}
+
+function swarmMaxSkewDots() {
+  return SWARM_DISPLAY_DOTS / 2 - SWARM_MIN_MINORITY_DOTS;
+}
+
+function swarmWantedMakerDots() {
+  return Math.round(SWARM_DISPLAY_DOTS / 2 + swarmMaxSkewDots() * swarmSkew());
+}
+
+function swarmCountMakerDots() {
+  var n = 0;
+  for (var i = 0; i < swarmDots.length; i++) if (swarmDots[i].side === "maker") n++;
+  return n;
+}
+
+// What the swarm is telling you, in words that are deliberately different
+// from the yin & yang panel's labels, and what to do about it.
+function swarmStatusInfo() {
+  var demand = ironDemandRate();
+  var supply = ironSupplyRate();
+  if (demand <= 0 && supply <= 0) {
+    return { label: "nothing to balance yet", advice: "build nail makers and nail breakers" };
+  }
+  if (supply <= 0) {
+    return { label: "too many makers", advice: "you have no breakers feeding them \u2014 get breakers" };
+  }
+  if (demand <= 0) {
+    return { label: "too many breakers", advice: "you have no makers using the iron \u2014 get nail makers" };
+  }
+  if (swarmWithinTolerance()) {
+    return { label: "balanced", advice: "makers and breakers are in step" };
+  }
+  if (demand > supply) {
+    return { label: "too many makers", advice: "get more breakers \u2014 click a white ball to add them" };
+  }
+  return { label: "too many breakers", advice: "get more makers \u2014 click a black ball to add them" };
 }
 
 function swarmImbalanceMagnitude() {
@@ -226,6 +279,14 @@ function swarmStep(nowMs) {
   var imbalanceSpeedMult = 1 + SWARM_IMBALANCE_SPEED_BONUS * Math.abs(ironStructuralImbalance());
   var now = Date.now();
 
+  var statusInfo = swarmStatusInfo();
+  if (el.swarmStatus) el.swarmStatus.textContent = statusInfo.label + (swarmGreying ? " \u2014 unstable!" : "");
+  if (el.swarmAdvice) el.swarmAdvice.textContent = statusInfo.advice;
+  if (el.swarmDotCounts) {
+    var whiteDots = swarmCountMakerDots();
+    el.swarmDotCounts.textContent = swarmDots.length + " balls: " + whiteDots + " white (makers) \u00b7 " + (swarmDots.length - whiteDots) + " black (breakers)";
+  }
+
   if (el.swarmIronRates) {
     el.swarmIronRates.textContent = "iron: " + fmtWeight(ironSupplyRate()) + "/s made \u00b7 " + fmtWeight(ironDemandRate()) + "/s used";
   }
@@ -300,13 +361,35 @@ function swarmStep(nowMs) {
   requestAnimationFrame(swarmStep);
 }
 
+var swarmBaseHint = null;
+var swarmHintTimer = null;
+
+// Shows a message in the hint line for a moment, then puts the ORIGINAL
+// hint back. (It used to remember whatever text was showing at the time,
+// so clicking again mid-flash could leave a stale message stuck there.)
 function swarmFlashHint(text, duration) {
   if (!el.swarmCostHint) return;
-  var old = el.swarmCostHint.textContent;
+  if (swarmBaseHint === null) swarmBaseHint = el.swarmCostHint.textContent;
   el.swarmCostHint.textContent = text;
-  setTimeout(function () {
-    if (el.swarmCostHint) el.swarmCostHint.textContent = old;
+  clearTimeout(swarmHintTimer);
+  swarmHintTimer = setTimeout(function () {
+    swarmHintTimer = null;
+    if (el.swarmCostHint) el.swarmCostHint.textContent = swarmBaseHint;
   }, duration || 1200);
+}
+
+// A click you can't afford doesn't just fail: the ball is flung away from
+// where you clicked, rejecting you.
+function swarmRejectDot(d, mx, my) {
+  var dx = d.x - mx, dy = d.y - my;
+  var len = Math.sqrt(dx * dx + dy * dy);
+  if (len < 0.01) {
+    var a = Math.random() * Math.PI * 2;
+    dx = Math.cos(a); dy = Math.sin(a); len = 1;
+  }
+  d.vx = (dx / len) * SWARM_REJECT_SPEED;
+  d.vy = (dy / len) * SWARM_REJECT_SPEED;
+  d.stunUntil = Date.now() + 700; // flee logic stays out of its way while it flies
 }
 
 // Clicking any dot flips its color. Copper buys the opposite machine
@@ -320,25 +403,36 @@ function swarmHandleClick(mx, my) {
     var dx = d.x - mx, dy = d.y - my;
     if (dx * dx + dy * dy > (SWARM_DOT_RADIUS + 6) * (SWARM_DOT_RADIUS + 6)) continue;
 
-    var makerDots = swarmDots.filter(function (dot) { return dot.side === "maker"; }).length;
+    var makerDots = swarmCountMakerDots();
     var targetMakerDots = makerDots + (d.side === "maker" ? -1 : 1);
+    var maxMakerDots = SWARM_DISPLAY_DOTS - SWARM_MIN_MINORITY_DOTS;
+    if (targetMakerDots > maxMakerDots || targetMakerDots < SWARM_MIN_MINORITY_DOTS) {
+      swarmLastClickAt = now;
+      swarmFlashHint("the swarm can't show a more lopsided split than this");
+      return;
+    }
+
     var demand = ironDemandRate();
     var supply = ironSupplyRate();
+    var half = SWARM_DISPLAY_DOTS / 2;
+    var skewDots = swarmMaxSkewDots();
     var machineType;
     var perUnitRate;
     var machinesNeeded;
 
+    // The dots show a log scale of demand:supply, so a target dot count maps
+    // back to a demand:supply ratio of SWARM_FULL_SKEW_RATIO ^ ((dots - 15) / 12).
     if (targetMakerDots < makerDots) {
       machineType = "breaker";
       perUnitRate = breakerIntakeEffective() * activeIronTileCount();
-      var upperMakerFraction = (targetMakerDots + 0.5) / SWARM_DISPLAY_DOTS;
-      var requiredSupply = demand * (1 - upperMakerFraction) / upperMakerFraction;
+      var upperRatio = Math.pow(SWARM_FULL_SKEW_RATIO, (targetMakerDots + 0.5 - half) / skewDots);
+      var requiredSupply = demand / upperRatio;
       machinesNeeded = Math.max(1, Math.floor((requiredSupply - supply) / perUnitRate) + 1);
     } else {
       machineType = "maker";
       perUnitRate = nailMakerRateEffective() * IRON_PER_NAIL;
-      var lowerMakerFraction = (targetMakerDots - 0.5) / SWARM_DISPLAY_DOTS;
-      var requiredDemand = supply * lowerMakerFraction / (1 - lowerMakerFraction);
+      var lowerRatio = Math.pow(SWARM_FULL_SKEW_RATIO, (targetMakerDots - 0.5 - half) / skewDots);
+      var requiredDemand = supply * lowerRatio;
       machinesNeeded = Math.max(1, Math.ceil((requiredDemand - demand) / perUnitRate));
     }
 
@@ -351,7 +445,9 @@ function swarmHandleClick(mx, my) {
     var cost = unitCopperCost * machinesNeeded;
 
     if (state.copperAmt < cost) {
-      swarmFlashHint("not enough copper (" + fmtWeight(cost) + " for " + fmtInt(machinesNeeded) + " " + machineType + "s)");
+      swarmLastClickAt = now;
+      swarmRejectDot(d, mx, my);
+      swarmFlashHint("not enough copper \u2014 you need " + fmtWeight(cost) + " for " + fmtInt(machinesNeeded) + " " + machineType + "s");
       return;
     }
 

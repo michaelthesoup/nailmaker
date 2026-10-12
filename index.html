@@ -836,11 +836,13 @@
       <h3>Unlocking</h3>
       <p>The swarm panel appears when you hold <strong>at least 1 tao and own at least one factory</strong>. Getting to 1 tao already proves you can balance; the factory proves you have an automated economy for the swarm to correct.</p>
       <h3>What the dots are</h3>
-      <p>The swarm is 30 dots drifting around a small field. It is a live picture of your economy: the proportion of white dots is the makers' share of your iron rate, and the proportion of black dots is the breakers' share. Fifteen white and fifteen black means true balance. Mostly white means making outweighs breaking; mostly black means the reverse. Within 5% of true balance the swarm counts as balanced. Beneath the field the panel shows your current iron rates, your maker and breaker counts, and a hint line.</p>
+      <p>The swarm is 30 dots drifting around a small field. It is a live picture of your economy: the proportion of white dots is the makers' share of your iron rate, and the proportion of black dots is the breakers' share. Fifteen white and fifteen black means true balance. Mostly white means making outweighs breaking; mostly black means the reverse. Within 5% of true balance the swarm counts as balanced.</p>
+      <p>The panel tells you in words where you stand, using different wording from yin &amp; yang: <em>balanced</em>, <em>too many makers</em> (get more breakers) or <em>too many breakers</em> (get more makers), with one line of advice. Under the field it counts the balls (for example 18 white and 12 black), then shows your iron rates, your maker and breaker counts, and a hint line.</p>
+      <p>The dots are a deliberately compressed picture. They follow a log scale of demand to supply, so it takes an enormous imbalance, about 50 makers' worth against 1 breaker's, before only 3 balls of one color remain (and never fewer). The collapse line of 3-to-1 shows up as roughly 18 balls against 12.
       <p>The dots also shy away from your cursor when you get near them. The more imbalanced your economy, the harder they dodge and the faster every dot moves (up to 1.5&times; at the collapse line); at true balance they drift slowly and barely react, so balance is the easy state. After you land a click, that dot is briefly stunned so you can chain hits fairly.</p>
       <h3>Clicking</h3>
       <p>Clicking a dot flips its colour and <strong>buys machines of the opposite type</strong> so that your real iron rates match the new dot split. In practice: if you have too much of one colour, click a dot of that colour. A click on a white dot makes it black and buys breakers; a click on a black dot makes it white and buys makers. The number of machines bought is exactly the number needed to move the split by one dot, which at large scale can be a lot of machines.</p>
-      <p>Machines bought this way are paid for in <strong>copper</strong>: 100 g for each maker and 1,000 g for each breaker (the same per-unit costs as a factory). If you cannot afford it, the hint line tells you the price and how many machines it would have bought. Clicks have a quarter-second cooldown.</p>
+      <p>Machines bought this way are paid for in <strong>copper</strong>: 100 g for each maker and 1,000 g for each breaker (the same per-unit costs as a factory). If you cannot afford it, the ball is flung away from your click, rejecting it, and the hint line tells you the price and how many machines it would have bought. A click that would make the split more lopsided than the swarm can show is ignored. Clicks have a quarter-second cooldown.</p>
       <p>This makes the swarm a balancing tool, not a growth engine: it spends copper to pull you toward true balance, and that is useful for earning tao.</p>
 
       <h2 id="g-collapse">14. Collapse and unstable cores</h2>
@@ -1214,8 +1216,11 @@
       <div class="panel" id="swarmSection" style="margin-top:0; display:none;">
           <div class="panel-header">the foundry swarm</div>
           <div class="panel-body">
+            <div id="swarmStatus" style="font-weight:bold; text-align:center;">balanced</div>
+            <div class="hint" id="swarmAdvice" style="text-align:center; margin-bottom:6px;"></div>
             <canvas id="swarmCanvas" width="288" height="224" style="width:100%; height:224px; display:block; background:var(--paper); border:1px solid var(--ink); cursor:crosshair;"></canvas>
-            <div class="hint" id="swarmIronRates" style="text-align:center; margin-top:6px;">iron: 0 g/s made &middot; 0 g/s used</div>
+            <div class="hint" id="swarmDotCounts" style="text-align:center; margin-top:6px;">30 balls</div>
+            <div class="hint" id="swarmIronRates" style="text-align:center;">iron: 0 g/s made &middot; 0 g/s used</div>
             <div class="hint" id="swarmUnitCounts" style="text-align:center;">0 makers &middot; 0 breakers</div>
             <div class="hint" id="swarmCostHint" style="text-align:center;">click a dot to flip it -- costs copper</div>
           </div>
