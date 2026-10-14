@@ -149,6 +149,11 @@ function showEndScreen(opts) {
       sheetAddHeading(body, "your next life begins with");
       sheetAddText(body, buildGrantedText(opts.ritual.granted), "sheet-sub");
       sheetAddText(body, opts.ritual.taoAward ? "+" + opts.ritual.taoAward + " tao awarded" : "no tao awarded", "sheet-sub");
+      if (opts.ritual.world) {
+        sheetAddHeading(body, "the world you were reborn into");
+        sheetAddRows(body, worldSummaryRows(opts.ritual.world));
+        sheetAddRows(body, marketSummaryRows(opts.ritual.world));
+      }
     }
   } else if (opts.karmaLost > 0) {
     sheetAddHeading(body, "karma");
