@@ -801,7 +801,7 @@
 
       <h2 id="g-copper">7. Copper</h2>
       <p>Copper comes only from the map, via your breakers. The copper line sits in the machinery panel beside a <strong>sell copper</strong> button, which sells all of it at once for <strong>$0.05 per gram</strong> ($50 per kilogram).</p>
-      <p>Copper has two real jobs: <strong>building machines</strong> (factories spend it every cycle) and <strong>buying balance</strong> (swarm clicks spend it, section 13). Selling it is possible but usually a worse use than feeding factories. The game's design is that iron has one job (becoming nails) and copper has one job (becoming machines).</p>
+      <p>Copper has one real job: <strong>building machines</strong> (factories spend it every cycle). Selling it is possible but usually a worse use than feeding factories. The game's design is that iron has one job (becoming nails) and copper has one job (becoming machines).</p>
 
       <h2 id="g-factories">8. Factories</h2>
       <p>A <strong>factory</strong> automates the buying of machines. You pay for a factory once with funds, and from then on it builds nail makers or nail breakers for you out of copper alone. Factories are the engine of long-term growth.</p>
@@ -914,9 +914,9 @@
       <p>The dots are a deliberately compressed picture. They follow a log scale of demand to supply, so it takes an enormous imbalance, about 50 makers' worth against 1 breaker's, before only 3 balls of one color remain (and never fewer). The collapse line of 3-to-1 shows up as roughly 18 balls against 12.
       <p>The dots also shy away from your cursor when you get near them. The more imbalanced your economy, the harder they dodge and the faster every dot moves (up to 1.5&times; at the collapse line); at true balance they drift slowly and barely react, so balance is the easy state. After you land a click, that dot is briefly stunned so you can chain hits fairly.</p>
       <h3>Clicking</h3>
-      <p>Clicking a dot flips its colour and <strong>buys machines of the opposite type</strong> so that your real iron rates match the new dot split. In practice: if you have too much of one colour, click a dot of that colour. A click on a white dot makes it black and buys breakers; a click on a black dot makes it white and buys makers. The number of machines bought is exactly the number needed to move the split by one dot, which at large scale can be a lot of machines.</p>
-      <p>Machines bought this way are paid for in <strong>copper</strong>: 100 g for each maker and 1,000 g for each breaker (the same per-unit costs as a factory). If you cannot afford it, the ball is flung away from your click, rejecting it, and the hint line tells you the price and how many machines it would have bought. A click that would make the split more lopsided than the swarm can show is ignored. Clicks have a quarter-second cooldown.</p>
-      <p>This makes the swarm a balancing tool, not a growth engine: it spends copper to pull you toward true balance, and that is useful for earning tao.</p>
+      <p>Clicking a dot flips its colour by <strong>scrapping machines of one type and rebuilding them as the other</strong>, so that your real iron rates match the new dot split. In practice: if you have too much of one colour, click a dot of that colour. A click on a black dot makes it white: breakers are scrapped and you get makers. A click on a white dot makes it black: makers are scrapped and you get breakers. The number scrapped is the smallest that moves the split by one dot, which at large scale can be a lot of machines.</p>
+      <p>The exchange rate is the factory's own: a breaker costs a factory 1,000 g of copper and a maker 100 g, so <strong>1 breaker is worth 10 makers</strong>. <strong>20% of the value is lost</strong> in the conversion, so 10 breakers become 80 makers, and 12.5 makers (rounded up to whole machines) become 1 breaker. Flipping costs no copper. If the conversion isn't possible (for instance you would have to scrap your last machine of a type), the ball is flung away from your click and the hint line says why. A click that would make the split more lopsided than the swarm can show is ignored. Clicks have a quarter-second cooldown.</p>
+      <p>This makes the swarm a balancing tool, not a growth engine: it turns the machines you have into the machines you need, at a loss, and that is useful for earning tao. New machines only come from factories.</p>
 
       <h2 id="g-collapse">14. Collapse and unstable cores</h2>
       <p>If you push your economy far enough out of balance and leave it there, the swarm collapses.</p>
@@ -1005,7 +1005,7 @@
         <li><strong>Early game.</strong> Make your first 100 nails by hand, buy iron, and buy nail makers as soon as you can: they are only $5 each. Hit 250 nails to open the machinery panel, then get a breaker as soon as you can afford $75 so that iron starts coming from the ground rather than from your wallet.</li>
         <li><strong>Watch your inventory.</strong> Piling-up unsold nails mean your price is too high or your marketing too low. An inventory at zero with iron to spare means you can raise the price.</li>
         <li><strong>Feed the factories.</strong> Copper is worth far more as machines than as cash. Buy a factory early and keep it supplied. The slider decides what you get, and cheaper makers get you more machines per gram of copper.</li>
-        <li><strong>Learn to cross balance.</strong> Tao is the point of the middle game. Fill yin and yang by deliberately leaning your factories one way and then the other. The percentages above the slider tell you what you are building. The swarm's copper-for-balance clicks help when you overshoot.</li>
+        <li><strong>Learn to cross balance.</strong> Tao is the point of the middle game. Fill yin and yang by deliberately leaning your factories one way and then the other. The percentages above the slider tell you what you are building. The swarm's flips help when you overshoot.</li>
         <li><strong>Mind the map.</strong> Your breakers' output depends on how many iron deposits the current map has, so a new map can shift your balance on its own.</li>
         <li><strong>Choose your path deliberately.</strong> Reincarnation compounds across lives and leads toward Nirvana. Nailbombing gives immense demand now at the cost of a tao hole you have to climb out of before you can reincarnate again. Everything you do to the swarm on the way to a collapse costs you real machines.</li>
         <li><strong>Save before you experiment.</strong> Collapses and nailbombs destroy things and cannot be undone. The save button is a cheap safety net, and nothing here is automatic except cloud saving when you are logged in.</li>
@@ -1030,7 +1030,7 @@
         <tr><td>Karma</td><td>1 per 3 tao at reincarnation; every 3 tao below zero is &minus;1 on the counter</td></tr>
         <tr><td>Community</td><td>Unlocks with any karma; member cost 50 nails &times; 1.4<sup>members</sup>; room 1 + 2 per karma; 0.25 merit/s per member &times; harmony; 100 merit = 1 tao; harmony +2%/s up, &minus;5%/s down</td></tr>
         <tr><td>Swarm unlocks</td><td>1 tao held + 1 factory</td></tr>
-        <tr><td>Swarm click</td><td>Costs 100 g copper per maker or 1,000 g per breaker bought; 0.25 s cooldown</td></tr>
+        <tr><td>Swarm flip</td><td>Scraps machines at 1 breaker = 10 makers, minus a 20% loss; no copper; 0.25 s cooldown</td></tr>
         <tr><td>Collapse</td><td>Imbalance &ge; 0.5 (3-to-1) for 1.5 s; yields 1 unstable core; unlocks the skyline</td></tr>
         <tr><td>Nailbomb nails</td><td>50,000 &times; 2.3<sup>bombs dropped</sup>, plus (bomb number) unstable cores</td></tr>
         <tr><td>Nailbomb permanent scar</td><td>+50% demand per bomb (added to the tao bonus), capped at +1000%</td></tr>
@@ -1312,7 +1312,7 @@
             <div class="hint" id="swarmDotCounts" style="text-align:center; margin-top:6px;">30 balls</div>
             <div class="hint" id="swarmIronRates" style="text-align:center;">iron: 0 g/s made &middot; 0 g/s used</div>
             <div class="hint" id="swarmUnitCounts" style="text-align:center;">0 makers &middot; 0 breakers</div>
-            <div class="hint" id="swarmCostHint" style="text-align:center;">click a dot to flip it -- costs copper</div>
+            <div class="hint" id="swarmCostHint" style="text-align:center;">click a dot to flip it -- scraps one machine type into the other (20% lost)</div>
           </div>
       </div>
       </div>

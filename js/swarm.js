@@ -12,8 +12,10 @@
 // the SAME speed. There is no "fast at balance" trick here -- at real
 // parity, every dot drifts at the same calm baseline.
 //
-// Clicking any dot flips its color and buys enough of the opposite
-// machine type to make the real rate split match the resulting colors.
+// Clicking any dot flips its color by SCRAPPING machines of one type and
+// rebuilding their value as the other (at the factory's exchange rate, minus
+// a 20% loss), so the real rate split matches the resulting colors. It costs
+// no copper and creates no machines: factories stay the only way to grow.
 //
 // Push the real imbalance far enough (SWARM_COLLAPSE_IMBALANCE_THRESHOLD)
 // and HOLD it there for a sustained moment, and the whole swarm greys
@@ -21,7 +23,7 @@
 // overrepresented type to bring real iron rates as close to parity as
 // whole machines allow, then banks one unstable core (state.isotopeStock), which together with
 // unsold nails is what the foundry core (see city.js) needs to arm a
-// nailbomb. Copper pays for each balancing conversion.
+// nailbomb.
 //
 // Dots also FLEE the cursor when you get close, independent of all the
 // above -- stronger the more imbalanced the real economy currently is,
@@ -34,6 +36,7 @@ var SWARM_DISPLAY_DOTS = 30;
 var SWARM_DOT_RADIUS = 3;
 var SWARM_BASE_SPEED = 0.25; // px/frame -- the uniform speed BOTH colors move at when genuinely balanced, and the baseline for the minority color otherwise. Kept deliberately gentle: balance is meant to be the EASY state now, not a challenge.
 var SWARM_CLICK_COOLDOWN_MS = 250;
+var SWARM_CONVERSION_LOSS = 0.2; // share of the scrapped machines' value lost when a flip converts them
 
 // How lopsided the REAL economy has to be before the dots show it. The dot
 // split is drawn on a log scale of demand:supply, so it takes a seriously
@@ -42,7 +45,7 @@ var SWARM_CLICK_COOLDOWN_MS = 250;
 // remain, and never fewer. (3:1, the collapse line, shows as roughly 18/12.)
 var SWARM_FULL_SKEW_RATIO = 50;
 var SWARM_MIN_MINORITY_DOTS = 3;
-var SWARM_REJECT_SPEED = 5; // px/frame a dot is flung away at when you can't afford its click
+var SWARM_REJECT_SPEED = 5; // px/frame a dot is flung away at when a flip isn't possible
 
 // Flee behavior -- strongest at real imbalance, weakest at real parity.
 var SWARM_FLEE_RADIUS = 55; // px -- dots within this distance of the cursor start dodging
@@ -378,7 +381,7 @@ function swarmFlashHint(text, duration) {
   }, duration || 1200);
 }
 
-// A click you can't afford doesn't just fail: the ball is flung away from
+// A flip that isn't possible doesn't just fail: the ball is flung away from
 // where you clicked, rejecting you.
 function swarmRejectDot(d, mx, my) {
   var dx = d.x - mx, dy = d.y - my;
@@ -392,8 +395,76 @@ function swarmRejectDot(d, mx, my) {
   d.stunUntil = Date.now() + 700; // flee logic stays out of its way while it flies
 }
 
-// Clicking any dot flips its color. Copper buys the opposite machine
-// capacity needed to move the real rate split to that visible ratio.
+// ----------------------------------------------------------------
+// Flipping a ball is a TRADE, not a purchase. It scrapes machines of one
+// type and rebuilds their value as the other, at the factory's own
+// exchange rate (a breaker costs a factory 1,000 g of copper and a maker
+// 100 g, so 1 breaker <-> 10 makers) minus SWARM_CONVERSION_LOSS. It costs
+// no copper and creates no new value: factories stay the only way to grow.
+//
+//   black ball -> white: scrap breakers, get makers   (10 breakers -> 80 makers at 20% loss)
+//   white ball -> black: scrap makers, get breakers   (12.5 makers -> 1 breaker at 20% loss)
+//
+// How many machines are scrapped is the smallest number that moves the
+// real iron split onto the new ball split (one ball's worth).
+// ----------------------------------------------------------------
+
+function swarmMakersPerBreaker() {
+  return (FACTORY_COST_BREAKER_SIDE_COPPER / FACTORY_COST_MAKER_SIDE_COPPER) * (1 - SWARM_CONVERSION_LOSS);
+}
+
+function swarmBreakersPerMaker() {
+  return (FACTORY_COST_MAKER_SIDE_COPPER / FACTORY_COST_BREAKER_SIDE_COPPER) * (1 - SWARM_CONVERSION_LOSS);
+}
+
+// Black -> white. Scrap k breakers for floor(k * r) makers, k as small as
+// possible while demand/supply reaches lowerRatio. Always keeps one breaker.
+function swarmPlanToMakers(lowerRatio) {
+  var owned = state.breakers;
+  var m = nailMakerRateEffective() * IRON_PER_NAIL;
+  var b = breakerIntakeEffective() * activeIronTileCount();
+  if (m <= 0) return { why: "turn on your nail makers first" };
+  if (b <= 0) return { why: "turn on your breakers (and find some iron) first" };
+  if (owned < 2) return { why: "you need breakers to scrap into makers" };
+
+  var D = ironDemandRate(), S = ironSupplyRate(), r = swarmMakersPerBreaker();
+  function gainFor(k) { return Math.floor(k * r + 1e-9); }
+  function reaches(k) {
+    var s2 = S - k * b;
+    return gainFor(k) >= 1 && s2 > 0 && (D + gainFor(k) * m) / s2 >= lowerRatio;
+  }
+
+  var k = Math.max(1, Math.ceil((lowerRatio * S - D) / (r * m + lowerRatio * b) - 1e-9));
+  var guard = 0;
+  while (k <= owned - 1 && !reaches(k) && guard++ < 5000) k++;
+  if (k > owned - 1 || !reaches(k)) return { why: "not enough breakers to scrap for that" };
+  return { from: "breaker", scrap: k, gain: gainFor(k) };
+}
+
+// White -> black. Gain g whole breakers by scrapping ceil(g / r) makers, g as
+// small as possible while demand/supply drops to upperRatio. Keeps one maker.
+function swarmPlanToBreakers(upperRatio) {
+  var owned = state.nailMakers;
+  var m = nailMakerRateEffective() * IRON_PER_NAIL;
+  var b = breakerIntakeEffective() * activeIronTileCount();
+  if (m <= 0) return { why: "turn on your nail makers first" };
+  if (b <= 0) return { why: "turn on your breakers (and find some iron) first" };
+  if (owned < 2) return { why: "you need nail makers to scrap into breakers" };
+
+  var D = ironDemandRate(), S = ironSupplyRate(), r = swarmBreakersPerMaker();
+  function scrapFor(g) { return Math.ceil(g / r - 1e-9); }
+  function reaches(g) {
+    var d2 = D - scrapFor(g) * m;
+    return d2 > 0 && d2 / (S + g * b) <= upperRatio;
+  }
+
+  var g = Math.max(1, Math.ceil((D - upperRatio * S) / (m / r + upperRatio * b) - 1e-9));
+  var guard = 0;
+  while (scrapFor(g) <= owned - 1 && !reaches(g) && guard++ < 5000) g++;
+  if (scrapFor(g) > owned - 1 || !reaches(g)) return { why: "not enough nail makers to scrap for that" };
+  return { from: "maker", scrap: scrapFor(g), gain: g };
+}
+
 function swarmHandleClick(mx, my) {
   var now = Date.now();
   if (now - swarmLastClickAt < SWARM_CLICK_COOLDOWN_MS) return;
@@ -412,59 +483,38 @@ function swarmHandleClick(mx, my) {
       return;
     }
 
-    var demand = ironDemandRate();
-    var supply = ironSupplyRate();
     var half = SWARM_DISPLAY_DOTS / 2;
     var skewDots = swarmMaxSkewDots();
-    var machineType;
-    var perUnitRate;
-    var machinesNeeded;
+    var plan;
 
     // The dots show a log scale of demand:supply, so a target dot count maps
     // back to a demand:supply ratio of SWARM_FULL_SKEW_RATIO ^ ((dots - 15) / 12).
     if (targetMakerDots < makerDots) {
-      machineType = "breaker";
-      perUnitRate = breakerIntakeEffective() * activeIronTileCount();
-      var upperRatio = Math.pow(SWARM_FULL_SKEW_RATIO, (targetMakerDots + 0.5 - half) / skewDots);
-      var requiredSupply = demand / upperRatio;
-      machinesNeeded = Math.max(1, Math.floor((requiredSupply - supply) / perUnitRate) + 1);
+      plan = swarmPlanToBreakers(Math.pow(SWARM_FULL_SKEW_RATIO, (targetMakerDots + 0.5 - half) / skewDots));
     } else {
-      machineType = "maker";
-      perUnitRate = nailMakerRateEffective() * IRON_PER_NAIL;
-      var lowerRatio = Math.pow(SWARM_FULL_SKEW_RATIO, (targetMakerDots - 0.5 - half) / skewDots);
-      var requiredDemand = supply * lowerRatio;
-      machinesNeeded = Math.max(1, Math.ceil((requiredDemand - demand) / perUnitRate));
-    }
-
-    if (perUnitRate <= 0 || !isFinite(machinesNeeded)) {
-      swarmFlashHint("turn on " + (machineType === "maker" ? "nail makers" : "breakers") + " first");
-      return;
-    }
-
-    var unitCopperCost = machineType === "maker" ? FACTORY_COST_MAKER_SIDE_COPPER : FACTORY_COST_BREAKER_SIDE_COPPER;
-    var cost = unitCopperCost * machinesNeeded;
-
-    if (state.copperAmt < cost) {
-      swarmLastClickAt = now;
-      swarmRejectDot(d, mx, my);
-      swarmFlashHint("not enough copper \u2014 you need " + fmtWeight(cost) + " for " + fmtInt(machinesNeeded) + " " + machineType + "s");
-      return;
+      plan = swarmPlanToMakers(Math.pow(SWARM_FULL_SKEW_RATIO, (targetMakerDots - 0.5 - half) / skewDots));
     }
 
     swarmLastClickAt = now;
-    state.copperAmt -= cost;
-    d.stunUntil = now + SWARM_STUN_MS;
+    if (!plan.from) {
+      swarmRejectDot(d, mx, my);
+      swarmFlashHint(plan.why);
+      return;
+    }
 
-    if (machineType === "maker") {
-      state.nailMakers += machinesNeeded;
+    d.stunUntil = now + SWARM_STUN_MS;
+    if (plan.from === "breaker") {
+      state.breakers -= plan.scrap;
+      state.nailMakers += plan.gain;
+      swarmFlashHint("scrapped " + fmtInt(plan.scrap) + " breakers into " + fmtInt(plan.gain) + " makers (" + Math.round(SWARM_CONVERSION_LOSS * 100) + "% lost)", 1800);
     } else {
-      state.breakers += machinesNeeded;
+      state.nailMakers -= plan.scrap;
+      state.breakers += plan.gain;
+      swarmFlashHint("scrapped " + fmtInt(plan.scrap) + " makers into " + fmtInt(plan.gain) + " breakers (" + Math.round(SWARM_CONVERSION_LOSS * 100) + "% lost)", 1800);
     }
 
     d.side = d.side === "maker" ? "breaker" : "maker";
     d.speedy = false;
-    swarmFlashHint("+" + fmtInt(machinesNeeded) + " " + machineType + "s (" + fmtWeight(cost) + ")", 1200);
-
     if (state.breakers > 0) state.unlockedMap = true;
     render();
     return;
