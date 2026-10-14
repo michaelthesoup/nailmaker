@@ -433,7 +433,7 @@ var SWARM_COLLAPSE_IMBALANCE_THRESHOLD = 0.5; // 0.5 = a 3-to-1 split between th
 // All dots move faster the further out of balance you are: speed x (1 + this * |imbalance|).
 // At the collapse line (0.5) that is 1.5x; at total one-sided imbalance it is 2x.
 var SWARM_IMBALANCE_SPEED_BONUS = 1;
-var SWARM_COLLAPSE_SUSTAIN_SEC = 1.5; // ...and stay there this long (the grey-out) before it actually collapses
+var SWARM_COLLAPSE_SUSTAIN_SEC = 5; // ...and stay there this long (the grey-out) before it actually collapses
 var SWARM_COLLAPSE_FUEL_GAIN = 1; // unstable core banked per collapse
 
 function defaultState() {
