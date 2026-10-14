@@ -514,6 +514,24 @@
   }
   .profile-result:hover { background: rgba(128, 128, 128, 0.15); }
 
+  /* the "more" dropdown under the top buttons: guide, achievements, players */
+  #moreWrap { position: relative; flex: 1; display: flex; }
+  #moreMenu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    min-width: 100%;
+    margin-top: 4px;
+    padding: 4px;
+    flex-direction: column;
+    gap: 4px;
+    background: var(--paper);
+    border: 1px solid var(--ink);
+    z-index: 60;
+  }
+  #moreMenu button { white-space: nowrap; flex: none; }
+
   #cheatBox {
     position: fixed;
     bottom: 6px;
@@ -647,15 +665,18 @@
 <div id="pageShakeWrap">
 <h1 id="titleCount">nails: 0</h1>
 
-<div class="top-buttons" style="margin-bottom:6px;">
+<div class="top-buttons">
   <button id="btnSave">save</button>
   <button id="btnLoad">load</button>
   <button id="btnEndRun">end run</button>
-  <button id="btnGuide">guide</button>
-</div>
-<div class="top-buttons">
-  <button id="btnStats">stats &amp; achievements (0/0)</button>
-  <button id="btnPlayers">players</button>
+  <div id="moreWrap">
+    <button id="btnMore">more</button>
+    <div id="moreMenu">
+      <button id="btnGuide">guide</button>
+      <button id="btnStats" style="display:none;">achievements (0/0)</button>
+      <button id="btnPlayers" style="display:none;">players</button>
+    </div>
+  </div>
 </div>
 
 <button id="btnDarkMode" style="position:fixed; bottom:12px; left:12px; font-size:10px; padding:2px 6px; opacity:0.7; z-index:5;">dark mode</button>
@@ -704,7 +725,7 @@
 
       <h2 id="g-layout">2. The screen</h2>
       <h3>Top of the page</h3>
-      <p>The large counter at the top-left shows <em>nails</em>, the total number of nails you have made in this life. It is also shown in the browser tab title. Under it are four buttons: <strong>save</strong> and <strong>load</strong> (local browser saving), <strong>end run</strong> (end this life for good, see section 16) and <strong>guide</strong> (this page).</p>
+      <p>The large counter at the top-left shows <em>nails</em>, the total number of nails you have made in this life. It is also shown in the browser tab title. Under it are four buttons: <strong>save</strong> and <strong>load</strong> (local browser saving), <strong>end run</strong> (end this life for good, see section 16) and <strong>more</strong>, which opens a small menu with the <strong>guide</strong> (this page), <strong>achievements</strong> (it appears once you have earned your first one) and <strong>players</strong> (it appears once you are logged in).</p>
       <h3>The three columns</h3>
       <ul>
         <li><strong>Left column:</strong> the business panel (funds, price, demand, marketing, iron), the <em>make nail</em> button, the machinery panel (nail makers, nail breakers, copper, factories) and, much later, the factory&sup2; panel.</li>
@@ -971,11 +992,11 @@
         <li>Your account name is used automatically on the leaderboard.</li>
       </ul>
       <h3>Lifetime stats and achievements</h3>
-      <p>The <em>stats &amp; achievements</em> button under the top buttons opens your lifetime record: runs ended, lives lived, total nails, best life and best run, nailbombs, highest karma and tao, and more, including the life you are currently playing. A <strong>run</strong> is a chain of lives that finishes when you end the run; reincarnating continues the same run. Unlike your karma and the past lives log, these stats are <strong>not</strong> erased when you end a run. Below them are the achievements: each unlocks once, shows a notification, and is remembered permanently. Logged in, they sync to your account; logged out, they are saved in this browser only.</p>
+      <p>The <em>achievements</em> button in the <em>more</em> menu opens your lifetime record: runs ended, lives lived, total nails, best life and best run, nailbombs, highest karma and tao, and more, including the life you are currently playing. A <strong>run</strong> is a chain of lives that finishes when you end the run; reincarnating continues the same run. Unlike your karma and the past lives log, these stats are <strong>not</strong> erased when you end a run. Below them are the achievements: each unlocks once, shows a notification, and is remembered permanently. Logged in, they sync to your account; logged out, they are saved in this browser only.</p>
       <h3>The leaderboard</h3>
-      <p>Your score is your lifetime nail count for the life you just ended, and it is submitted when you end a run or reincarnate. Not logged in, the leaderboard is a top-100 list local to your browser. Logged in, it is a global top-100 list with one row per player showing their personal best. A new run only replaces your global entry if it beats your previous best. The panel can be hidden if it is in your way.</p>
+      <p>Your score is your lifetime nail count for the life you just ended, and it is submitted when you end a run or reincarnate. Leaderboards are for players with an account: without one, the panel just invites you to sign up and nothing is posted. Logged in, it is a global top-100 list with one row per player showing their personal best. A new run only replaces your global entry if it beats your previous best. The panel can be hidden if it is in your way.</p>
       <h3>The weekly board</h3>
-      <p>The leaderboard has two tabs. <strong>This week</strong> is a board that resets every Monday at 00:00 UTC (the panel shows a countdown). It holds each player's best finished life of the week, and anyone can read it, logged in or not, though you need an account to post a score. <strong>All time</strong> is the board described above. A player who finished a life with karma in the bank has it shown beside their score, since a head-started life is not the same as a fresh one. A life counts for the week it ends in.</p>
+      <p>The leaderboard has two tabs. <strong>This week</strong> is a board that resets every Monday at 00:00 UTC (the panel shows a countdown). It holds each player's best finished life of the week, and, like the rest of the leaderboard, it is shown to logged-in players. <strong>All time</strong> is the board described above. A player who finished a life with karma in the bank has it shown beside their score, since a head-started life is not the same as a fresh one. A life counts for the week it ends in.</p>
       <h3>Profiles</h3>
       <p>Every logged-in player has a public profile: when they joined, their records (most nails in one life, total nails, best run, karma, time played and more) and the achievements they have earned. The <strong>players</strong> button opens a search by name, and clicking a name on either leaderboard opens that player's profile. <strong>My profile</strong> shows your own. Profile stats update when a life ends, so the life in progress is not counted until it finishes.</p>
 
@@ -1304,12 +1325,16 @@
       <button id="btnToggleLeaderboard" style="font-size:10px; padding:2px 6px;">hide</button>
     </div>
     <div class="panel-body" id="leaderboardBody">
-      <div style="display:flex; gap:6px; margin-bottom:6px;">
+      <div id="leaderboardTabs" style="display:flex; gap:6px; margin-bottom:6px;">
         <button id="btnLbWeek" class="lb-tab-active" style="flex:1;">this week</button>
         <button id="btnLbAll" style="flex:1;">all time</button>
       </div>
-      <div class="hint" id="leaderboardNote">local to this browser -- log in for a global leaderboard</div>
+      <div class="hint" id="leaderboardNote"></div>
       <div id="leaderboardList" style="max-height:60vh; overflow-y:auto;"></div>
+      <div id="leaderboardSignup" style="display:none; text-align:center;">
+        <div class="hint">sign up for global leaderboards</div>
+        <button id="btnLeaderboardSignup" style="margin-top:6px;">sign up</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1367,6 +1392,7 @@
 <script src="js/lifetime.js"></script>
 <script src="js/achievements.js"></script>
 <script src="js/profiles.js"></script>
+<script src="js/moremenu.js"></script>
 <script src="js/community.js"></script>
 <script src="js/monastery.js"></script>
 <script src="js/engine.js"></script>

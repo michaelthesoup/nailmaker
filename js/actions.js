@@ -177,25 +177,19 @@ el.btnEndRun.addEventListener("click", function () {
   var karmaWarning = state.karma > 0
     ? "\n\nYour " + fmtInt(state.karma) + " karma will be lost. You'll start over with nothing, exactly like a brand new player. This is a dead end -- if you want your karma to carry forward and improve your next life, reincarnate instead."
     : "";
+  var postNote = currentAuthUser()
+    ? "will be saved to the leaderboard."
+    : "won't be posted to a leaderboard because you aren't logged in.";
   var confirmed = window.confirm(
     "End this life for good?\n\n" +
-    "Your final nail count (" + fmtInt(state.totalNailsMade) + ") will be saved to the leaderboard below." +
+    "Your final nail count (" + fmtInt(state.totalNailsMade) + ") " + postNote +
     karmaWarning
   );
   if (!confirmed) return;
 
+  // Only logged-in players post scores, under their account name (submitScore ignores everyone else).
   var user = currentAuthUser();
-  var name;
-  if (user) {
-    // Logged-in players are always identified by their account username --
-    // no point asking them to type a name they already have.
-    name = user.displayName || "player";
-  } else {
-    name = window.prompt("Name for the leaderboard:", "");
-    if (name === null) return; // cancelled -- don't reset if they backed out
-    name = name.trim().slice(0, 20);
-    if (!name) name = "anonymous";
-  }
+  var name = user ? (user.displayName || "player") : "anonymous";
 
   submitScore(name, Math.floor(state.totalNailsMade), { karma: state.karma, timeSec: state.simTime });
   deleteAllSaves();

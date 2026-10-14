@@ -171,7 +171,7 @@ function showEndScreen(opts) {
   ]);
 
   if (opts.kind === "ended") {
-    sheetAddText(body, "Your score was submitted to the leaderboard. The past lives log has been erased.", "sheet-sub");
+    sheetAddText(body, (currentAuthUser() ? "Your score was submitted to the leaderboard." : "You weren't logged in, so your score wasn't posted.") + " The past lives log has been erased.", "sheet-sub");
   }
 
   el.endScreenOverlay.style.display = "flex";

@@ -347,14 +347,7 @@ el.btnReincarnateConfirm.addEventListener("click", function () {
   el.reincarnateOverlay.style.display = "none";
 
   var user = currentAuthUser();
-  var name;
-  if (user) {
-    name = user.displayName || "player";
-  } else {
-    name = window.prompt("Name for the leaderboard:", "");
-    if (name === null) name = "anonymous"; // reincarnation itself isn't cancellable at this point
-    name = name.trim().slice(0, 20) || "anonymous";
-  }
+  var name = user ? (user.displayName || "player") : "anonymous"; // only logged-in players post scores
   // state.karma already includes the karma this life just earned; the weekly board shows the karma it STARTED with.
   var karmaAtStart = state.karma - Math.floor(state.tao / KARMA_TAO_THRESHOLD);
   submitScore(name, Math.floor(state.totalNailsMade), { karma: karmaAtStart, timeSec: state.simTime });

@@ -59,8 +59,12 @@ function achievementCount() {
   return Object.keys(lifetime.achievements).length;
 }
 
+// Hidden until the first achievement is earned, so a new player sees nothing but the game.
 function updateAchievementButton() {
-  if (el.btnStats) el.btnStats.textContent = "stats & achievements (" + achievementCount() + "/" + ACHIEVEMENTS.length + ")";
+  if (!el.btnStats) return;
+  var count = achievementCount();
+  el.btnStats.textContent = "achievements (" + count + "/" + ACHIEVEMENTS.length + ")";
+  el.btnStats.style.display = count > 0 ? "" : "none";
 }
 
 function checkAchievements() {

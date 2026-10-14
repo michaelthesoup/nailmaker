@@ -2,8 +2,8 @@
 
 // ----------------------------------------------------------------
 // Leaderboard. Two tiers:
-//  - Not logged in: a local top-10 list on this browser only (same as
-//    before), stored in localStorage.
+//  - Not logged in: no leaderboard at all -- the panel just invites the
+//    player to sign up (nothing is posted or stored for them).
 //  - Logged in: a global leaderboard in Firestore, one row per player
 //    (keyed by their user id) holding their personal best score. Every
 //    "end run" also still writes to the local list, so nothing is lost
@@ -66,6 +66,9 @@ function updateLeaderboardTabs() {
   if (el.btnLbAll) el.btnLbAll.classList.toggle("lb-tab-active", leaderboardTab === "all");
 }
 
+if (el.btnLeaderboardSignup) el.btnLeaderboardSignup.addEventListener("click", function () {
+  if (typeof showAuthOverlay === "function") showAuthOverlay("signup");
+});
 if (el.btnLbWeek) el.btnLbWeek.addEventListener("click", function () { setLeaderboardTab("week"); });
 if (el.btnLbAll) el.btnLbAll.addEventListener("click", function () { setLeaderboardTab("all"); });
 
@@ -163,20 +166,24 @@ function currentAuthUser() {
 // Renders whichever board applies right now. Logged in -> pull the
 // global top 10 from Firestore. Logged out -> show the local list.
 function renderLeaderboard() {
+  // Without an account there is no leaderboard, just an invitation to sign up.
+  var signedIn = !!currentAuthUser();
+  if (el.leaderboardTabs) el.leaderboardTabs.style.display = signedIn ? "" : "none";
+  if (el.leaderboardNote) el.leaderboardNote.style.display = signedIn ? "" : "none";
+  if (el.leaderboardList) el.leaderboardList.style.display = signedIn ? "" : "none";
+  if (el.leaderboardSignup) el.leaderboardSignup.style.display = signedIn ? "none" : "";
+  if (!signedIn) {
+    leaderboardRenderToken++; // drop any reply still on its way
+    leaderboardWeekShown = null;
+    return;
+  }
+
   updateLeaderboardTabs();
   if (leaderboardTab === "week") {
     renderWeeklyBoard();
     return;
   }
   leaderboardWeekShown = null;
-  var user = currentAuthUser();
-
-  if (!user) {
-    el.leaderboardNote.textContent = "local to this browser -- log in for a global leaderboard";
-    renderLeaderboardRows(loadLocalLeaderboard());
-    return;
-  }
-
   el.leaderboardNote.textContent = "global -- top players";
   db.collection("scores").orderBy("score", "desc").limit(LEADERBOARD_MAX_ENTRIES).get()
     .then(function (snapshot) {
@@ -226,13 +233,9 @@ function renderWeeklyBoard() {
 // head-started life reads differently from a fresh one.
 function submitScore(name, score, extra) {
   extra = extra || {};
-  addLocalLeaderboardEntry(name, score);
-
   var user = currentAuthUser();
-  if (!user) {
-    renderLeaderboard();
-    return;
-  }
+  if (!user) return; // scores are only posted for logged-in players
+  addLocalLeaderboardEntry(name, score); // still kept locally as a backup
 
   var karma = Math.max(0, Math.floor(extra.karma || 0));
   var allTimeRef = db.collection("scores").doc(user.uid);
