@@ -68,6 +68,7 @@ function submitAuthForm() {
   var request = authMode === "signup"
     ? firebase.auth().createUserWithEmailAndPassword(email, password)
         .then(function (cred) { return cred.user.updateProfile({ displayName: username }); })
+        .then(function () { if (typeof cloudSaveLifetime === "function") cloudSaveLifetime(); }) // the first sync ran before the name was set
     : firebase.auth().signInWithEmailAndPassword(email, password);
 
   request

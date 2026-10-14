@@ -355,7 +355,9 @@ el.btnReincarnateConfirm.addEventListener("click", function () {
     if (name === null) name = "anonymous"; // reincarnation itself isn't cancellable at this point
     name = name.trim().slice(0, 20) || "anonymous";
   }
-  submitScore(name, Math.floor(state.totalNailsMade));
+  // state.karma already includes the karma this life just earned; the weekly board shows the karma it STARTED with.
+  var karmaAtStart = state.karma - Math.floor(state.tao / KARMA_TAO_THRESHOLD);
+  submitScore(name, Math.floor(state.totalNailsMade), { karma: karmaAtStart, timeSec: state.simTime });
 
   var karmaCarried = state.karma;
   var nirvanaCarried = state.nirvanaAchieved || !!ritual.title.isNirvana;

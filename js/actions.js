@@ -197,7 +197,7 @@ el.btnEndRun.addEventListener("click", function () {
     if (!name) name = "anonymous";
   }
 
-  submitScore(name, Math.floor(state.totalNailsMade));
+  submitScore(name, Math.floor(state.totalNailsMade), { karma: state.karma, timeSec: state.simTime });
   deleteAllSaves();
 
   // Capture this life (and the whole run) for the end screen before the

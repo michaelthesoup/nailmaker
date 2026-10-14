@@ -102,10 +102,12 @@ function cloudSaveLifetime() {
   var user = currentAuthUser();
   if (!user || typeof db === "undefined" || !db.collection) return;
   var name = user.displayName || "player";
+  var created = user.metadata && user.metadata.creationTime ? Date.parse(user.metadata.creationTime) : NaN;
   db.collection("profiles").doc(user.uid).set({
     uid: user.uid,
     name: name,
     nameLower: name.toLowerCase(),
+    createdAt: isNaN(created) ? lifetime.firstPlayedAt : created, // when the ACCOUNT was made (shown as "joined")
     stats: lifetime,
     achievementCount: Object.keys(lifetime.achievements).length,
     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -126,6 +128,7 @@ if (typeof firebase !== "undefined" && firebase.auth) {
       cloudSaveLifetime();
     }).catch(function (err) {
       console.warn("Couldn't load profile stats", err);
+      cloudSaveLifetime(); // still try to write it, so the profile exists
     });
   });
 }
