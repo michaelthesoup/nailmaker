@@ -144,6 +144,12 @@ function renderLeaderboardRows(list) {
         nameText.addEventListener("click", function () { openProfile(entry.uid, entry); });
       })(list[i]);
     }
+    if (list[i].uid && typeof presenceDot === "function") {
+      var dot = presenceDot();
+      dot.setAttribute("data-uid", list[i].uid);
+      dot.style.display = isPlayerOnline(list[i].uid) ? "" : "none";
+      nameSpan.appendChild(dot);
+    }
     if (list[i].karma > 0) {
       var karmaSpan = document.createElement("span");
       karmaSpan.className = "lb-karma";
@@ -156,6 +162,15 @@ function renderLeaderboardRows(list) {
     row.appendChild(nameSpan);
     row.appendChild(scoreSpan);
     el.leaderboardList.appendChild(row);
+  }
+}
+
+// Shows or hides each row's green dot as players come and go, without rebuilding the list.
+function leaderboardRepaintPresence() {
+  if (!el.leaderboardList || !el.leaderboardList.querySelectorAll) return;
+  var dots = el.leaderboardList.querySelectorAll(".online-dot[data-uid]");
+  for (var i = 0; i < dots.length; i++) {
+    dots[i].style.display = isPlayerOnline(dots[i].getAttribute("data-uid")) ? "" : "none";
   }
 }
 
@@ -178,6 +193,7 @@ function renderLeaderboard() {
     return;
   }
 
+  if (typeof presenceRefresh === "function") presenceRefresh(false);
   updateLeaderboardTabs();
   if (leaderboardTab === "week") {
     renderWeeklyBoard();

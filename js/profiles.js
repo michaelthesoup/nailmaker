@@ -156,6 +156,10 @@ function renderProfile(d, uid) {
   var name = document.createElement("div");
   name.className = "sheet-title";
   name.textContent = d.name || "player";
+  if (typeof isPlayerOnline === "function" && isPlayerOnline(uid)) {
+    name.appendChild(document.createTextNode(" "));
+    name.appendChild(presenceDot());
+  }
   body.appendChild(name);
 
   var joined = typeof d.createdAt === "number" && !isNaN(d.createdAt) ? d.createdAt : stats.firstPlayedAt;

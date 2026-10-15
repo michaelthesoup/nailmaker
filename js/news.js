@@ -2,7 +2,7 @@
 
 // ----------------------------------------------------------------
 // The news ticker: a small scrolling headline strip at the very top of the
-// page, about as wide as one column. It only appears for logged-in players
+// page, across the full width of the screen. It only appears for logged-in players
 // (making an account unlocks it) and only when there is something to say.
 // The admin writes the headlines from the admin panel; they are stored in
 // config/news as { headlines: [text, ...] } and fetched on login and every
@@ -21,6 +21,7 @@ function newsRender() {
   if (!box) return;
   var visible = !!currentAuthUser() && newsHeadlines.length > 0;
   box.style.display = visible ? "" : "none";
+  document.documentElement.classList.toggle("news-on", visible); // makes room for it (see the page CSS)
   if (!visible) { newsShownKey = null; return; }
 
   var text = newsHeadlines.join(NEWS_SEPARATOR);
@@ -28,9 +29,15 @@ function newsRender() {
   newsShownKey = text;
 
   el.newsTrack.textContent = text;
-  var distance = el.newsTrack.scrollWidth; // the track is padded by one container width, so this is the whole trip
-  el.newsTrack.style.animationDuration = Math.max(8, distance / NEWS_SPEED_PX_PER_SEC) + "s";
+  newsSetSpeed();
 }
+
+// The track is padded by one screen width, so its width is the whole trip.
+function newsSetSpeed() {
+  el.newsTrack.style.animationDuration = Math.max(8, el.newsTrack.scrollWidth / NEWS_SPEED_PX_PER_SEC) + "s";
+}
+
+window.addEventListener("resize", function () { if (newsShownKey !== null) newsSetSpeed(); });
 
 function newsFetch() {
   if (!currentAuthUser() || typeof db === "undefined") { newsHeadlines = []; newsRender(); return; }
