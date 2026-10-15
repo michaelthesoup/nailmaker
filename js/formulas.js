@@ -48,7 +48,8 @@ function nailMakerCostEffective() {
 }
 
 function factoryBuildCostEffective() {
-  return FACTORY_BUILD_COST_FUNDS * Math.pow(FACTORY_COST_GROWTH, state.factories);
+  var discount = typeof moduleFactoryDiscount === "function" ? moduleFactoryDiscount() : 0; // blueprint tables (floor.js)
+  return FACTORY_BUILD_COST_FUNDS * Math.pow(FACTORY_COST_GROWTH, state.factories) * (1 - discount);
 }
 
 function factorySquaredBuildCostEffective() {
@@ -73,7 +74,8 @@ function foremanOutputBonus() {
 function factoryCopperCostEffective() {
   var f = factoryMakerFraction();
   var base = FACTORY_COST_BREAKER_SIDE_COPPER * (1 - f) + FACTORY_COST_MAKER_SIDE_COPPER * f;
-  return base / (1 + foremanOutputBonus());
+  var save = typeof moduleCopperSave === "function" ? moduleCopperSave() : 0; // copper presses (floor.js)
+  return base / (1 + foremanOutputBonus()) * (1 - save);
 }
 
 function factorySquaredCopperCostEffective() {

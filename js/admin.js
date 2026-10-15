@@ -95,11 +95,12 @@ function adminAfter(key) {
   adminRefreshValues();
 }
 
-function adminAdd(key, delta, min, whole) {
+function adminAdd(key, delta, min, whole, max) {
   if (!adminAllowed()) return;
   var v = (state[key] || 0) + delta;
   if (whole) v = Math.floor(v);
   if (min !== undefined) v = Math.max(min, v);
+  if (max !== undefined) v = Math.min(max, v);
   state[key] = v;
   adminAfter(key);
 }
@@ -114,7 +115,7 @@ function adminAmountButtons(key, amounts, opts) {
   opts = opts || {};
   var out = [];
   var i;
-  function make(a) { return function () { adminAdd(key, a, opts.min, opts.whole); }; }
+  function make(a) { return function () { adminAdd(key, a, opts.min, opts.whole, opts.max); }; }
   if (opts.minus) {
     for (i = amounts.length - 1; i >= 0; i--) out.push(["\u2212" + adminAbbrev(amounts[i]), make(-amounts[i])]);
   }
@@ -143,6 +144,7 @@ function adminUnlockEverything() {
   state.unlockedSwarm = true;
   state.unlockedCity = true;
   state.unlockedMonastery = true;
+  state.unlockedFloor = true;
   render();
 }
 
@@ -162,7 +164,7 @@ function buildMePanel(p) {
   adminRow(p, "nail breakers", function () { return fmtInt(state.breakers); }, adminAmountButtons("breakers", countBig, { min: 0, whole: true, minus: true }));
   adminRow(p, "factories", function () { return fmtInt(state.factories); }, adminAmountButtons("factories", count, { min: 0, whole: true, minus: true }));
   adminRow(p, "factory\u00b2", function () { return fmtInt(state.factorySquared); }, adminAmountButtons("factorySquared", [1, 10], { min: 0, whole: true, minus: true }));
-  adminRow(p, "marketing level", function () { return String(state.marketingLevel); }, adminAmountButtons("marketingLevel", count, { min: 0, whole: true, minus: true }));
+  adminRow(p, "marketing level", function () { return String(state.marketingLevel); }, adminAmountButtons("marketingLevel", count, { min: 0, max: MARKETING_LEVEL_MAX, whole: true, minus: true }));
 
   sheetAddHeading(p, "progress");
   adminRow(p, "tao", function () { return String(state.tao); }, adminAmountButtons("tao", count, { whole: true, minus: true }));
@@ -229,7 +231,7 @@ function adminGive(key, amount) {
 }
 
 function adminKickPlayer(uid, name, statusNode, done) {
-  if (!window.confirm("Kick " + name + " off the leaderboards?\n\nThis deletes their all-time and recent weekly entries and stops them posting new scores until you restore them.")) return;
+  if (!window.confirm("Kick " + name + " off the leaderboards?\n\nThis deletes their all-time and recent weekly entries and stops them posting new scores or chatting until you restore them.")) return;
   var batch = db.batch();
   batch.delete(db.collection("scores").doc(uid));
   for (var i = 0; i <= ADMIN_KICK_WEEKS_BACK; i++) {
@@ -238,7 +240,7 @@ function adminKickPlayer(uid, name, statusNode, done) {
   var me = currentAuthUser();
   batch.set(db.collection("banned").doc(uid), { name: name, by: me ? me.displayName : "admin", at: firebase.firestore.FieldValue.serverTimestamp() });
   batch.commit().then(function () {
-    statusNode.textContent = name + " was kicked off the leaderboards and can't post until restored.";
+    statusNode.textContent = name + " was kicked off the leaderboards and can't post or chat until restored.";
     if (done) done();
     if (typeof renderLeaderboard === "function") renderLeaderboard();
   }).catch(function (err) {

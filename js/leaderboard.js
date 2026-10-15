@@ -64,6 +64,7 @@ function setLeaderboardTab(tab) {
 function updateLeaderboardTabs() {
   if (el.btnLbWeek) el.btnLbWeek.classList.toggle("lb-tab-active", leaderboardTab === "week");
   if (el.btnLbAll) el.btnLbAll.classList.toggle("lb-tab-active", leaderboardTab === "all");
+  if (el.btnLbChat) el.btnLbChat.classList.toggle("lb-tab-active", leaderboardTab === "chat");
 }
 
 if (el.btnLeaderboardSignup) el.btnLeaderboardSignup.addEventListener("click", function () {
@@ -184,17 +185,27 @@ function renderLeaderboard() {
   // Without an account there is no leaderboard, just an invitation to sign up.
   var signedIn = !!currentAuthUser();
   if (el.leaderboardTabs) el.leaderboardTabs.style.display = signedIn ? "" : "none";
-  if (el.leaderboardNote) el.leaderboardNote.style.display = signedIn ? "" : "none";
-  if (el.leaderboardList) el.leaderboardList.style.display = signedIn ? "" : "none";
+  var chatTab = signedIn && leaderboardTab === "chat";
+  if (el.leaderboardNote) el.leaderboardNote.style.display = signedIn && !chatTab ? "" : "none";
+  if (el.leaderboardList) el.leaderboardList.style.display = signedIn && !chatTab ? "" : "none";
+  if (el.chatView) el.chatView.style.display = chatTab ? "" : "none";
   if (el.leaderboardSignup) el.leaderboardSignup.style.display = signedIn ? "none" : "";
   if (!signedIn) {
     leaderboardRenderToken++; // drop any reply still on its way
     leaderboardWeekShown = null;
+    if (typeof chatClose === "function") chatClose();
     return;
   }
 
   if (typeof presenceRefresh === "function") presenceRefresh(false);
   updateLeaderboardTabs();
+  if (chatTab) { // the chat tab: a live listener, on only while this tab is showing
+    leaderboardWeekShown = null;
+    leaderboardRenderToken++;
+    if (typeof chatOpen === "function") chatOpen();
+    return;
+  }
+  if (typeof chatClose === "function") chatClose();
   if (leaderboardTab === "week") {
     renderWeeklyBoard();
     return;

@@ -16,6 +16,11 @@ var PRICE_MAX = 0.08; // also used as the starting price -- a reasonable one, no
 var MARKETING_BASE_COST = 25;
 var MARKETING_GROWTH = 2.0;
 var MARKETING_LEVEL_MULT = 1.4;
+var MARKETING_LEVEL_MAX = 100;
+
+function clampMarketingLevel(level) {
+  return Math.min(MARKETING_LEVEL_MAX, Math.max(0, Math.floor(Number(level) || 0)));
+}
 
 var IRON_BUY_COST = 1;
 var IRON_BUY_AMOUNT = 100; // grams
@@ -433,7 +438,7 @@ var SWARM_COLLAPSE_IMBALANCE_THRESHOLD = 0.5; // 0.5 = a 3-to-1 split between th
 // All dots move faster the further out of balance you are: speed x (1 + this * |imbalance|).
 // At the collapse line (0.5) that is 1.5x; at total one-sided imbalance it is 2x.
 var SWARM_IMBALANCE_SPEED_BONUS = 1;
-var SWARM_COLLAPSE_SUSTAIN_SEC = 5; // ...and stay there this long (the grey-out) before it actually collapses
+var SWARM_COLLAPSE_SUSTAIN_SEC = 1.5; // ...and stay there this long (the grey-out) before it actually collapses
 var SWARM_COLLAPSE_FUEL_GAIN = 1; // unstable core banked per collapse
 
 function defaultState() {
@@ -525,6 +530,13 @@ function defaultState() {
     cityFever: 0, // decaying marketing boost from recent nailbombs -- see cityFeverMult()
     cityPanic: 0, // decaying street-panic boost from a recent nailbomb -- fast, short-lived, see cityFeverMult()
     cityMarketScar: 0, // permanent demand loss from the lasting impact of bombings
+    unlockedFloor: false, // the factory floor (modules) button appears at FLOOR_UNLOCK_FACTORIES factories (floor.js)
+    floorTier: 1,         // Mk1 = 5x5 grid, Mk2 = 6x6, Mk3 = 7x7
+    modules: [],          // placed modules: { id, type, x, y, rot, paid }
+    moduleStock: [],      // bought but not placed: { type, paid }
+    moduleNextId: 1,
+    yieldAccumMakers: 0,  // fractional machines carried between factory cycles (module yield bonuses)
+    yieldAccumBreakers: 0,
     isotopeStock: 0, // banked unstable cores from swarm collapses -- one is spent per nailbomb
     cityWorld: {
       cameraX: 0,

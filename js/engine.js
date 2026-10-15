@@ -24,6 +24,16 @@ function recordNailRate(made, dt) {
   actualNailsPerSec += (made / dt - actualNailsPerSec) * k;
 }
 
+// Factory-floor yield bonuses (floor.js) give a fraction of an extra machine per cycle;
+// the fraction is carried between cycles in state[key] so nothing is lost to rounding.
+// With no bonus this returns exactly n.
+function yieldWhole(key, n, bonus) {
+  state[key] = (state[key] || 0) + n * (1 + bonus);
+  var whole = Math.floor(state[key] + 1e-9);
+  state[key] -= whole;
+  return whole;
+}
+
 function tick(dt, skipRender) {
   state.simTime += dt;
   cityTick(dt);
@@ -94,7 +104,8 @@ function tick(dt, skipRender) {
   // are banked (up to one per factory) while copper is short.
   if (state.factoriesOn && state.factories > 0) {
     var cycleCopperCost = factoryCopperCostEffective();
-    state.factoryProgress = Math.min(state.factories, (state.factoryProgress || 0) + state.factories * dt / FACTORY_PERIOD_SEC);
+    var factorySpeed = typeof moduleSpeedMult === "function" ? moduleSpeedMult() : 1; // batteries (floor.js)
+    state.factoryProgress = Math.min(state.factories * Math.max(1, factorySpeed), (state.factoryProgress || 0) + state.factories * factorySpeed * dt / FACTORY_PERIOD_SEC);
     var cycles = Math.floor(state.factoryProgress + 1e-9);
     if (cycles > 0 && cycleCopperCost > 0) cycles = Math.min(cycles, Math.floor(state.copperAmt / cycleCopperCost));
     if (cycles > 0) {
@@ -104,10 +115,12 @@ function tick(dt, skipRender) {
       var allocTotal = (state.factoryAllocAccum || 0) + cycles * (state.factoryBalance / 100);
       var madeMakers = Math.min(cycles, Math.floor(allocTotal + 1e-9));
       state.factoryAllocAccum = allocTotal - madeMakers;
-      state.nailMakers += madeMakers;
+      var modBonus = typeof moduleBonuses === "function" ? moduleBonuses() : null; // maker / breaker dies (floor.js)
+      state.nailMakers += yieldWhole("yieldAccumMakers", madeMakers, modBonus ? modBonus.makerYield : 0);
       if (cycles - madeMakers > 0) {
-        state.breakers += cycles - madeMakers;
-        state.unlockedMap = true;
+        var gotBreakers = yieldWhole("yieldAccumBreakers", cycles - madeMakers, modBonus ? modBonus.breakerYield : 0);
+        state.breakers += gotBreakers;
+        if (gotBreakers > 0) state.unlockedMap = true;
       }
     }
   } else {

@@ -145,7 +145,7 @@ function runReincarnationRitual(result) {
   scratch.ironAmt += result.granted.ironAmt;
   scratch.copperAmt += result.granted.copperAmt;
   scratch.nailMakers += result.granted.nailMakers;
-  scratch.marketingLevel += result.granted.marketingLevel;
+  scratch.marketingLevel = clampMarketingLevel(scratch.marketingLevel + result.granted.marketingLevel);
   scratch.factories += result.granted.factories;
   var granted = {
     funds: Math.round((scratch.funds - before.funds) * 100) / 100,
@@ -356,6 +356,7 @@ el.btnReincarnateConfirm.addEventListener("click", function () {
   var karmaCarried = state.karma;
   var nirvanaCarried = state.nirvanaAchieved || !!ritual.title.isNirvana;
   var guideSeenCarried = state.guideSeen;
+  var floorUnlockedCarried = state.unlockedFloor; // modules themselves reset each life; the button stays
   var autoNextMapCarried = state.autoNextMap; // a preference toggle, unrelated to which map is loaded
   var yinYangCarried = {
     yin: state.yin,
@@ -390,6 +391,7 @@ el.btnReincarnateConfirm.addEventListener("click", function () {
   state.unlockedSwarm = true;
   state.unlockedCity = true;
   state.guideSeen = guideSeenCarried;
+  state.unlockedFloor = floorUnlockedCarried;
   state.mapIndex = ritual.newMapIndex;
   state.mapTiles = ritual.newMapTiles;
   state.mapTotalWeight = mapRemainingWeight(ritual.newMapTiles);
@@ -404,7 +406,7 @@ el.btnReincarnateConfirm.addEventListener("click", function () {
   state.copperAmt += ritual.granted.copperAmt;
   state.nailMakers += ritual.granted.nailMakers;
   state.breakers += ritual.granted.breakers;
-  state.marketingLevel += ritual.granted.marketingLevel;
+  state.marketingLevel = clampMarketingLevel(state.marketingLevel + ritual.granted.marketingLevel);
   state.factories += ritual.granted.factories;
 
   render();

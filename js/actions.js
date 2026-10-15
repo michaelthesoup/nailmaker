@@ -4,13 +4,18 @@
 // Actions
 // ----------------------------------------------------------------
 
-setupRepeatButton(el.btnPriceMinus, function () {
-  state.price = Math.max(PRICE_MIN, round2(state.price - PRICE_STEP));
+setupRepeatButton(el.btnPriceMinus, function (steps) {
+  steps = steps || 1;
+  state.price = Math.max(PRICE_MIN, round2(state.price - PRICE_STEP * steps));
   render();
 });
 
-setupRepeatButton(el.btnPricePlus, function () {
-  state.price = round2(state.price + PRICE_STEP);
+setupRepeatButton(el.btnPricePlus, function (steps) {
+  steps = steps || 1;
+  var nextPrice = state.price + PRICE_STEP * steps;
+  state.price = !isFinite(nextPrice) || nextPrice >= Number.MAX_VALUE / 100
+    ? Number.MAX_VALUE
+    : round2(nextPrice);
   render();
 });
 
@@ -24,10 +29,11 @@ el.btnMakeNail.addEventListener("click", function () {
 });
 
 el.btnBuyMarketing.addEventListener("click", function () {
+  if (state.marketingLevel >= MARKETING_LEVEL_MAX) return;
   var cost = priceForMarketing();
   if (state.funds >= cost) {
     state.funds -= cost;
-    state.marketingLevel += 1;
+    state.marketingLevel = clampMarketingLevel(state.marketingLevel + 1);
     render();
   }
 });
@@ -211,6 +217,7 @@ el.btnEndRun.addEventListener("click", function () {
 });
 
 function migrateLoadedState() {
+  state.marketingLevel = clampMarketingLevel(state.marketingLevel);
   // Factories used to be an array (and later had a timer array); they are
   // now just a count plus one pooled production progress value.
   state.factories = Array.isArray(state.factories) ? state.factories.length : Math.max(0, Math.floor(state.factories || 0));
@@ -246,6 +253,7 @@ function migrateLoadedState() {
   delete state.cityKarmaLocked;
 
   if (!Array.isArray(state.pastLives)) state.pastLives = [];
+  if (typeof floorNormalize === "function") floorNormalize(); // factory floor modules
 }
 
 function flashButton(btn, text) {

@@ -36,8 +36,14 @@ function applyGift(gift) {
   if (!def || !isFinite(amount) || amount === 0) return;
   if (def.whole) amount = Math.floor(amount);
 
-  var next = (state[gift.key] || 0) + amount;
+  var previous = state[gift.key] || 0;
+  var next = previous + amount;
   if (gift.key !== "tao") next = Math.max(0, next); // only tao may go negative
+  if (gift.key === "marketingLevel") {
+    next = clampMarketingLevel(next);
+    amount = next - previous;
+    if (amount === 0) return;
+  }
   state[gift.key] = next;
   if (gift.key === "breakers" && state.breakers > 0) state.unlockedMap = true;
 

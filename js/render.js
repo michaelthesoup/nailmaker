@@ -47,9 +47,10 @@ function render() {
   el.mapIndexLabel.textContent = state.mapIndex;
 
   // ---- machinery: factories ----
-  var factoryCopperRate = state.factories * (1 / FACTORY_PERIOD_SEC) * factoryCopperCostEffective();
+  var factorySpeedMult = typeof moduleSpeedMult === "function" ? moduleSpeedMult() : 1;
+  var factoryCopperRate = state.factories * factorySpeedMult * (1 / FACTORY_PERIOD_SEC) * factoryCopperCostEffective();
   el.factoryMaterialUse.textContent = "consuming " + fmtWeight(factoryCopperRate) + " copper/s";
-  el.factoryOutputRate.textContent = fmtDecimal(state.factories * (1 / FACTORY_PERIOD_SEC) * 60);
+  el.factoryOutputRate.textContent = fmtDecimal(state.factories * factorySpeedMult * (1 / FACTORY_PERIOD_SEC) * 60);
 
   el.sliderFactoryBalance.value = state.factoryBalance;
   // Share of factory output going to each machine type (white = makers, black = breakers).
@@ -86,7 +87,7 @@ function render() {
   el.btnBuyBreaker.disabled = !breakerReady || state.funds < breakerBuildCostEffective();
 
   el.btnBuyMarketing.textContent = "buy (" + fmtMoney(priceForMarketing()) + ")";
-  el.btnBuyMarketing.disabled = state.funds < priceForMarketing();
+  el.btnBuyMarketing.disabled = state.marketingLevel >= MARKETING_LEVEL_MAX || state.funds < priceForMarketing();
 
   el.btnBuyIron.textContent = "buy " + fmtWeight(IRON_BUY_AMOUNT) + " (" + fmtMoney(IRON_BUY_COST) + ")";
   el.btnBuyIron.disabled = state.funds < IRON_BUY_COST;
@@ -159,6 +160,7 @@ function render() {
   if (typeof renderCity === "function") renderCity();
   if (typeof renderCommunity === "function") renderCommunity();
   if (typeof renderMonastery === "function") renderMonastery();
+  if (typeof renderFloor === "function") renderFloor();
   if (typeof newsRender === "function") newsRender();
 }
 

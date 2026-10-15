@@ -558,6 +558,22 @@
   #newsTicker:hover #newsTrack { animation-play-state: paused; }
   @keyframes newsScroll { from { transform: translateX(0); } to { transform: translateX(-100%); } }
 
+  /* global chat (a tab in the leaderboard panel) */
+  #chatList {
+    max-height: 260px;
+    min-height: 120px;
+    overflow-y: auto;
+    border: 1px solid var(--ink);
+    padding: 4px 6px;
+    margin-bottom: 4px;
+    font-size: 12px;
+    line-height: 1.4;
+  }
+  .chat-msg { padding: 1px 0; overflow-wrap: anywhere; }
+  .chat-time { opacity: 0.55; margin-right: 5px; }
+  .chat-name { font-weight: bold; }
+  .chat-admin-btn { font-size: 10px; padding: 0 4px; margin-left: 4px; }
+
   /* green dot beside players who are online */
   .online-dot {
     display: inline-block;
@@ -568,6 +584,31 @@
     background: #2ecc40;
     vertical-align: middle;
   }
+
+  /* factory floor: the module grid */
+  :root { --floor-cell: 44px; }
+  .floor-grid { display: grid; width: max-content; max-width: 100%; margin: 8px auto; }
+  .floor-cell {
+    width: var(--floor-cell);
+    height: var(--floor-cell);
+    box-sizing: border-box;
+    border: 1px solid var(--ink);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 14px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .floor-cell.occ { background: rgba(128, 128, 128, 0.28); }
+  .floor-cell.sel { background: rgba(128, 128, 128, 0.6); }
+  .floor-cell.no-top { border-top-color: transparent; }
+  .floor-cell.no-bottom { border-bottom-color: transparent; }
+  .floor-cell.no-left { border-left-color: transparent; }
+  .floor-cell.no-right { border-right-color: transparent; }
+  .floor-cell.floor-ok { background: rgba(46, 204, 64, 0.45); }
+  .floor-cell.floor-bad { background: rgba(231, 76, 60, 0.45); }
 
   /* admin panel */
   .admin-btns { display: flex; flex-wrap: wrap; gap: 4px; margin: 3px 0 8px; }
@@ -851,6 +892,12 @@
       <p>A breaker is heavy mining equipment and a maker is a light machine, so they cost different amounts of copper. Per cycle, a factory spends <code>1,000 g &times; (breaker share) + 100 g &times; (maker share)</code>. All breakers costs 1,000 g per machine, all makers costs 100 g per machine, and the midpoint of 50/50 costs 550 g per cycle on average. Copper is the only material factories use. They never need iron or funds beyond the purchase price.</p>
       <p>Choosing the slider is therefore both a balance decision (section 10) and a speed decision: building makers is ten times cheaper in copper, but a pile of makers with no iron supply simply stalls.</p>
 
+      <h3>The factory floor</h3>
+      <p>Once you own 10 factories a <strong>factory floor</strong> button appears under the balance slider. The floor is a small grid (5 &times; 5 to begin with) and you fill it with <strong>modules</strong>, each taking up a rectangle of cells. Buy a module, hold it from your stock, tap a cell to place it (its top-left corner lands there), and use <em>rotate</em> to turn it. Tap a placed module to select it: you can <em>move</em> it (free), <em>pick it up</em> back into stock, or <em>sell</em> it for 75% of what you paid.</p>
+      <p>Each module attacks a different limit on your factories. Time: a <strong>battery</strong> (2 &times; 2) makes factories work 8% faster. Copper: a <strong>copper press</strong> (1 &times; 2) cuts the copper each cycle costs by 6%. Money: a <strong>blueprint table</strong> (2 &times; 1) makes new factories cost 4% less. A <strong>maker die</strong> and a <strong>breaker die</strong> (both 1 &times; 3) each give 10% extra nail makers or nail breakers from the cycles that build them; the extra is carried between cycles, so nothing is lost to rounding. A <strong>cooler</strong> (1 &times; 1) does nothing alone, but each cooler touching a battery or a copper press adds half of that module's bonus again (up to two coolers each).</p>
+      <p>Bonuses of the same kind add together, and each kind has a ceiling (speed +300%, copper &minus;60%, factory price &minus;50%, yields +500%). Space is the real limit, so what you fit and where the coolers go is the build. Every module you own makes the next one of its type 1.5&times; dearer. Which module helps depends on what is holding you back: speed does nothing if you are short of copper, and a discount does nothing if you can already afford factories.</p>
+      <p>You can <strong>expand the floor</strong>: Mk2 (6 &times; 6) costs $500 million and 10 million unsold nails; Mk3 (7 &times; 7) costs $20 billion, 1 billion unsold nails and 100 tonnes of copper. Modules are lost when a life ends, but the button stays, so you can start rebuilding your floor straight away.</p>
+
       <h2 id="g-factory2">9. Factory&sup2;</h2>
       <p>Factory&sup2; ("factory squared") is the next step of automation: a factory that builds factories. It unlocks only when you own at least <strong>100,000 nail makers and 100,000 nail breakers</strong>, and its panel appears below the machinery panel.</p>
       <ul>
@@ -1033,6 +1080,8 @@
       <p>Your score is your lifetime nail count for the life you just ended, and it is submitted when you end a run or reincarnate. Leaderboards are for players with an account: without one, the panel just invites you to sign up and nothing is posted. Logged in, it is a global top-100 list with one row per player showing their personal best. A new run only replaces your global entry if it beats your previous best. The panel can be hidden if it is in your way.</p>
       <h3>The weekly board</h3>
       <p>The leaderboard has two tabs. <strong>This week</strong> is a board that resets every Monday at 00:00 UTC (the panel shows a countdown). It holds each player's best finished life of the week, and, like the rest of the leaderboard, it is shown to logged-in players. <strong>All time</strong> is the board described above. A player who finished a life with karma in the bank has it shown beside their score, since a head-started life is not the same as a fresh one. A life counts for the week it ends in. A small green dot beside a name means that player is online right now (they have had the game open in the last few minutes).</p>
+      <h3>Chat</h3>
+      <p>The leaderboard panel has a third tab, <strong>chat</strong>: a global chat for logged-in players. It shows the latest 50 messages live while the tab is open (it switches off when you leave the tab). Messages are plain text up to 200 characters, with a few seconds between them. Click a name to see that player's profile; a green dot means they are online. Players who have been kicked off the leaderboards can't chat either. Be kind: messages can be deleted and players removed.</p>
       <h3>Medallions</h3>
       <p>When a week ends, the top three players on that week's board earn a <strong>gold</strong>, <strong>silver</strong> or <strong>bronze medallion</strong>. They are awarded by hand after the board has been checked, so they may arrive a little after the week closes. You get a notice the next time you log in, and medallions are listed on your profile.</p>
       <h3>The news ticker</h3>
@@ -1070,6 +1119,7 @@
         <tr><td>Karma</td><td>1 per 3 tao at reincarnation; every 3 tao below zero is &minus;1 on the counter</td></tr>
         <tr><td>Community</td><td>Unlocks with any karma; member cost 50 nails &times; 1.4<sup>members</sup>; room 1 + 2 per karma; 0.25 merit/s per member &times; harmony; 100 merit = 1 tao; harmony +2%/s up, &minus;5%/s down</td></tr>
         <tr><td>Swarm unlocks</td><td>1 tao held + 1 factory</td></tr>
+        <tr><td>Factory floor</td><td>Unlocks at 10 factories; 5&times;5, Mk2 6&times;6 ($500M + 10M nails), Mk3 7&times;7 ($20B + 1B nails + 100 t copper); modules 1.5&times; dearer each; sell for 75%</td></tr>
         <tr><td>Swarm flip</td><td>Converts machines at 1 breaker = 10 makers, no loss; no copper; 0.25 s cooldown</td></tr>
         <tr><td>Collapse</td><td>Imbalance &ge; 0.5 (3-to-1) for 1.5 s; yields 1 unstable core; unlocks the skyline</td></tr>
         <tr><td>Nailbomb nails</td><td>50,000 &times; 2.3<sup>bombs dropped</sup>, plus (bomb number) unstable cores</td></tr>
@@ -1095,6 +1145,14 @@
     <div class="sheet-title">stats &amp; achievements</div>
     <div id="statsBody"></div>
     <div class="sheet-actions"><button id="btnStatsClose">close</button></div>
+  </div>
+</div>
+
+<div id="floorOverlay" class="sheet-overlay">
+  <div class="sheet-box">
+    <div class="sheet-title">factory floor</div>
+    <div id="floorBody"></div>
+    <div class="sheet-actions"><button id="btnFloorClose">close</button></div>
   </div>
 </div>
 
@@ -1220,6 +1278,7 @@
               </div>
               <input type="range" id="sliderFactoryBalance" min="0" max="100" step="5" value="50">
               <div class="hint" id="valFactoryMaterialUse" style="text-align:center; margin-top:4px;">consuming 0 g copper/s</div>
+              <div id="floorWrap" style="display:none; text-align:center; margin-top:6px;"><button id="btnFloor">factory floor</button></div>
             </div>
 
             <div class="hint">
@@ -1376,11 +1435,21 @@
       <div id="leaderboardTabs" style="display:flex; gap:6px; margin-bottom:6px;">
         <button id="btnLbWeek" class="lb-tab-active" style="flex:1;">this week</button>
         <button id="btnLbAll" style="flex:1;">all time</button>
+        <button id="btnLbChat" style="flex:1;">chat</button>
       </div>
       <div class="hint" id="leaderboardNote"></div>
       <div id="leaderboardList" style="max-height:60vh; overflow-y:auto;"></div>
+      <div id="chatView" style="display:none;">
+        <div id="chatList"></div>
+        <div class="hint" id="chatHint" style="min-height:14px;"></div>
+        <div style="display:flex; gap:6px;">
+          <input type="text" id="chatInput" class="admin-input" maxlength="200" placeholder="say something" autocomplete="off" style="margin:0; flex:1; width:auto;">
+          <button id="btnChatSend">send</button>
+        </div>
+        <div id="chatAdmin" style="display:none; margin-top:4px;"><button id="btnChatClear" style="font-size:11px;">clear shown messages</button></div>
+      </div>
       <div id="leaderboardSignup" style="display:none; text-align:center;">
-        <div class="hint">sign up for global leaderboards</div>
+        <div class="hint">sign up for global leaderboards and chat</div>
         <button id="btnLeaderboardSignup" style="margin-top:6px;">sign up</button>
       </div>
     </div>
@@ -1427,6 +1496,7 @@
 <script src="js/audio.js"></script>
 <script src="js/render.js"></script>
 <script src="js/swarm.js"></script>
+<script src="js/floor.js"></script>
 <script src="js/city.js"></script>
 <script src="js/leaderboard.js"></script>
 <script src="js/auth.js"></script>
@@ -1443,6 +1513,7 @@
 <script src="js/gifts.js"></script>
 <script src="js/news.js"></script>
 <script src="js/presence.js"></script>
+<script src="js/chat.js"></script>
 <script src="js/admin.js"></script>
 <script src="js/community.js"></script>
 <script src="js/monastery.js"></script>

@@ -14,8 +14,8 @@ function setupRepeatButton(btn, action) {
   var speedUpFactor = 0.7; // get fast quickly while the button is held
   var held = false;
   var heldSince = 0;
-  var FAST_MULTIPLIER_AFTER_MS = 5000; // after holding this long, each tick fires 3x instead of 1x
-  var FAST_MULTIPLIER_COUNT = 3;
+  var ACCELERATION_START_MS = 10000;
+  var ACCELERATION_INTERVAL_MS = 2000;
 
   function scheduleNext() {
     repeatTimeout = setTimeout(function () {
@@ -24,8 +24,9 @@ function setupRepeatButton(btn, action) {
         return;
       }
       var heldFor = Date.now() - heldSince;
-      var steps = heldFor >= FAST_MULTIPLIER_AFTER_MS ? FAST_MULTIPLIER_COUNT : 1;
-      for (var i = 0; i < steps; i++) action();
+      var acceleration = Math.max(0, Math.floor((heldFor - ACCELERATION_START_MS) / ACCELERATION_INTERVAL_MS));
+      var steps = Math.pow(2, acceleration);
+      action(steps);
       currentDelay = Math.max(minDelay, currentDelay * speedUpFactor);
       scheduleNext();
     }, currentDelay);
@@ -36,7 +37,7 @@ function setupRepeatButton(btn, action) {
     if (btn.disabled) return;
     held = true;
     heldSince = Date.now();
-    action(); // do the first step right away
+    action(1); // do the first step right away
     currentDelay = 90;
     scheduleNext();
   }
@@ -56,7 +57,7 @@ function setupRepeatButton(btn, action) {
   // step per press, which is the normal expected behavior.
   btn.addEventListener("keydown", function (e) {
     if ((e.key === "Enter" || e.key === " ") && !held) {
-      action();
+      action(1);
     }
   });
 }
