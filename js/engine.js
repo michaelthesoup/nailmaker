@@ -11,6 +11,19 @@
 // gets fast enough to cause real performance trouble.
 var SETTLE_INTERVAL_FLOOR_SEC = 0.05; // never settle faster than 20x/sec
 
+// What the nail makers REALLY make, as opposed to what they could make with
+// unlimited iron. Production is already capped by the iron on hand (below), so
+// when iron runs dry the makers only turn out what arrives; this smoothed
+// measurement is what the screen shows in that case. Not saved.
+var RATE_SMOOTH_SEC = 3;
+var actualNailsPerSec = 0;
+
+function recordNailRate(made, dt) {
+  if (!(dt > 0)) return;
+  var k = 1 - Math.exp(-dt / RATE_SMOOTH_SEC);
+  actualNailsPerSec += (made / dt - actualNailsPerSec) * k;
+}
+
 function tick(dt, skipRender) {
   state.simTime += dt;
   cityTick(dt);
@@ -24,8 +37,10 @@ function tick(dt, skipRender) {
   var actuallyMade = Math.min(wantToMake, ironAvailableAsNails);
 
   state.ironAmt -= actuallyMade * IRON_PER_NAIL;
+  if (state.ironAmt < 0) state.ironAmt = 0; // iron can run out, never go below zero
   state.unsold += actuallyMade;
   state.totalNailsMade += actuallyMade;
+  recordNailRate(actuallyMade, dt);
 
   // Breakers and selling settle in chunks rather than continuously --
   // that's what makes the sawtooth visible: unsold inventory climbs

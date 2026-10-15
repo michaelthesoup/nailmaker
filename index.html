@@ -809,12 +809,12 @@
       <h3>Marketing</h3>
       <p>The <strong>buy marketing</strong> button costs $25 for the first level and doubles with every level you own ($25, $50, $100, $200 &hellip;). Each level multiplies public demand by 1.4. Marketing is the other lever on demand besides price, and it is the one that does not cost you per-nail revenue.</p>
       <h3>The two rate displays</h3>
-      <p><em>avg revenue/s</em> is the sales rate (demand-driven) capped at your theoretical production, multiplied by the price: it is the revenue you could sustain, not a bursty reading. <em>avg nails/s</em> is your theoretical production, ignoring whether iron happens to be available this instant.</p>
+      <p><em>avg revenue/s</em> is the sales rate (demand-driven) capped at your theoretical production, multiplied by the price: it is the revenue you could sustain, not a bursty reading. <em>avg nails/s</em> is what your makers are really making. While there is iron on hand that is their full speed. If your makers use iron faster than your breakers supply it, the iron runs down to zero and stays there, and the makers can only turn out what arrives, so the figure drops to your actual rate. It climbs back to full speed once your breakers supply at least as much iron as your makers use.</p>
 
       <h2 id="g-makers">5. Nail makers</h2>
       <p>A <strong>nail maker</strong> is a machine that turns iron into nails with no clicking. It costs a flat <strong>$5</strong>, forever (the price never rises), with a one-second pause between purchases. Each one produces <strong>1 nail per second</strong> and consumes <strong>1 g of iron per second</strong> while doing so.</p>
       <p>If your iron runs out, your makers stall: they can only make as many nails as your iron stock allows. This is the central tension of the early game, because iron has to come from somewhere. You can buy it for money, or you can mine it, which brings in nail breakers.</p>
-      <p>The machinery panel shows, under the nail maker line, how much iron per second your makers consume and how many nails per second they produce. Both figures include the tao bonus (section 11).</p>
+      <p>The machinery panel shows, under the nail maker line, how much iron per second your makers consume and how many nails per second they produce (what they are really making, see above). Both figures include the tao bonus (section 11).</p>
 
       <h2 id="g-breakers">6. Nail breakers and the extraction map</h2>
       <p>A <strong>nail breaker</strong> is the opposite of a nail maker. It costs <strong>$75</strong> with a one-second pause between purchases. Each breaker fires <strong>1 nail per second</strong> from your unsold inventory into the ground, and what comes back is iron and copper. Buying your first breaker reveals the <strong>extraction map</strong> and the copper and factory controls.</p>
@@ -950,9 +950,9 @@
       <p>The dots are a deliberately compressed picture. They follow a log scale of demand to supply, so it takes an enormous imbalance, about 50 makers' worth against 1 breaker's, before only 3 balls of one color remain (and never fewer). The collapse line of 3-to-1 shows up as roughly 18 balls against 12.
       <p>The dots also shy away from your cursor when you get near them. The more imbalanced your economy, the harder they dodge and the faster every dot moves (up to 1.5&times; at the collapse line); at true balance they drift slowly and barely react, so balance is the easy state. After you land a click, that dot is briefly stunned so you can chain hits fairly.</p>
       <h3>Clicking</h3>
-      <p>Clicking a dot flips its colour by <strong>scrapping machines of one type and rebuilding them as the other</strong>, so that your real iron rates match the new dot split. In practice: if you have too much of one colour, click a dot of that colour. A click on a black dot makes it white: breakers are scrapped and you get makers. A click on a white dot makes it black: makers are scrapped and you get breakers. The number scrapped is the smallest that moves the split by one dot, which at large scale can be a lot of machines.</p>
-      <p>The exchange rate is the factory's own: a breaker costs a factory 1,000 g of copper and a maker 100 g, so <strong>1 breaker is worth 10 makers</strong>. <strong>20% of the value is lost</strong> in the conversion, so 10 breakers become 80 makers, and 12.5 makers (rounded up to whole machines) become 1 breaker. Flipping costs no copper. If the conversion isn't possible (for instance you would have to scrap your last machine of a type), the ball is flung away from your click and the hint line says why. A click that would make the split more lopsided than the swarm can show is ignored. Clicks have a quarter-second cooldown.</p>
-      <p>This makes the swarm a balancing tool, not a growth engine: it turns the machines you have into the machines you need, at a loss, and that is useful for earning tao. New machines only come from factories.</p>
+      <p>Clicking a dot flips its colour by <strong>converting machines of one type into the other</strong>, so that your real iron rates match the new dot split. In practice: if you have too much of one colour, click a dot of that colour. A click on a black dot makes it white: breakers are converted into makers. A click on a white dot makes it black: makers are converted into breakers. The number converted is the smallest that moves the split by one dot, which at large scale can be a lot of machines.</p>
+      <p>The exchange rate is the factory's own: a breaker costs a factory 1,000 g of copper and a maker 100 g, so <strong>1 breaker is worth 10 makers</strong>, and nothing is lost in the conversion: 10 breakers become 100 makers, and 10 makers become 1 breaker. Flipping costs no copper. If the conversion isn't possible (for instance you would have to convert your last machine of a type), the ball is flung away from your click and the hint line says why. A click that would make the split more lopsided than the swarm can show is ignored. Clicks have a quarter-second cooldown.</p>
+      <p>This makes the swarm a balancing tool, not a growth engine: it turns the machines you have into the machines you need, which is useful for earning tao. New machines only come from factories.</p>
 
       <h2 id="g-collapse">14. Collapse and unstable cores</h2>
       <p>If you push your economy far enough out of balance and leave it there, the swarm collapses.</p>
@@ -1036,7 +1036,7 @@
       <h3>Medallions</h3>
       <p>When a week ends, the top three players on that week's board earn a <strong>gold</strong>, <strong>silver</strong> or <strong>bronze medallion</strong>. They are awarded by hand after the board has been checked, so they may arrive a little after the week closes. You get a notice the next time you log in, and medallions are listed on your profile.</p>
       <h3>The news ticker</h3>
-      <p>Once you have an account, a small headline strip scrolls along the very top of the page whenever there is news to share. It runs across the full width of the screen. Hover over it to pause it.</p>
+      <p>Once you have an account and have unlocked the skyline, a small headline strip scrolls along the very top of the page whenever there is news to share. It runs across the full width of the screen. Hover over it to pause it.</p>
       <h3>Profiles</h3>
       <p>Every logged-in player has a public profile: when they joined, their records (most nails in one life, total nails, best run, karma, time played and more) and the achievements they have earned. The <strong>players</strong> button opens a search by name, and clicking a name on either leaderboard opens that player's profile. <strong>My profile</strong> shows your own. Profile stats update when a life ends, so the life in progress is not counted until it finishes.</p>
 
@@ -1070,7 +1070,7 @@
         <tr><td>Karma</td><td>1 per 3 tao at reincarnation; every 3 tao below zero is &minus;1 on the counter</td></tr>
         <tr><td>Community</td><td>Unlocks with any karma; member cost 50 nails &times; 1.4<sup>members</sup>; room 1 + 2 per karma; 0.25 merit/s per member &times; harmony; 100 merit = 1 tao; harmony +2%/s up, &minus;5%/s down</td></tr>
         <tr><td>Swarm unlocks</td><td>1 tao held + 1 factory</td></tr>
-        <tr><td>Swarm flip</td><td>Scraps machines at 1 breaker = 10 makers, minus a 20% loss; no copper; 0.25 s cooldown</td></tr>
+        <tr><td>Swarm flip</td><td>Converts machines at 1 breaker = 10 makers, no loss; no copper; 0.25 s cooldown</td></tr>
         <tr><td>Collapse</td><td>Imbalance &ge; 0.5 (3-to-1) for 1.5 s; yields 1 unstable core; unlocks the skyline</td></tr>
         <tr><td>Nailbomb nails</td><td>50,000 &times; 2.3<sup>bombs dropped</sup>, plus (bomb number) unstable cores</td></tr>
         <tr><td>Nailbomb permanent scar</td><td>+50% demand per bomb (added to the tao bonus), capped at +1000%</td></tr>
@@ -1360,7 +1360,7 @@
             <div class="hint" id="swarmDotCounts" style="text-align:center; margin-top:6px;">30 balls</div>
             <div class="hint" id="swarmIronRates" style="text-align:center;">iron: 0 g/s made &middot; 0 g/s used</div>
             <div class="hint" id="swarmUnitCounts" style="text-align:center;">0 makers &middot; 0 breakers</div>
-            <div class="hint" id="swarmCostHint" style="text-align:center;">click a dot to flip it -- scraps one machine type into the other (20% lost)</div>
+            <div class="hint" id="swarmCostHint" style="text-align:center;">click a dot to flip it -- converts one machine type into the other (1 breaker = 10 makers)</div>
           </div>
       </div>
       </div>

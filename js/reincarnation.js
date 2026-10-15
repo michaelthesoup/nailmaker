@@ -12,7 +12,8 @@
 //
 // Being reborn starts a fresh map 1 (karma only adds deposits to it) and
 // a small established business whose opening price is matched to the
-// market so it actually runs. Every part of the UI is unlocked. The
+// market so it actually runs. The main parts of the game are already unlocked
+// (the monastery still needs 3 tao, see monastery.js). The
 // reveal shows all of it before you commit.
 // ----------------------------------------------------------------
 
@@ -124,7 +125,7 @@ function startReincarnation() {
   var confirmed = window.confirm(
     "Be reincarnated?\n\n" +
     "You'll gain " + karmaAvailable + " karma (" + newTotalKarma + " total, forever). " +
-    "This life ends and you are reborn with a fresh map (karma adds more deposits to it), everything unlocked, and a head start that grows with karma. " +
+    "This life ends and you are reborn with a fresh map (karma adds more deposits to it), the game's main parts already unlocked, and a head start that grows with karma. " +
     "Every starting bonus is rolled independently and nothing is guaranteed.\n\n" +
     "This can't be undone."
   );
@@ -380,14 +381,14 @@ el.btnReincarnateConfirm.addEventListener("click", function () {
   state.pastLives = pastLivesCarried;
   state.karma = karmaCarried;
   state.nirvanaAchieved = nirvanaCarried;
-  // Every part of the UI is available from the first second of a new life.
+  // The main parts of the game are available from the first second of a new life.
+  // The monastery is NOT in this list: it unlocks the usual way (a reincarnation AND 3 tao).
   state.unlockedMap = true;
   state.unlockedMachinery = true;
   state.unlockedFactorySquared = true;
   state.unlockedYinYang = true;
   state.unlockedSwarm = true;
   state.unlockedCity = true;
-  state.unlockedMonastery = true;
   state.guideSeen = guideSeenCarried;
   state.mapIndex = ritual.newMapIndex;
   state.mapTiles = ritual.newMapTiles;

@@ -431,7 +431,7 @@ function adminLoadNews() {
 }
 
 function buildNewsPanel(p) {
-  sheetAddText(p, "These scroll in a small ticker at the top of the page for logged-in players. Add headlines, then publish.");
+  sheetAddText(p, "These scroll in a small ticker across the top of the page for logged-in players who have unlocked the skyline. Add headlines, then publish.");
   sheetAddHeading(p, "headlines");
   var list = adminMake("div");
   p.appendChild(list);
@@ -456,7 +456,7 @@ function buildNewsPanel(p) {
       db.collection("config").doc("news").set({
         headlines: adminNewsDraft, updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       }).then(function () {
-        status.textContent = "published. Players see it within a few minutes (it shows up for you now).";
+        status.textContent = "published. Players see it within a few minutes (you see it too once you have the skyline).";
         if (typeof newsFetch === "function") newsFetch();
       }).catch(function (err) {
         console.error(err);

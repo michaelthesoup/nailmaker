@@ -12,10 +12,10 @@
 // the SAME speed. There is no "fast at balance" trick here -- at real
 // parity, every dot drifts at the same calm baseline.
 //
-// Clicking any dot flips its color by SCRAPPING machines of one type and
-// rebuilding their value as the other (at the factory's exchange rate, minus
-// a 20% loss), so the real rate split matches the resulting colors. It costs
-// no copper and creates no machines: factories stay the only way to grow.
+// Clicking any dot flips its color by CONVERTING machines of one type into
+// the other (at the factory's exchange rate, 1 breaker = 10 makers), so the
+// real rate split matches the resulting colors. It costs no copper and
+// creates no value: factories stay the only way to grow.
 //
 // Push the real imbalance far enough (SWARM_COLLAPSE_IMBALANCE_THRESHOLD)
 // and HOLD it there for a sustained moment, and the whole swarm greys
@@ -36,7 +36,7 @@ var SWARM_DISPLAY_DOTS = 30;
 var SWARM_DOT_RADIUS = 3;
 var SWARM_BASE_SPEED = 0.25; // px/frame -- the uniform speed BOTH colors move at when genuinely balanced, and the baseline for the minority color otherwise. Kept deliberately gentle: balance is meant to be the EASY state now, not a challenge.
 var SWARM_CLICK_COOLDOWN_MS = 250;
-var SWARM_CONVERSION_LOSS = 0.2; // share of the scrapped machines' value lost when a flip converts them
+var SWARM_CONVERSION_LOSS = 0; // share of the converted machines' value lost in a flip (0 = a pure conversion)
 
 // How lopsided the REAL economy has to be before the dots show it. The dot
 // split is drawn on a log scale of demand:supply, so it takes a seriously
@@ -396,18 +396,23 @@ function swarmRejectDot(d, mx, my) {
 }
 
 // ----------------------------------------------------------------
-// Flipping a ball is a TRADE, not a purchase. It scrapes machines of one
-// type and rebuilds their value as the other, at the factory's own
-// exchange rate (a breaker costs a factory 1,000 g of copper and a maker
-// 100 g, so 1 breaker <-> 10 makers) minus SWARM_CONVERSION_LOSS. It costs
-// no copper and creates no new value: factories stay the only way to grow.
+// Flipping a ball is a CONVERSION, not a purchase. It turns machines of one
+// type into the other at the factory's own exchange rate (a breaker costs a
+// factory 1,000 g of copper and a maker 100 g, so 1 breaker <-> 10 makers),
+// less SWARM_CONVERSION_LOSS if you ever set one. It costs no copper and
+// creates no new value: factories stay the only way to grow.
 //
-//   black ball -> white: scrap breakers, get makers   (10 breakers -> 80 makers at 20% loss)
-//   white ball -> black: scrap makers, get breakers   (12.5 makers -> 1 breaker at 20% loss)
+//   black ball -> white: breakers become makers   (10 breakers -> 100 makers)
+//   white ball -> black: makers become breakers   (10 makers -> 1 breaker)
 //
 // How many machines are scrapped is the smallest number that moves the
 // real iron split onto the new ball split (one ball's worth).
 // ----------------------------------------------------------------
+
+// " (20% lost)" when a loss is configured, nothing otherwise.
+function swarmLossNote() {
+  return SWARM_CONVERSION_LOSS > 0 ? " (" + Math.round(SWARM_CONVERSION_LOSS * 100) + "% lost)" : "";
+}
 
 function swarmMakersPerBreaker() {
   return (FACTORY_COST_BREAKER_SIDE_COPPER / FACTORY_COST_MAKER_SIDE_COPPER) * (1 - SWARM_CONVERSION_LOSS);
@@ -425,7 +430,7 @@ function swarmPlanToMakers(lowerRatio) {
   var b = breakerIntakeEffective() * activeIronTileCount();
   if (m <= 0) return { why: "turn on your nail makers first" };
   if (b <= 0) return { why: "turn on your breakers (and find some iron) first" };
-  if (owned < 2) return { why: "you need breakers to scrap into makers" };
+  if (owned < 2) return { why: "you need breakers to convert into makers" };
 
   var D = ironDemandRate(), S = ironSupplyRate(), r = swarmMakersPerBreaker();
   function gainFor(k) { return Math.floor(k * r + 1e-9); }
@@ -437,7 +442,7 @@ function swarmPlanToMakers(lowerRatio) {
   var k = Math.max(1, Math.ceil((lowerRatio * S - D) / (r * m + lowerRatio * b) - 1e-9));
   var guard = 0;
   while (k <= owned - 1 && !reaches(k) && guard++ < 5000) k++;
-  if (k > owned - 1 || !reaches(k)) return { why: "not enough breakers to scrap for that" };
+  if (k > owned - 1 || !reaches(k)) return { why: "not enough breakers to convert for that" };
   return { from: "breaker", scrap: k, gain: gainFor(k) };
 }
 
@@ -449,7 +454,7 @@ function swarmPlanToBreakers(upperRatio) {
   var b = breakerIntakeEffective() * activeIronTileCount();
   if (m <= 0) return { why: "turn on your nail makers first" };
   if (b <= 0) return { why: "turn on your breakers (and find some iron) first" };
-  if (owned < 2) return { why: "you need nail makers to scrap into breakers" };
+  if (owned < 2) return { why: "you need nail makers to convert into breakers" };
 
   var D = ironDemandRate(), S = ironSupplyRate(), r = swarmBreakersPerMaker();
   function scrapFor(g) { return Math.ceil(g / r - 1e-9); }
@@ -461,7 +466,7 @@ function swarmPlanToBreakers(upperRatio) {
   var g = Math.max(1, Math.ceil((D - upperRatio * S) / (m / r + upperRatio * b) - 1e-9));
   var guard = 0;
   while (scrapFor(g) <= owned - 1 && !reaches(g) && guard++ < 5000) g++;
-  if (scrapFor(g) > owned - 1 || !reaches(g)) return { why: "not enough nail makers to scrap for that" };
+  if (scrapFor(g) > owned - 1 || !reaches(g)) return { why: "not enough nail makers to convert for that" };
   return { from: "maker", scrap: scrapFor(g), gain: g };
 }
 
@@ -506,11 +511,11 @@ function swarmHandleClick(mx, my) {
     if (plan.from === "breaker") {
       state.breakers -= plan.scrap;
       state.nailMakers += plan.gain;
-      swarmFlashHint("scrapped " + fmtInt(plan.scrap) + " breakers into " + fmtInt(plan.gain) + " makers (" + Math.round(SWARM_CONVERSION_LOSS * 100) + "% lost)", 1800);
+      swarmFlashHint("converted " + fmtInt(plan.scrap) + " breakers into " + fmtInt(plan.gain) + " makers" + swarmLossNote(), 1800);
     } else {
       state.nailMakers -= plan.scrap;
       state.breakers += plan.gain;
-      swarmFlashHint("scrapped " + fmtInt(plan.scrap) + " makers into " + fmtInt(plan.gain) + " breakers (" + Math.round(SWARM_CONVERSION_LOSS * 100) + "% lost)", 1800);
+      swarmFlashHint("converted " + fmtInt(plan.scrap) + " makers into " + fmtInt(plan.gain) + " breakers" + swarmLossNote(), 1800);
     }
 
     d.side = d.side === "maker" ? "breaker" : "maker";

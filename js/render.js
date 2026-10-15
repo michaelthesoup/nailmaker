@@ -27,7 +27,14 @@ function render() {
   var foremanPct = Math.round(foremanOutputBonus() * 100); // foremen (monastery) raise factory output per copper
   el.factoryBonus.textContent = foremanPct > 0 ? "+" + foremanPct + "%" : "";
   el.breakers.textContent = state.breakers;
-  var theoreticalNailsPerSec = state.nailMakers * nailMakerRateEffective();
+  // What the makers could do with unlimited iron...
+  var capacityNailsPerSec = state.nailMakers * nailMakerRateEffective();
+  // ...versus what they really do. With iron on hand they run flat out. Once iron has run dry
+  // (under a second's worth left, and production measurably below capacity) they can only turn out
+  // what arrives, so the measured rate is shown instead.
+  var ironLow = state.ironAmt < capacityNailsPerSec * IRON_PER_NAIL;
+  var ironStarved = capacityNailsPerSec > 0 && ironLow && actualNailsPerSec < capacityNailsPerSec * 0.97;
+  var theoreticalNailsPerSec = ironStarved ? Math.min(actualNailsPerSec, capacityNailsPerSec) : capacityNailsPerSec; // what is really being made
   el.nailMakerNailsRate.textContent = fmtDecimal(theoreticalNailsPerSec);
   el.nailMakerIronRate.textContent = fmtWeight(theoreticalNailsPerSec * IRON_PER_NAIL);
   var theoreticalSoldPerSec = avgNailsSoldPerSec();
@@ -152,6 +159,7 @@ function render() {
   if (typeof renderCity === "function") renderCity();
   if (typeof renderCommunity === "function") renderCommunity();
   if (typeof renderMonastery === "function") renderMonastery();
+  if (typeof newsRender === "function") newsRender();
 }
 
 function renderGuide() {
