@@ -44,7 +44,7 @@ function showNextAchievementToast() {
   if (achievementToastShowing || achievementToastQueue.length === 0) return;
   achievementToastShowing = true;
   var a = achievementToastQueue.shift();
-  achievementToastEl.textContent = "achievement unlocked: " + a.name;
+  achievementToastEl.textContent = a.toastText || ("achievement unlocked: " + a.name);
   achievementToastEl.style.display = "block";
   setTimeout(function () {
     achievementToastEl.style.display = "none";

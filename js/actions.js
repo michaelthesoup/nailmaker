@@ -257,10 +257,9 @@ function flashButton(btn, text) {
 }
 
 // ----------------------------------------------------------------
-// Cheat box -- deliberately blends into the corner, no label.
-// Only works for accounts on CHEAT_ALLOWED_USERNAMES (see state.js).
-// Type "<key> <amount>" and hit Enter.
-// Keys: funds, unsold, iron, copper, nailmakers, factories, breakers, marketing, yin, yang
+// Admin check. Only accounts on CHEAT_ALLOWED_USERNAMES (see state.js) get the
+// admin panel (admin.js). This is for tidiness only: the Firestore rules are
+// what actually protect the shared data.
 // ----------------------------------------------------------------
 
 function isCheatAllowed() {
@@ -268,47 +267,3 @@ function isCheatAllowed() {
   if (!user || !user.displayName) return false;
   return CHEAT_ALLOWED_USERNAMES.indexOf(user.displayName.toLowerCase()) !== -1;
 }
-
-el.cheatBox.addEventListener("keydown", function (e) {
-  if (e.key !== "Enter") return;
-
-  if (!isCheatAllowed()) {
-    el.cheatBox.value = "";
-    el.cheatBox.blur();
-    return;
-  }
-
-  var raw = el.cheatBox.value.trim().toLowerCase();
-  var parts = raw.split(/\s+/);
-  if (parts.length === 2) {
-    var key = parts[0];
-    var amount = parseFloat(parts[1]);
-    if (!isNaN(amount)) {
-      switch (key) {
-        case "funds": state.funds = amount; break;
-        case "unsold": state.unsold = Math.max(0, amount); break;
-        case "iron": state.ironAmt = Math.max(0, amount); break;
-        case "copper": state.copperAmt = Math.max(0, amount); break;
-        case "nailmakers": state.nailMakers = Math.max(0, Math.floor(amount)); break;
-        case "factories":
-          state.factories = Math.max(0, Math.floor(amount));
-          state.factoryProgress = Math.min(state.factoryProgress || 0, state.factories);
-          break;
-        case "breakers":
-          state.breakers = Math.max(0, Math.floor(amount));
-          if (state.breakers > 0) state.unlockedMap = true;
-          break;
-        case "marketing": state.marketingLevel = Math.max(0, Math.floor(amount)); break;
-        case "yin": state.yin = Math.max(0, Math.min(YINYANG_MAX, amount)); break;
-        case "yang": state.yang = Math.max(0, Math.min(YINYANG_MAX, amount)); break;
-        case "yylevel": state.tao = Math.max(0, Math.floor(amount)); break;
-        case "tao": state.tao = Math.max(0, Math.floor(amount)); break;
-        case "totalnails": state.totalNailsMade = Math.max(0, amount); break;
-        case "citybombs": state.cityBombs = Math.max(0, Math.floor(amount)); break;
-      }
-      render();
-    }
-  }
-  el.cheatBox.value = "";
-  el.cheatBox.blur();
-});

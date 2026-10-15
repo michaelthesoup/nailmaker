@@ -177,6 +177,15 @@ function renderProfile(d, uid) {
     ["Nirvana reached", stats.nirvanaLives > 0 ? "yes" : "not yet"]
   ]);
 
+  var medalBox = document.createElement("div");
+  body.appendChild(medalBox);
+  if (typeof fetchMedallions === "function") {
+    fetchMedallions(uid).then(function (list) {
+      sheetAddHeading(medalBox, "medallions");
+      renderMedallionRows(medalBox, list);
+    }).catch(function () { /* rules not published yet -- just no section */ });
+  }
+
   var earned = 0;
   for (var k = 0; k < ACHIEVEMENTS.length; k++) if (stats.achievements[ACHIEVEMENTS[k].id]) earned++;
   sheetAddHeading(body, "achievements (" + earned + " / " + ACHIEVEMENTS.length + ")");

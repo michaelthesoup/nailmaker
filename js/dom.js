@@ -91,7 +91,12 @@ var el = {
   mapHealthFill: document.getElementById("mapHealthFill"),
   mapMaterials: document.getElementById("mapMaterials"),
   btnBuyBreaker: document.getElementById("btnBuyBreaker"),
-  cheatBox: document.getElementById("cheatBox"),
+  newsTicker: document.getElementById("newsTicker"),
+  newsTrack: document.getElementById("newsTrack"),
+  btnAdmin: document.getElementById("btnAdmin"),
+  adminOverlay: document.getElementById("adminOverlay"),
+  adminBody: document.getElementById("adminBody"),
+  btnAdminClose: document.getElementById("btnAdminClose"),
 
   factoryMaterialUse: document.getElementById("valFactoryMaterialUse"),
   factoryOutputRate: document.getElementById("valFactoryOutputRate"),

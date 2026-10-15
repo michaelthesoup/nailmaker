@@ -532,25 +532,40 @@
   }
   #moreMenu button { white-space: nowrap; flex: none; }
 
-  #cheatBox {
-    position: fixed;
-    bottom: 6px;
-    right: 6px;
-    width: 90px;
-    font-family: Arial, Helvetica, sans-serif;
-    font-size: 10px;
-    border: 1px solid #ddd;
-    color: #ccc;
-    padding: 2px 4px;
-    background: var(--paper);
-    opacity: 0.35;
+  /* news ticker: a small scrolling headline strip at the very top (logged-in players only) */
+  #newsTicker {
+    width: var(--col-w);
+    height: 22px;
+    overflow: hidden;
+    border: 1px solid var(--ink);
+    margin-bottom: 8px;
+    font-size: 12px;
+    line-height: 20px;
   }
+  #newsTrack {
+    display: inline-block;
+    white-space: nowrap;
+    padding-left: 100%;
+    animation: newsScroll linear infinite;
+  }
+  #newsTicker:hover #newsTrack { animation-play-state: paused; }
+  @keyframes newsScroll { from { transform: translateX(0); } to { transform: translateX(-100%); } }
 
-  #cheatBox:focus {
+  /* admin panel */
+  .admin-btns { display: flex; flex-wrap: wrap; gap: 4px; margin: 3px 0 8px; }
+  .admin-btns button { font-size: 12px; padding: 2px 8px; }
+  .admin-input {
+    width: 100%;
+    border: 1px solid var(--ink);
+    padding: 5px;
+    margin: 4px 0;
+    font-family: inherit;
+    font-size: 13px;
+    background: var(--paper);
     color: var(--ink);
-    border-color: var(--ink);
-    opacity: 1;
   }
+  .admin-status { min-height: 14px; }
+  .admin-news-row { padding: 4px 0 0; font-size: 13px; }
 
   /* ---- User's guide: a full-page manual ---- */
   #guideOverlay {
@@ -663,6 +678,7 @@
 <body>
 
 <div id="pageShakeWrap">
+<div id="newsTicker" style="display:none;"><div id="newsTrack"></div></div>
 <h1 id="titleCount">nails: 0</h1>
 
 <div class="top-buttons">
@@ -675,6 +691,7 @@
       <button id="btnGuide">guide</button>
       <button id="btnStats" style="display:none;">achievements (0/0)</button>
       <button id="btnPlayers" style="display:none;">players</button>
+      <button id="btnAdmin" style="display:none;">admin</button>
     </div>
   </div>
 </div>
@@ -997,6 +1014,10 @@
       <p>Your score is your lifetime nail count for the life you just ended, and it is submitted when you end a run or reincarnate. Leaderboards are for players with an account: without one, the panel just invites you to sign up and nothing is posted. Logged in, it is a global top-100 list with one row per player showing their personal best. A new run only replaces your global entry if it beats your previous best. The panel can be hidden if it is in your way.</p>
       <h3>The weekly board</h3>
       <p>The leaderboard has two tabs. <strong>This week</strong> is a board that resets every Monday at 00:00 UTC (the panel shows a countdown). It holds each player's best finished life of the week, and, like the rest of the leaderboard, it is shown to logged-in players. <strong>All time</strong> is the board described above. A player who finished a life with karma in the bank has it shown beside their score, since a head-started life is not the same as a fresh one. A life counts for the week it ends in.</p>
+      <h3>Medallions</h3>
+      <p>When a week ends, the top three players on that week's board earn a <strong>gold</strong>, <strong>silver</strong> or <strong>bronze medallion</strong>. They are awarded by hand after the board has been checked, so they may arrive a little after the week closes. You get a notice the next time you log in, and medallions are listed on your profile.</p>
+      <h3>The news ticker</h3>
+      <p>Once you have an account, a small headline strip scrolls along the very top of the page whenever there is news to share. Hover over it to pause it.</p>
       <h3>Profiles</h3>
       <p>Every logged-in player has a public profile: when they joined, their records (most nails in one life, total nails, best run, karma, time played and more) and the achievements they have earned. The <strong>players</strong> button opens a search by name, and clicking a name on either leaderboard opens that player's profile. <strong>My profile</strong> shows your own. Profile stats update when a life ends, so the life in progress is not counted until it finishes.</p>
 
@@ -1055,6 +1076,14 @@
     <div class="sheet-title">stats &amp; achievements</div>
     <div id="statsBody"></div>
     <div class="sheet-actions"><button id="btnStatsClose">close</button></div>
+  </div>
+</div>
+
+<div id="adminOverlay" class="sheet-overlay">
+  <div class="sheet-box">
+    <div class="sheet-title">admin</div>
+    <div id="adminBody"></div>
+    <div class="sheet-actions"><button id="btnAdminClose">close</button></div>
   </div>
 </div>
 
@@ -1367,8 +1396,6 @@
 
 <div id="bombDropOverlay" style="position:fixed; left:0; top:-120px; font-size:34px; line-height:1; pointer-events:none; z-index:80; display:none; transform:translateX(-50%);">&#9679;</div>
 
-<input type="text" id="cheatBox" spellcheck="false">
-
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
@@ -1393,6 +1420,10 @@
 <script src="js/achievements.js"></script>
 <script src="js/profiles.js"></script>
 <script src="js/moremenu.js"></script>
+<script src="js/medallions.js"></script>
+<script src="js/gifts.js"></script>
+<script src="js/news.js"></script>
+<script src="js/admin.js"></script>
 <script src="js/community.js"></script>
 <script src="js/monastery.js"></script>
 <script src="js/engine.js"></script>

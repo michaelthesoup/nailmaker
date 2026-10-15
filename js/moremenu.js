@@ -18,6 +18,7 @@ function setMoreMenuOpen(open) {
 // Shows each item only when it is useful.
 function updateMoreMenu() {
   if (el.btnPlayers) el.btnPlayers.style.display = (typeof currentAuthUser === "function" && currentAuthUser()) ? "" : "none";
+  if (el.btnAdmin) el.btnAdmin.style.display = (typeof isCheatAllowed === "function" && isCheatAllowed()) ? "" : "none";
   if (typeof updateAchievementButton === "function") updateAchievementButton();
 }
 
