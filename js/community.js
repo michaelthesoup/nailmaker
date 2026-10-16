@@ -110,7 +110,9 @@ function renderCommunity() {
   var harmony = communityHarmony();
   var rate = communityMeritRate();
   var working = state.monks + (state.foremen || 0);
-  el.communityMembers.textContent = state.members + " / " + cap + (working > 0 ? " (" + (state.members - working) + " meditating)" : "");
+  // Monks and foremen are members taken OUT of the community, so they come off this number
+  // (3 / 3 with one monk reads 2 / 3). The recruit price still follows the total ever recruited.
+  el.communityMembers.textContent = Math.max(0, state.members - working) + " / " + cap;
   var harmonyTarget = communityHarmonyTarget();
   var trend = harmonyTarget > harmony + 0.005 ? " \u2191" : (harmonyTarget < harmony - 0.005 ? " \u2193" : "");
   el.communityHarmony.textContent = Math.round(harmony * 100) + "%" + trend;
@@ -128,15 +130,6 @@ function renderCommunity() {
     el.btnRecruitMember.disabled = state.unsold < cost;
   }
 
-  var karmaShown = Math.max(0, state.karma);
-  el.communityHint.textContent = "karma " + karmaShown + " / " + COMMUNITY_NIRVANA_KARMA + " on the way to nirvana. " +
-    (state.members === 0
-      ? "Recruit members: they make merit while your makers and breakers stay balanced. 100 merit = 1 tao."
-      : (harmony <= 0.01
-          ? "The community is unsettled. Balance your makers and breakers and its harmony will recover."
-          : (communityLeanDrain() >= 0.05
-              ? "The monastery's heavy lean is straining the community (harmony \u2212" + Math.round(communityLeanDrain() * 100) + "%)."
-              : "Harmony follows your balance, climbing slowly and falling fast. A full ring is +1 tao.")));
 }
 
 // ---------------- drawing ----------------

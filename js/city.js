@@ -593,6 +593,8 @@ function renderCity() {
   el.cityBuffs.textContent = cityBuffText();
   el.cityBombCount.textContent = state.cityBombs + " made";
   el.cityBombNumber.textContent = state.cityBombs + 1;
+  el.btnOptimalPrice.style.display = state.cityBombs > 0 ? "" : "none";
+  el.btnOptimalPrice.disabled = currentNailProductionRate() <= 0;
 
   var nailsCost = cityBombCost();
   var isoCost = cityIsotopesNeeded();
@@ -622,6 +624,13 @@ function cityInit() {
 
   el.btnCityBomb.addEventListener("click", function () {
     cityArmAndDrop();
+  });
+
+  el.btnOptimalPrice.addEventListener("click", function () {
+    var price = optimalPriceForCurrentProduction();
+    if (price === null) return;
+    state.price = price;
+    render();
   });
 
   requestAnimationFrame(cityLoop);

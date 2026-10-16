@@ -9,6 +9,10 @@ function render() {
   el.funds.textContent = fmtMoney(state.funds);
   el.unsold.textContent = fmtInt(state.unsold);
   el.price.textContent = fmtMoney(state.price);
+  var hasDroppedNailbomb = state.cityBombs > 0;
+  el.price.style.display = hasDroppedNailbomb ? "none" : "";
+  el.manualPriceWrap.style.display = hasDroppedNailbomb ? "flex" : "none";
+  if (document.activeElement !== el.manualPrice) el.manualPrice.value = state.price.toFixed(2);
   el.demand.textContent = Math.round(publicDemandPD()) + "%";
   // Total permanent demand bonus (tao + nailbomb scar), as one number.
   var demandBonusPct = Math.round(permanentDemandBonus() * 100);
@@ -19,7 +23,7 @@ function render() {
   var breakerBonusPct = Math.round(breakerRateBonus() * 100);
   el.nailMakerBonus.textContent = makerBonusPct > 0 ? "+" + makerBonusPct + "%" : "";
   el.breakerBonus.textContent = breakerBonusPct > 0 ? "+" + breakerBonusPct + "%" : "";
-  el.marketing.textContent = state.marketingLevel;
+  el.marketing.textContent = state.marketingLevel + (state.marketingLevel >= MARKETING_LEVEL_MAX ? " (max)" : "");
   el.iron.textContent = fmtWeight(state.ironAmt);
   el.copper.textContent = fmtWeight(state.copperAmt);
   el.nailMakers.textContent = state.nailMakers;
@@ -86,8 +90,13 @@ function render() {
   );
   el.btnBuyBreaker.disabled = !breakerReady || state.funds < breakerBuildCostEffective();
 
-  el.btnBuyMarketing.textContent = "buy (" + fmtMoney(priceForMarketing()) + ")";
-  el.btnBuyMarketing.disabled = state.marketingLevel >= MARKETING_LEVEL_MAX || state.funds < priceForMarketing();
+  if (state.marketingLevel >= MARKETING_LEVEL_MAX) {
+    el.btnBuyMarketing.textContent = "max level";
+    el.btnBuyMarketing.disabled = true;
+  } else {
+    el.btnBuyMarketing.textContent = "buy (" + fmtMoney(priceForMarketing()) + ")";
+    el.btnBuyMarketing.disabled = state.funds < priceForMarketing();
+  }
 
   el.btnBuyIron.textContent = "buy " + fmtWeight(IRON_BUY_AMOUNT) + " (" + fmtMoney(IRON_BUY_COST) + ")";
   el.btnBuyIron.disabled = state.funds < IRON_BUY_COST;
@@ -121,25 +130,18 @@ function render() {
 
     renderYinYangStatus(yinYangStatusLabel());
 
-    if (el.yinYangHint) {
-      el.yinYangHint.textContent = "harvest more than you use to fill yin, use more than you harvest to fill yang \u2014 fill both to earn Tao. Each held Tao gives makers and breakers +" + Math.round(TAO_RATE_BONUS_PER_POINT * 100) + "% rate and +" + Math.round(YINYANG_PD_BONUS_PER_LEVEL * 100) + "% demand." + (state.tao < 0 ? " Negative tao gives no bonus (0%) \u2014 it isn't a penalty, but it blocks reincarnation." : "");
-    }
-
     // Negative tao counts against your karma standing: every 3 tao below zero is -1 karma.
     var negativeKarma = state.tao < 0 ? Math.trunc(state.tao / KARMA_TAO_THRESHOLD) : 0;
     el.valKarma.textContent = fmtInt(state.karma + negativeKarma);
     el.btnPastLives.textContent = "past lives (" + (state.pastLives ? state.pastLives.length : 0) + ")";
     var karmaAvailable = Math.floor(state.tao / KARMA_TAO_THRESHOLD);
-    if (state.tao < 0) {
+    // No explanatory text: the button just says what you would gain once you can.
+    if (state.tao < 0 || karmaAvailable < 1) {
       el.btnReincarnate.disabled = true;
-      el.reincarnateHint.textContent = "tao is negative (" + state.tao + ") \u2014 earn it back to " + KARMA_TAO_THRESHOLD + " to reincarnate";
-    } else if (karmaAvailable >= 1) {
-      var projectedTotal = state.karma + karmaAvailable;
-      el.btnReincarnate.disabled = false;
-      el.reincarnateHint.textContent = "reincarnate for +" + karmaAvailable + " karma (" + projectedTotal + " total) \u2014 stronger starting bonuses become more likely as karma grows";
+      el.btnReincarnate.textContent = "reincarnate";
     } else {
-      el.btnReincarnate.disabled = true;
-      el.reincarnateHint.textContent = "reach " + KARMA_TAO_THRESHOLD + " tao to end this life and be reborn";
+      el.btnReincarnate.disabled = false;
+      el.btnReincarnate.textContent = "reincarnate (+" + karmaAvailable + " karma)";
     }
   }
 

@@ -39,6 +39,39 @@ function avgNailsSoldPerSec() {
   return Math.min(1, pd / 100) * 7 * Math.pow(pd, DEMAND_CURVE_EXPONENT);
 }
 
+function currentNailProductionRate() {
+  var capacity = state.nailMakers * nailMakerRateEffective();
+  if (capacity <= 0) return 0;
+  var ironLow = state.ironAmt < capacity * IRON_PER_NAIL;
+  var measuredRate = typeof actualNailsPerSec === "number" ? actualNailsPerSec : capacity;
+  return ironLow && measuredRate < capacity * 0.97 ? Math.min(measuredRate, capacity) : capacity;
+}
+
+function optimalPriceForCurrentProduction() {
+  var targetSales = currentNailProductionRate() * OPTIMAL_PRICE_SALES_RATIO;
+  if (targetSales <= 0) return null;
+
+  var salesAtDemand100 = 7 * Math.pow(100, DEMAND_CURVE_EXPONENT);
+  var targetDemand = targetSales <= salesAtDemand100
+    ? Math.pow(targetSales / 0.07, 1 / (1 + DEMAND_CURVE_EXPONENT))
+    : Math.pow(targetSales / 7, 1 / DEMAND_CURVE_EXPONENT);
+  var demandMultiplier = marketingMultiplier() * yinYangPDMultiplier() * cityFeverMult();
+  var price = 0.8 * Math.pow(demandMultiplier / targetDemand, 1 / PRICE_DEMAND_SENSITIVITY);
+  if (!isFinite(price) || price >= Number.MAX_VALUE / 100) return Number.MAX_VALUE;
+
+  var lowerPrice = Math.max(PRICE_MIN, Math.floor(price * 100) / 100);
+  var upperPrice = Math.max(PRICE_MIN, Math.ceil(price * 100) / 100);
+  var lowerDemand = demandMultiplier * Math.pow(0.8 / lowerPrice, PRICE_DEMAND_SENSITIVITY);
+  var lowerSales = Math.min(1, lowerDemand / 100) * 7 * Math.pow(lowerDemand, DEMAND_CURVE_EXPONENT);
+    var upperDemand = demandMultiplier * Math.pow(0.8 / upperPrice, PRICE_DEMAND_SENSITIVITY);
+    var upperSales = Math.min(1, upperDemand / 100) * 7 * Math.pow(upperDemand, DEMAND_CURVE_EXPONENT);
+  if (lowerSales <= targetSales / OPTIMAL_PRICE_SALES_RATIO * OPTIMAL_PRICE_MAX_SALES_RATIO
+      && Math.abs(lowerSales - targetSales) < Math.abs(upperSales - targetSales)) {
+    return lowerPrice;
+  }
+  return upperPrice;
+}
+
 function priceForMarketing() {
   return MARKETING_BASE_COST * Math.pow(MARKETING_GROWTH, state.marketingLevel);
 }

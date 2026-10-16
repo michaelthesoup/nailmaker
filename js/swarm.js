@@ -161,26 +161,26 @@ function swarmCountMakerDots() {
 }
 
 // What the swarm is telling you, in words that are deliberately different
-// from the yin & yang panel's labels, and what to do about it.
+// from the yin & yang panel's labels.
 function swarmStatusInfo() {
   var demand = ironDemandRate();
   var supply = ironSupplyRate();
   if (demand <= 0 && supply <= 0) {
-    return { label: "nothing to balance yet", advice: "build nail makers and nail breakers" };
+    return { label: "nothing to balance yet" };
   }
   if (supply <= 0) {
-    return { label: "too many makers", advice: "you have no breakers feeding them \u2014 get breakers" };
+    return { label: "too many makers" };
   }
   if (demand <= 0) {
-    return { label: "too many breakers", advice: "you have no makers using the iron \u2014 get nail makers" };
+    return { label: "too many breakers" };
   }
   if (swarmWithinTolerance()) {
-    return { label: "balanced", advice: "makers and breakers are in step" };
+    return { label: "balanced" };
   }
   if (demand > supply) {
-    return { label: "too many makers", advice: "get more breakers \u2014 click a white ball to add them" };
+    return { label: "too many makers" };
   }
-  return { label: "too many breakers", advice: "get more makers \u2014 click a black ball to add them" };
+  return { label: "too many breakers" };
 }
 
 function swarmImbalanceMagnitude() {
@@ -284,7 +284,6 @@ function swarmStep(nowMs) {
 
   var statusInfo = swarmStatusInfo();
   if (el.swarmStatus) el.swarmStatus.textContent = statusInfo.label + (swarmGreying ? " \u2014 unstable!" : "");
-  if (el.swarmAdvice) el.swarmAdvice.textContent = statusInfo.advice;
   if (el.swarmDotCounts) {
     var whiteDots = swarmCountMakerDots();
     el.swarmDotCounts.textContent = swarmDots.length + " balls: " + whiteDots + " white (makers) \u00b7 " + (swarmDots.length - whiteDots) + " black (breakers)";

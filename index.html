@@ -159,6 +159,29 @@
     padding: 2px 0;
   }
 
+  .stepper .manual-price {
+    display: flex;
+    align-items: center;
+    width: 78px;
+    min-width: 0;
+    gap: 2px;
+    border: 1px solid var(--ink);
+    padding: 2px 4px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .stepper .manual-price input {
+    width: 100%;
+    min-width: 0;
+    border: 0;
+    padding: 0;
+    outline: 0;
+    color: var(--ink);
+    background: transparent;
+    font: inherit;
+    font-variant-numeric: tabular-nums;
+  }
+
   .top-buttons {
     display: flex;
     gap: 6px;
@@ -546,17 +569,31 @@
     line-height: 22px;
     z-index: 45; /* above the leaderboard and menus, below the overlays */
   }
+  /* the version number: small grey text at the top middle; it scrolls away with the page, and when scrolled right
+     to the top it sits just under the headlines */
+  #versionTag {
+    position: absolute;
+    top: 4px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 11px;
+    color: #999;
+    z-index: 5;
+    pointer-events: none;
+    user-select: none;
+  }
+  html.news-on #versionTag { top: 28px; }
+
   /* when it is showing, nudge everything down so it covers nothing */
   html.news-on body { padding-top: 24px; }
   html.news-on #leaderboardSection { top: 44px !important; }
   #newsTrack {
     display: inline-block;
-    white-space: nowrap;
-    padding-left: 100%;
+    white-space: pre;
     animation: newsScroll linear infinite;
   }
   #newsTicker:hover #newsTrack { animation-play-state: paused; }
-  @keyframes newsScroll { from { transform: translateX(0); } to { transform: translateX(-100%); } }
+  @keyframes newsScroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 
   /* global chat (a tab in the leaderboard panel) */
   #chatList {
@@ -737,6 +774,7 @@
 <body>
 
 <div id="newsTicker" style="display:none;"><div id="newsTrack"></div></div>
+<div id="versionTag">v1.0</div>
 
 <div id="pageShakeWrap">
 <h1 id="titleCount">nails: 0</h1>
@@ -836,7 +874,7 @@
       <h2 id="g-selling">4. Selling: price, demand and marketing</h2>
       <p>You do not choose when to sell. The public buys nails continuously at a rate that depends on your price and your marketing, and your unsold inventory shrinks as they do. What you control is how attractive your product is.</p>
       <h3>Price</h3>
-      <p>The price control sits in the business panel with a <strong>&minus;</strong> and a <strong>+</strong> button. Each press moves the price by $0.01, and the price cannot go below $0.01. You start at $0.08. If you hold a button down it repeats, getting faster the longer you hold, and after five seconds of holding each repeat fires three steps at once so that large changes do not take forever.</p>
+      <p>The price control sits in the business panel with a <strong>&minus;</strong> and a <strong>+</strong> button. Each press moves the price by $0.01, and the price cannot go below $0.01. You start at $0.08. If you hold a button down it repeats faster over time; after ten seconds, the number of cents changed per repeat doubles every two seconds. After your first nailbomb, you can also type a price directly into the field.</p>
       <h3>Public demand</h3>
       <p>The number labelled <em>public demand (%)</em> is calculated like this:</p>
       <p><code>demand = 1.4<sup>marketing level</sup> &times; (0.8 &divide; price) &times; (1 + 0.1 &times; tao + nailbomb scar) &times; fever &times; panic</code></p>
@@ -848,7 +886,7 @@
       <h3>The price that actually matters</h3>
       <p>Cutting the price always raises the number of nails the public is <em>willing</em> to buy, and in this formula it also always raises the theoretical revenue. But the public can only buy nails you actually have. The right way to think about price is therefore: <strong>find the highest price at which you still sell everything you produce.</strong> Any demand beyond your production is wasted, and any price lower than needed gives away revenue for nothing. When your nail inventory is piling up, your price is too high or your marketing too low; when your inventory sits at zero and sales are limited by production, you can raise the price.</p>
       <h3>Marketing</h3>
-      <p>The <strong>buy marketing</strong> button costs $25 for the first level and doubles with every level you own ($25, $50, $100, $200 &hellip;). Each level multiplies public demand by 1.4. Marketing is the other lever on demand besides price, and it is the one that does not cost you per-nail revenue.</p>
+      <p>The <strong>buy marketing</strong> button costs $25 for the first level and doubles with every level you own ($25, $50, $100, $200 &hellip;). Each level multiplies public demand by 1.4, up to a maximum of <strong>level 100</strong> (after which the button reads <em>max level</em>). Marketing is the other lever on demand besides price, and it is the one that does not cost you per-nail revenue.</p>
       <h3>The two rate displays</h3>
       <p><em>avg revenue/s</em> is the sales rate (demand-driven) capped at your theoretical production, multiplied by the price: it is the revenue you could sustain, not a bursty reading. <em>avg nails/s</em> is what your makers are really making. While there is iron on hand that is their full speed. If your makers use iron faster than your breakers supply it, the iron runs down to zero and stays there, and the makers can only turn out what arrives, so the figure drops to your actual rate. It climbs back to full speed once your breakers supply at least as much iron as your makers use.</p>
 
@@ -1024,6 +1062,7 @@
         <li><strong>Unsold nails</strong>: 50,000 for the first, and each bomb multiplies the price of the next by 2.3. The bombs cost <code>50,000 &times; 2.3<sup>bombs already dropped</sup></code> nails.</li>
       </ul>
       <p>When both bars are full, the <strong>launch nailbomb</strong> button works. Its hint line says what is going to happen.</p>
+      <p>After your first bomb lands, you can type a price directly in the business panel. The Skyline's <strong>set optimal price</strong> button estimates a price that sells about 90% of your current nail production, leaving a small surplus in inventory. It is disabled when you have no active nail production.</p>
       <h3>What a nailbomb does</h3>
       <p>The bomb falls in from above the entire page onto the middle of the skyline, and the whole page shakes. Then:</p>
       <ul>
@@ -1079,7 +1118,7 @@
       <h3>The leaderboard</h3>
       <p>Your score is your lifetime nail count for the life you just ended, and it is submitted when you end a run or reincarnate. Leaderboards are for players with an account: without one, the panel just invites you to sign up and nothing is posted. Logged in, it is a global top-100 list with one row per player showing their personal best. A new run only replaces your global entry if it beats your previous best. The panel can be hidden if it is in your way.</p>
       <h3>The weekly board</h3>
-      <p>The leaderboard has two tabs. <strong>This week</strong> is a board that resets every Monday at 00:00 UTC (the panel shows a countdown). It holds each player's best finished life of the week, and, like the rest of the leaderboard, it is shown to logged-in players. <strong>All time</strong> is the board described above. A player who finished a life with karma in the bank has it shown beside their score, since a head-started life is not the same as a fresh one. A life counts for the week it ends in. A small green dot beside a name means that player is online right now (they have had the game open in the last few minutes).</p>
+      <p>The leaderboard has two tabs. <strong>This week</strong> is a board that resets every Monday at 00:00 UTC (the panel shows a countdown). It holds each player's best finished life of the week, and, like the rest of the leaderboard, it is shown to logged-in players. <strong>All time</strong> is the board described above. A player who finished a life with karma in the bank has it shown beside their score, since a head-started life is not the same as a fresh one. A life counts for the week it ends in. Every player with an account is listed: anyone who hasn't ended a run or reincarnated yet simply shows as 0 nails. A small green dot beside a name means that player is online right now (they have had the game open in the last few minutes).</p>
       <h3>Chat</h3>
       <p>The leaderboard panel has a third tab, <strong>chat</strong>: a global chat for logged-in players. It shows the latest 50 messages live while the tab is open (it switches off when you leave the tab). Messages are plain text up to 200 characters, with a few seconds between them. Click a name to see that player's profile; a green dot means they are online. Players who have been kicked off the leaderboards can't chat either. Be kind: messages can be deleted and players removed.</p>
       <h3>Medallions</h3>
@@ -1107,7 +1146,7 @@
         <tr><td>Iron per nail</td><td>1 g</td></tr>
         <tr><td>Buy iron</td><td>$1.00 for 100 g</td></tr>
         <tr><td>Machinery unlocks</td><td>250 lifetime nails</td></tr>
-        <tr><td>Marketing</td><td>$25 &times; 2<sup>level</sup>; each level &times;1.4 demand</td></tr>
+        <tr><td>Marketing</td><td>$25 &times; 2<sup>level</sup>; each level &times;1.4 demand; maximum level 100</td></tr>
         <tr><td>Nail maker</td><td>$5 flat; 1 nail/s; 1 g iron/s; 1 s between buys</td></tr>
         <tr><td>Nail breaker</td><td>$75 flat; 1 nail/s ammo; 1 s between buys</td></tr>
         <tr><td>Map</td><td>10 &times; 21; 15 deposits (20 at 1 karma, +1 per 2 more, max 60); map 1 deposits are 2,000 g; &times;1.2 per map</td></tr>
@@ -1204,6 +1243,7 @@
           <span class="label" style="margin-right:auto;">price ($):</span>
           <button id="btnPriceMinus">-</button>
           <span class="value" id="valPrice">$0.00</span>
+          <span class="manual-price" id="manualPriceWrap" style="display:none;"><span>$</span><input id="inputPrice" type="number" min="0.01" step="0.01" inputmode="decimal" aria-label="Price"></span>
           <button id="btnPricePlus">+</button>
         </div>
 
@@ -1214,7 +1254,6 @@
           <span class="value" id="valMarketing">0</span>
           <button id="btnBuyMarketing">buy marketing</button>
         </div>
-        <div class="hint">each level multiplies public demand &times;1.4</div>
 
         <div class="row">
           <span class="label">iron:</span>
@@ -1318,15 +1357,12 @@
             <div class="row"><span class="label">breaker bonus:</span><span class="value" id="valMonasteryBreakerBonus">+0%</span></div>
             <div class="row"><span class="label">harmony drain:</span><span class="value" id="valMonasteryDrain">none</span></div>
             <div class="row"><span class="label">factory output:</span><span class="value" id="valMonasteryFactoryBonus">+0%</span></div>
-            <div class="hint" id="monasteryHint"></div>
           </div>
         </div>
 
       <div class="panel" id="factorySquaredSection" style="margin-top:0; display:none;">
           <div class="panel-header">factory&sup2;</div>
           <div class="panel-body">
-            <div class="hint" style="margin-top:0;">a factory that builds factories. unlocked once your economy is big enough to feed it.</div>
-
             <div class="row">
               <span class="label">factory&sup2;:</span>
               <span class="value"><span id="valFactorySquaredCount">0</span><span class="bonus-note" id="valFactorySquaredBonus"></span></span>
@@ -1350,7 +1386,6 @@
             <div class="row"><span class="label">merit rate:</span><span class="value" id="valCommunityRate">none</span></div>
             <div class="row"><span class="label">merit:</span><span class="value" id="valCommunityMerit">0 / 100</span></div>
             <button id="btnRecruitMember" style="width:100%; margin-top:6px;">recruit</button>
-            <div class="hint" id="communityHint"></div>
           </div>
         </div>
 
@@ -1364,7 +1399,6 @@
               <div class="map-health-track"><div class="map-health-fill" id="mapHealthFill"></div></div>
             </div>
             <div class="hint" id="mapMaterials">iron: 0 g &middot; copper: 0 g</div>
-            <div class="hint">i/c = iron/copper &nbsp; I/C = worked by breaker &nbsp; . = drained/empty</div>
           </div>
         </div>
 
@@ -1380,12 +1414,10 @@
               <input type="range" id="sliderYinYang" min="0" max="100" step="1" value="50" tabindex="-1">
             </div>
             <div class="yy-status" id="valYinYangStatus">BALANCED</div>
-            <div class="hint" id="yinYangHint">stay balanced for a production/sales bonus</div>
 
             <hr class="machinery-divider">
 
             <div class="row"><span class="label">karma:</span><span class="value" id="valKarma">0</span></div>
-            <div class="hint" id="reincarnateHint">reach 3 tao to end this life and be reborn</div>
             <button id="btnReincarnate" style="width:100%; margin-top:6px;" disabled>reincarnate</button>
             <button id="btnPastLives" style="width:100%; margin-top:6px;">past lives (0)</button>
           </div>
@@ -1405,8 +1437,8 @@
             <div class="row" style="margin-top:4px;"><span class="label" style="font-size:11px;">unstable cores</span><span class="value" id="valCoreIsotopes" style="font-size:11px;">0 / 1</span></div>
             <div class="map-health-track"><div class="map-health-fill" id="coreIsotopesFill" style="background:var(--ink);"></div></div>
 
+            <button id="btnOptimalPrice" style="width:100%; margin-top:6px; display:none;">set optimal price</button>
             <button id="btnCityBomb" style="width:100%; margin-top:6px;">launch nailbomb</button>
-            <div class="hint">launches down the middle. the Nth nailbomb needs N unstable cores; demand spikes briefly and the market scar permanently raises demand further -- but every bomb drains tao (3 for the first, more for bigger bombs).</div>
           </div>
       </div>
 
@@ -1414,12 +1446,11 @@
           <div class="panel-header">the foundry swarm</div>
           <div class="panel-body">
             <div id="swarmStatus" style="font-weight:bold; text-align:center;">balanced</div>
-            <div class="hint" id="swarmAdvice" style="text-align:center; margin-bottom:6px;"></div>
             <canvas id="swarmCanvas" width="288" height="224" style="width:100%; height:224px; display:block; background:var(--paper); border:1px solid var(--ink); cursor:crosshair;"></canvas>
             <div class="hint" id="swarmDotCounts" style="text-align:center; margin-top:6px;">30 balls</div>
             <div class="hint" id="swarmIronRates" style="text-align:center;">iron: 0 g/s made &middot; 0 g/s used</div>
             <div class="hint" id="swarmUnitCounts" style="text-align:center;">0 makers &middot; 0 breakers</div>
-            <div class="hint" id="swarmCostHint" style="text-align:center;">click a dot to flip it -- converts one machine type into the other (1 breaker = 10 makers)</div>
+            <div class="hint" id="swarmCostHint" style="text-align:center;"></div>
           </div>
       </div>
       </div>

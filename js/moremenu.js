@@ -44,3 +44,9 @@ if (typeof firebase !== "undefined" && firebase.auth) {
   firebase.auth().onAuthStateChanged(updateMoreMenu);
 }
 updateMoreMenu();
+
+// The version number, small and grey at the top middle of the page.
+(function () {
+  var tag = document.getElementById("versionTag");
+  if (tag && typeof GAME_VERSION !== "undefined") tag.textContent = "v" + GAME_VERSION;
+})();

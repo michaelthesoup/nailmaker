@@ -287,10 +287,8 @@ function floorSetHint(text) {
 }
 
 function floorDefaultHint() {
-  if (floorHold) return "placing a " + MODULES[floorHold.type].name + " \u2014 tap a cell (it is placed with its top-left corner there)";
   var m = floorSelectedModule();
-  if (m) return moduleInfoText(m);
-  return "tap a module to select it, or hold one from your stock to place it";
+  return m ? moduleInfoText(m) : ""; // only says something when a module is selected
 }
 
 function fmtPct(x) { return Math.round(x * 1000) / 10 + "%"; }
@@ -415,10 +413,8 @@ function floorRender() {
   var counts = {};
   state.moduleStock.forEach(function (s) { counts[s.type] = (counts[s.type] || 0) + 1; });
   var stockTypes = MODULE_ORDER.filter(function (t) { return counts[t]; });
-  sheetAddHeading(body, "in stock (bought, not placed)");
-  if (stockTypes.length === 0) {
-    sheetAddText(body, "nothing waiting \u2014 buy a module below, then place it on the floor");
-  } else {
+  if (stockTypes.length > 0) {
+    sheetAddHeading(body, "in stock");
     var chips = fl("div", "admin-btns");
     stockTypes.forEach(function (t) {
       var chip = floorBtn(chips, MODULES[t].name + " " + MODULES[t].w + "\u00d7" + MODULES[t].h + " \u00d7" + counts[t], function () {
@@ -460,7 +456,6 @@ function floorRender() {
     body.appendChild(ew);
   }
 
-  sheetAddText(body, "Each module you own makes the next of its type dearer. Selling returns " + Math.round(MODULE_SELL_REFUND * 100) + "% of what you paid; moving a module is free.");
   floorUpdate();
 }
 

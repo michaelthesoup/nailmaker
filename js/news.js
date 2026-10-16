@@ -36,20 +36,28 @@ function newsRender() {
   }
   if (!visible) return;
 
-  var text = newsHeadlines.join(NEWS_SEPARATOR);
-  if (text === newsShownKey) return; // don't restart the scroll for nothing
-  newsShownKey = text;
-
-  el.newsTrack.textContent = text;
-  newsSetSpeed();
+  // One "unit" is every headline followed by a separator, so the end of the last
+  // headline is immediately followed by the start of the first: the strip never runs empty.
+  var unit = newsHeadlines.join(NEWS_SEPARATOR) + NEWS_SEPARATOR;
+  if (unit === newsShownKey) return; // don't restart the scroll for nothing
+  newsShownKey = unit;
+  newsBuildTrack(unit);
 }
 
-// The track is padded by one screen width, so its width is the whole trip.
-function newsSetSpeed() {
-  el.newsTrack.style.animationDuration = Math.max(8, el.newsTrack.scrollWidth / NEWS_SPEED_PX_PER_SEC) + "s";
+// The strip holds two identical halves, each made of enough copies of the unit to be at least as
+// wide as the screen, and slides left by exactly one half and starts over: the swap is invisible,
+// so the headlines flow round forever like a snake chasing its own tail.
+function newsBuildTrack(unit) {
+  var track = el.newsTrack;
+  track.textContent = unit;
+  var unitWidth = Math.max(1, track.scrollWidth);
+  var copies = Math.max(1, Math.ceil(el.newsTicker.clientWidth / unitWidth));
+  var half = new Array(copies + 1).join(unit);
+  track.textContent = half + half;
+  track.style.animationDuration = Math.max(4, (track.scrollWidth / 2) / NEWS_SPEED_PX_PER_SEC) + "s";
 }
 
-window.addEventListener("resize", function () { if (newsShownKey !== null) newsSetSpeed(); });
+window.addEventListener("resize", function () { if (newsShownKey !== null) newsBuildTrack(newsShownKey); });
 
 function newsFetch() {
   if (!currentAuthUser() || typeof db === "undefined") { newsHeadlines = []; newsRender(); return; }

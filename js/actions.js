@@ -19,6 +19,20 @@ setupRepeatButton(el.btnPricePlus, function (steps) {
   render();
 });
 
+el.manualPrice.addEventListener("change", function () {
+  var price = Number(el.manualPrice.value);
+  if (!isFinite(price) || price < PRICE_MIN) {
+    render();
+    return;
+  }
+  state.price = Math.max(PRICE_MIN, round2(price));
+  render();
+});
+
+el.manualPrice.addEventListener("keydown", function (e) {
+  if (e.key === "Enter") el.manualPrice.blur();
+});
+
 el.btnMakeNail.addEventListener("click", function () {
   if (state.ironAmt >= IRON_PER_NAIL) {
     state.ironAmt -= IRON_PER_NAIL;

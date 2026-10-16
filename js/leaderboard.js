@@ -17,7 +17,47 @@
 // ----------------------------------------------------------------
 
 var LOCAL_LEADERBOARD_KEY = "nailMakerLeaderboard";
-var LEADERBOARD_MAX_ENTRIES = 100;
+var LEADERBOARD_MAX_ENTRIES = 100;   // the local (this browser) list
+var LEADERBOARD_ONLINE_MAX = 500;    // rows shown on the online boards
+var EVERYONE_CACHE_MS = 2 * 60 * 1000;
+var everyoneCache = { at: 0, players: null, banned: null };
+
+// Every account (taken from the public profiles) and who is banned from the boards.
+// Cached for a couple of minutes so flicking between tabs doesn't re-read everyone.
+function fetchEveryone() {
+  if (everyoneCache.players && Date.now() - everyoneCache.at < EVERYONE_CACHE_MS) return Promise.resolve(everyoneCache);
+  return Promise.all([
+    db.collection("profiles").limit(1000).get(),
+    db.collection("banned").get().catch(function () { return null; }) // not readable yet -> simply hide no one
+  ]).then(function (res) {
+    var players = [];
+    res[0].forEach(function (doc) {
+      var p = doc.data();
+      players.push({ uid: p.uid || doc.id, name: p.name || "player" });
+    });
+    var banned = {};
+    if (res[1]) res[1].forEach(function (doc) { banned[doc.id] = true; });
+    everyoneCache = { at: Date.now(), players: players, banned: banned };
+    return everyoneCache;
+  });
+}
+
+// The board lists every player with an account: anyone who hasn't ended a run or
+// reincarnated yet simply shows as 0 nails. Kicked players are left off.
+function withEveryone(list) {
+  return fetchEveryone().then(function (all) {
+    var seen = {};
+    list.forEach(function (e) { if (e.uid) seen[e.uid] = true; });
+    var merged = list.filter(function (e) { return !(e.uid && all.banned[e.uid]); });
+    all.players.forEach(function (p) {
+      if (!seen[p.uid] && !all.banned[p.uid]) merged.push({ name: p.name, score: 0, uid: p.uid, karma: 0 });
+    });
+    merged.sort(function (a, b) {
+      return (b.score - a.score) || String(a.name).toLowerCase().localeCompare(String(b.name).toLowerCase());
+    });
+    return merged;
+  }).catch(function () { return list; }); // if profiles can't be read, just show the scores
+}
 
 // ----------------------------------------------------------------
 // Weeks. Week 0 starts on a Monday (1970-01-05 00:00 UTC; the Unix epoch
@@ -58,6 +98,7 @@ function weeklyNoteText() {
 
 function setLeaderboardTab(tab) {
   leaderboardTab = tab;
+  if (tab === "chat" && typeof chatMarkRead === "function") chatMarkRead();
   renderLeaderboard();
 }
 
@@ -197,28 +238,32 @@ function renderLeaderboard() {
     return;
   }
 
+  if (typeof chatOpen === "function") chatOpen();
   if (typeof presenceRefresh === "function") presenceRefresh(false);
   updateLeaderboardTabs();
-  if (chatTab) { // the chat tab: a live listener, on only while this tab is showing
+  if (chatTab) {
     leaderboardWeekShown = null;
     leaderboardRenderToken++;
-    if (typeof chatOpen === "function") chatOpen();
     return;
   }
-  if (typeof chatClose === "function") chatClose();
   if (leaderboardTab === "week") {
     renderWeeklyBoard();
     return;
   }
   leaderboardWeekShown = null;
   el.leaderboardNote.textContent = "global -- top players";
-  db.collection("scores").orderBy("score", "desc").limit(LEADERBOARD_MAX_ENTRIES).get()
+  var allToken = ++leaderboardRenderToken;
+  db.collection("scores").orderBy("score", "desc").limit(LEADERBOARD_ONLINE_MAX).get()
     .then(function (snapshot) {
       var list = [];
       snapshot.forEach(function (doc) {
         list.push(doc.data());
       });
-      renderLeaderboardRows(list);
+      return withEveryone(list);
+    })
+    .then(function (merged) {
+      if (allToken !== leaderboardRenderToken || leaderboardTab !== "all") return;
+      renderLeaderboardRows(merged);
     })
     .catch(function (err) {
       console.error("Failed to load global leaderboard", err);
@@ -234,15 +279,15 @@ function renderWeeklyBoard() {
   el.leaderboardNote.textContent = weeklyNoteText();
 
   db.collection("weeks").doc(weekIdFor(weekIndex)).collection("scores")
-    .orderBy("score", "desc").limit(LEADERBOARD_MAX_ENTRIES).get()
+    .orderBy("score", "desc").limit(LEADERBOARD_ONLINE_MAX).get()
     .then(function (snapshot) {
-      if (token !== leaderboardRenderToken || leaderboardTab !== "week") return;
       var list = [];
       snapshot.forEach(function (doc) { list.push(doc.data()); });
-      renderLeaderboardRows(list);
-      if (list.length === 0) {
-        el.leaderboardList.firstChild.textContent = "no scores yet this week -- finish a life to post the first one";
-      }
+      return withEveryone(list);
+    })
+    .then(function (merged) {
+      if (token !== leaderboardRenderToken || leaderboardTab !== "week") return;
+      renderLeaderboardRows(merged);
     })
     .catch(function (err) {
       if (token !== leaderboardRenderToken) return;

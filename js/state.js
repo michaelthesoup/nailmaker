@@ -7,6 +7,8 @@
 var PRICE_MIN = 0.01;
 var PRICE_STEP = 0.01;
 var PRICE_MAX = 0.08; // also used as the starting price -- a reasonable one, not the rock-bottom floor
+var OPTIMAL_PRICE_SALES_RATIO = 0.9;
+var OPTIMAL_PRICE_MAX_SALES_RATIO = 0.98;
 
 // Marketing, Universal-Paperclips style. Their formula is:
 //   PD = (1 + 0.1*U) * (1.1^M) * Bonuses * (0.8/P)
@@ -16,6 +18,8 @@ var PRICE_MAX = 0.08; // also used as the starting price -- a reasonable one, no
 var MARKETING_BASE_COST = 25;
 var MARKETING_GROWTH = 2.0;
 var MARKETING_LEVEL_MULT = 1.4;
+var GAME_VERSION = "1.0"; // shown as small grey text at the top of the page
+
 var MARKETING_LEVEL_MAX = 100;
 
 function clampMarketingLevel(level) {

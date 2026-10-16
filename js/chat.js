@@ -4,9 +4,8 @@
 // Global chat: a third tab in the leaderboard panel. Only logged-in players
 // can read or write it. Messages live in chat/{id} as
 //   { uid, name, text, createdAt }
-// and the panel shows the latest CHAT_HISTORY of them, live, only while the
-// chat tab is open: the listener is switched off when you leave the tab, so
-// it costs nothing (no reads) the rest of the time.
+// and the panel shows the latest CHAT_HISTORY of them. While signed in, a
+// lightweight listener also tracks new messages for the unread tab count.
 //
 // Plain text only, CHAT_MAX_LEN characters, one message per CHAT_COOLDOWN_MS.
 // The admin account sees a delete and a kick button on every message, plus
@@ -22,6 +21,20 @@ var chatUnsub = null;
 var chatLastSent = 0;
 var chatShown = []; // [{ id, uid, name, text, ms }] oldest first, as drawn
 var chatHintTimer = null;
+var chatUnreadCount = 0;
+var chatSeenMessageIds = Object.create(null);
+
+function chatUpdateUnreadLabel() {
+  if (!el.btnLbChat) return;
+  el.btnLbChat.textContent = chatUnreadCount === 0
+    ? "chat"
+    : "chat (" + (chatUnreadCount > 9 ? "9+" : chatUnreadCount) + ")";
+}
+
+function chatMarkRead() {
+  chatUnreadCount = 0;
+  chatUpdateUnreadLabel();
+}
 
 function chatIsAdmin() {
   return typeof isCheatAllowed === "function" && isCheatAllowed();
@@ -97,23 +110,39 @@ function chatRender() {
 
 function chatOpen() {
   if (chatUnsub || typeof db === "undefined" || !currentAuthUser()) return;
+  chatSeenMessageIds = Object.create(null);
+  var initialSnapshot = true;
   chatUnsub = db.collection("chat").orderBy("createdAt", "desc").limit(CHAT_HISTORY).onSnapshot(function (snap) {
+    var user = currentAuthUser();
+    var countUnread = !initialSnapshot && leaderboardTab !== "chat" && !!user;
+    snap.docChanges().forEach(function (change) {
+      if (change.type !== "added" || chatSeenMessageIds[change.doc.id]) return;
+      chatSeenMessageIds[change.doc.id] = true;
+      if (countUnread && change.doc.data().uid !== user.uid) chatUnreadCount++;
+    });
+    initialSnapshot = false;
+
     var list = [];
     snap.forEach(function (doc) {
       var d = doc.data({ serverTimestamps: "estimate" }); // a message you just sent has no time yet
+      chatSeenMessageIds[doc.id] = true;
       list.push({ id: doc.id, uid: d.uid, name: String(d.name || "player"), text: String(d.text || ""), ms: d.createdAt && d.createdAt.toMillis ? d.createdAt.toMillis() : 0 });
     });
     chatShown = list.reverse(); // newest was first; draw oldest first
+    chatUpdateUnreadLabel();
     chatRender();
   }, function (err) {
     console.error("Chat listener failed", err);
     chatUnsub = null;
+    chatSeenMessageIds = Object.create(null);
     chatSetHint("couldn't load chat -- check the Firestore rules for 'chat'", 8000);
   });
 }
 
 function chatClose() {
   if (chatUnsub) { chatUnsub(); chatUnsub = null; }
+  chatSeenMessageIds = Object.create(null);
+  chatMarkRead();
 }
 
 // ---------------- sending ----------------

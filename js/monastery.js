@@ -172,25 +172,6 @@ function renderMonastery() {
   el.btnForemanAdd.disabled = free <= 0;
   el.btnForemanRemove.disabled = (state.foremen || 0) <= 0;
 
-  var hint;
-  if (state.monasteryHalls === 0) {
-    hint = "Build a hall (it costs funds and a great many unsold nails) to seat monks and foremen, then move members out of the community's meditation to fill it.";
-  } else if (staffed === 0) {
-    hint = "No one is staffing the monastery. Monks steer the tao bonus toward balance; foremen cut the copper factories need. Each is a member who stops making merit.";
-  } else if (state.monks > 0 && taoRateBonus() <= 0) {
-    hint = "Monks steer the tao bonus between makers and breakers, but you hold no tao, so there is nothing to steer yet.";
-  } else if (state.monks > 0) {
-    var gap = Math.abs((state.monkShift || 0) - monasteryTargetLean());
-    hint = gap < 0.01
-      ? "The monks have found the middle way: makers and breakers are in step."
-      : "The monks are walking the middle way \u2014 shifting bonus between makers and breakers.";
-    if (communityLeanDrain() >= 0.05) {
-      hint += " A heavy lean drains community harmony and slows its tao.";
-    }
-  } else {
-    hint = "The foremen are working the factories.";
-  }
-  el.monasteryHint.textContent = hint;
 }
 
 // ---------------- drawing ----------------
