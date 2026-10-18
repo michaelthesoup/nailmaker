@@ -157,18 +157,12 @@ function render() {
   el.yinYangSection.style.display = state.unlockedYinYang ? "" : "none";
   if (el.swarmSection) el.swarmSection.style.display = state.unlockedSwarm ? "" : "none";
 
-  renderGuide();
   renderMap();
   if (typeof renderCity === "function") renderCity();
   if (typeof renderCommunity === "function") renderCommunity();
   if (typeof renderMonastery === "function") renderMonastery();
   if (typeof renderFloor === "function") renderFloor();
   if (typeof newsRender === "function") newsRender();
-}
-
-function renderGuide() {
-  // The guide is now one complete manual -- nothing is gated or "unread".
-  if (el.btnGuide) el.btnGuide.textContent = "guide";
 }
 
 function renderYinYangStatus(label) {

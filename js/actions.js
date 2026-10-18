@@ -148,7 +148,6 @@ el.btnLoad.addEventListener("click", function () {
 
 el.btnGuide.addEventListener("click", function () {
   markGuideRead();
-  renderGuide();
   el.guideOverlay.style.display = "block";
   el.guideOverlay.scrollTop = 0;
 });

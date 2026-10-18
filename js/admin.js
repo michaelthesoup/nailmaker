@@ -14,6 +14,10 @@
 // Kicking a player deletes their leaderboard entries (all-time and the last
 // few weeks) and adds them to the "banned" collection, which the rules use to
 // stop them posting again until you restore them.
+//
+// "sync scores from saves" (players tab) reads every player's cloud save and
+// raises their board entries to the life they are in right now. It needs the
+// admin read on saves and the admin write on scores and weeks in the rules.
 // ----------------------------------------------------------------
 
 var ADMIN_TABS = [["me", "me"], ["players", "players"], ["weekly", "weekly"], ["news", "news"]];
@@ -249,6 +253,85 @@ function adminKickPlayer(uid, name, statusNode, done) {
   });
 }
 
+// Raises every player's leaderboard entries to the nail count of the life they are in right now, read
+// from their cloud save. It only ever RAISES a score (never lowers or removes one) and skips banned players.
+// The weekly board is only touched for players whose save was written this week.
+var ADMIN_SYNC_BATCH = 400; // Firestore allows 500 writes per batch
+
+function adminSyncScores(status) {
+  if (!adminAllowed()) return;
+  if (!window.confirm("Raise everyone's leaderboard score to the nails they have made in their current life?\n\nScores only ever go up, and banned players are skipped. This reads every player's cloud save.")) return;
+  status.textContent = "reading saves...";
+
+  var weekIndex = currentWeekIndex();
+  var weekId = weekIdFor(weekIndex);
+  var weekStart = weekStartMs(weekIndex);
+
+  Promise.all([
+    db.collection("saves").get(),
+    db.collection("scores").get(),
+    db.collection("weeks").doc(weekId).collection("scores").get(),
+    db.collection("profiles").limit(1000).get(),
+    db.collection("banned").get()
+  ]).then(function (res) {
+    var allTime = {}, weekly = {}, names = {}, banned = {};
+    res[1].forEach(function (doc) { allTime[doc.id] = doc.data(); });
+    res[2].forEach(function (doc) { weekly[doc.id] = doc.data(); });
+    res[3].forEach(function (doc) { names[doc.id] = doc.data().name; });
+    res[4].forEach(function (doc) { banned[doc.id] = true; });
+
+    var writes = [];
+    var raisedAll = 0, raisedWeek = 0, skipped = 0;
+
+    res[0].forEach(function (doc) {
+      var uid = doc.id;
+      if (banned[uid]) return;
+      var save = doc.data();
+      var s;
+      try { s = JSON.parse(save.data); } catch (e) { skipped++; return; }
+      var nails = Math.floor(Number(s && s.totalNailsMade));
+      if (!isFinite(nails) || nails <= 0) return;
+      var name = String((allTime[uid] && allTime[uid].name) || names[uid] || "").slice(0, 30);
+      if (!name) { skipped++; return; } // nothing to show on the board without a name
+
+      var karma = Math.max(0, Math.floor(Number(s.karma) || 0)); // karma the life began with, same as an end-run score
+      var timeSec = Math.max(0, Math.floor(Number(s.simTime) || 0));
+      var stamp = firebase.firestore.FieldValue.serverTimestamp();
+
+      var bestAll = allTime[uid] ? allTime[uid].score : -1;
+      if (nails > bestAll) {
+        writes.push({ ref: db.collection("scores").doc(uid), data: { name: name, score: nails, uid: uid, karma: karma, updatedAt: stamp } });
+        raisedAll++;
+      }
+
+      var savedMs = save.updatedAt && save.updatedAt.toMillis ? save.updatedAt.toMillis() : 0;
+      var bestWeek = weekly[uid] ? weekly[uid].score : -1;
+      if (savedMs >= weekStart && nails > bestWeek) {
+        writes.push({
+          ref: db.collection("weeks").doc(weekId).collection("scores").doc(uid),
+          data: { name: name, score: nails, uid: uid, karma: karma, timeSec: timeSec, weekId: weekId, updatedAt: stamp }
+        });
+        raisedWeek++;
+      }
+    });
+
+    var commits = [];
+    for (var i = 0; i < writes.length; i += ADMIN_SYNC_BATCH) {
+      var batch = db.batch();
+      writes.slice(i, i + ADMIN_SYNC_BATCH).forEach(function (w) { batch.set(w.ref, w.data); });
+      commits.push(batch.commit());
+    }
+    return Promise.all(commits).then(function () {
+      status.textContent = "raised " + raisedAll + " all-time and " + raisedWeek + " weekly scores (" + res[0].size + " saves read" +
+        (skipped ? ", " + skipped + " skipped" : "") + ").";
+      if (typeof renderLeaderboard === "function") renderLeaderboard();
+    });
+  }).catch(function (err) {
+    console.error(err);
+    status.textContent = "couldn't sync -- publish the updated Firestore rules (admin read on 'saves', admin write on 'scores' and 'weeks')";
+  });
+}
+
 function adminRestorePlayer(uid, name, statusNode) {
   db.collection("banned").doc(uid).delete().then(function () {
     if (typeof everyoneCache !== "undefined") everyoneCache.at = 0;
@@ -285,6 +368,7 @@ function buildPlayersPanel(p) {
   sheetAddHeading(p, "leaderboards");
   var status = adminStatus(p);
   adminButtons(p, [
+    ["sync scores from saves", function () { adminSyncScores(status); }],
     ["kick off leaderboards", function () {
       if (!adminTarget) { status.textContent = "select a player first"; return; }
       adminKickPlayer(adminTarget.uid, adminTarget.name, status);
