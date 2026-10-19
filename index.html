@@ -521,6 +521,27 @@
   .rc-codes { font-family: "Courier New", Courier, monospace; letter-spacing: 2px; margin-top: 14px; font-size: 13px; }
 
 
+  /* the map of lands shown when you reincarnate (regions.js) */
+  .region-map {
+    font-family: "Courier New", Courier, monospace;
+    font-size: 15px;
+    line-height: 1.2;
+    letter-spacing: 3px;
+    white-space: pre;
+    text-align: center;
+    border: 1px solid var(--ink);
+    padding: 8px 0;
+    margin: 8px 0 4px;
+    overflow-x: auto;
+    user-select: none;
+  }
+  .region-map .sea { opacity: 0.3; }
+  .region-map .land { cursor: pointer; }
+  .region-map .land.hov { background: color-mix(in srgb, var(--paper) 85%, var(--ink) 15%); }
+  .region-map .land.sel { background: var(--ink); color: var(--paper); }
+  .region-names { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin: 8px 0; }
+  .region-name.on { font-weight: bold; text-decoration: underline; }
+
   /* leaderboard tabs, clickable names, and the profile screen */
   .lb-tab-active { font-weight: bold; text-decoration: underline; }
   .lb-name-link { cursor: pointer; text-decoration: underline; }
@@ -798,6 +819,7 @@
     <button id="btnMore">more</button>
     <div id="moreMenu">
       <button id="btnGuide">guide</button>
+      <button id="btnLandMap" style="display:none;">map</button>
       <button id="btnStats" style="display:none;">achievements (0/0)</button>
       <button id="btnPlayers" style="display:none;">players</button>
       <button id="btnAdmin" style="display:none;">admin</button>
@@ -854,7 +876,7 @@
 
       <h2 id="g-layout">2. The screen</h2>
       <h3>Top of the page</h3>
-      <p>The large counter at the top-left shows <em>nails</em>, the total number of nails you have made in this life. It is also shown in the browser tab title. Under it are four buttons: <strong>save</strong> and <strong>load</strong> (local browser saving), <strong>end run</strong> (end this life for good, see section 18) and <strong>more</strong>, which opens a small menu with the <strong>guide</strong> (this page), <strong>achievements</strong> (it appears once you have earned your first one) and <strong>players</strong> (it appears once you are logged in).</p>
+      <p>The large counter at the top-left shows <em>nails</em>, the total number of nails you have made in this life. It is also shown in the browser tab title. Under it are four buttons: <strong>save</strong> and <strong>load</strong> (local browser saving), <strong>end run</strong> (end this life for good, see section 18) and <strong>more</strong>, which opens a small menu with the <strong>guide</strong> (this page), <strong>map</strong> (it appears after your first reincarnation), <strong>achievements</strong> (it appears once you have earned your first one) and <strong>players</strong> (it appears once you are logged in).</p>
       <h3>The three columns</h3>
       <ul>
         <li><strong>Left column:</strong> the business panel (funds, price, demand, marketing, iron), the <em>make nail</em> button and the machinery panel (nail makers, nail breakers, copper, factories). Below them, once you have them, sit the monastery and the factory&sup2; panel.</li>
@@ -995,7 +1017,20 @@
       <h3>Converting tao into karma</h3>
       <p>Every <strong>3 tao</strong> becomes <strong>1 karma</strong>, calculated at the moment you reincarnate (leftover tao that does not make a full 3 is simply lost with the life). The button stays disabled until you hold at least 3 tao. Karma never goes away: it is not spent, it is added to a permanent total that follows you through every future life, and it increases the odds of strong starting bonuses.</p>
       <h3>The ritual</h3>
-      <p>After you confirm, a wall of flickering characters fills the screen. It is mostly noise, and after a short wait it resolves into a report on your next life: its title, the ground you will mine (a map preview, the number and size of its deposits, and how long your starting breakers need to clear it), your starting business, and the market, including your opening price. You then press <em>begin new life</em>.</p>
+      <p>After you confirm, a wall of flickering characters fills the screen. It is mostly noise, and after a short wait it resolves into the title of your next life and a map of seven lands. Choose where you will be reborn (click the map or a name under it) and the rest of the report appears: your starting business, and the market, including your opening price. You can change your mind and pick another land as often as you like. Then press <em>begin new life</em>.</p>
+      <h3>Your land</h3>
+      <p>Every land gives your whole next life one benefit and one drawback. Nothing is handed to you at birth: the effects are simply applied to costs, rates and prices for as long as you live there, and you choose again each time you reincarnate. A first life has no land. You can read your land's effects at any time in the <strong>map</strong> screen from the <em>more</em> menu, which also shows the whole map: click any land to see its effects and which players live there (you need to be logged in to see the players). &ldquo;Machines&rdquo; means nail makers, nail breakers and factories.</p>
+      <table>
+        <tr><th>Land</th><th>Benefit</th><th>Drawback</th></tr>
+        <tr><td>Iron peaks (<code>^</code>)</td><td>factories 15% cheaper</td><td>nails sell for 10% less</td></tr>
+        <tr><td>Copper basin (<code>:</code>)</td><td>factory copper cost 20% lower</td><td>breakers 10% slower</td></tr>
+        <tr><td>Merchant coast (<code>~</code>)</td><td>nails sell for 15% more</td><td>factories 20% dearer</td></tr>
+        <tr><td>Holy land (<code>+</code>)</td><td>yin &amp; yang 15% faster</td><td>factories 15% dearer</td></tr>
+        <tr><td>The capital (<code>#</code>)</td><td>public demand 20% higher</td><td>marketing 25% dearer</td></tr>
+        <tr><td>Old forest (<code>T</code>)</td><td>25% more deposits</td><td>yin &amp; yang 10% slower</td></tr>
+        <tr><td>Frontier (<code>,</code>)</td><td>machines 10% cheaper</td><td>public demand 15% lower</td></tr>
+      </table>
+      <p>Your starting breakers, the map's deposits and your opening price are all worked out for the land you pick, so the report always matches the life you will actually have.</p>
       <h3>Starting bonuses</h3>
       <p>Each bonus is rolled on its own, so one life can be rich in one area and ordinary in another. Nothing is guaranteed. The amounts grow with your total karma, and each roll is randomised to between roughly 60% and 140% of its expected value.</p>
       <table>
@@ -1006,7 +1041,7 @@
         <tr><td>Factories</td><td>Above 15 karma</td><td>The rarest bonus.</td></tr>
         <tr><td>Nail breakers</td><td>Not rolled</td><td>Sized to balance the nail makers you were granted.</td></tr>
       </table>
-      <p>Below a bonus's threshold you can still get a small token amount by luck, but not a real one. Breakers are deliberately not random: the game works out how many are needed to structurally balance your granted makers. Every life starts on a fresh map 1, and karma only adds deposits to it. The opening price is set so that public demand just absorbs what your starting makers produce, so you are not reborn into a workshop whose nails nobody buys. Raise it for more per nail, or lower it to sell faster.</p>
+      <p>Below a bonus's threshold you can still get a small token amount by luck, but not a real one. Breakers are deliberately not random: the game works out how many are needed to structurally balance your granted makers. Every life starts on a fresh map 1, and karma (and some lands) add deposits to it. The opening price is set so that public demand just absorbs what your starting makers produce in your land, so you are not reborn into a workshop whose nails nobody buys. Raise it for more per nail, or lower it to sell faster.</p>
       <h3>Titles and Nirvana</h3>
       <p>A separate roll (five independent rolls whose results rise with karma) decides the title of your next life. Mostly it is flavour, in rising order: <em>a quiet beginning</em>, <em>an encouraging start</em>, <em>an established workshop</em>, <em>a name people know</em>, <em>an empire already in motion</em>, and finally <strong>Nirvana</strong>.</p>
       <p>Nirvana is a permanent achievement. Once reached, it survives everything, including ending a run and losing your karma. It is the game's closest thing to a victory, but it does not stop you: you can keep playing.</p>
@@ -1016,7 +1051,7 @@
       <ul>
         <li><strong>Carried over:</strong> your total karma; Nirvana; your past lives log; your yin and yang bar progress; the factory floor button; and your auto-next-map setting.</li>
         <li><strong>Open from the first second:</strong> the map, machinery, factory&sup2;, yin &amp; yang, the swarm and the skyline. The monastery is not on this list (section 14).</li>
-        <li><strong>Reset:</strong> funds, iron, copper, all machines, marketing, price (replaced by your opening price), the map (a fresh map 1), the community's members and merit, the monastery, the factory floor's modules and size, unstable cores, and nailbomb progress (bombs, fever and the market scar).</li>
+        <li><strong>Reset:</strong> funds, iron, copper, all machines, marketing, price (replaced by your opening price), your land (you choose again), the map (a fresh map 1), the community's members and merit, the monastery, the factory floor's modules and size, unstable cores, and nailbomb progress (bombs, fever and the market scar).</li>
       </ul>
       <p>Reincarnating submits your final nail count to the leaderboard and deletes your old saves, so you cannot load your way back. You are asked to confirm first, because it cannot be undone.</p>
 
@@ -1142,7 +1177,7 @@
       <h3>The news ticker</h3>
       <p>Once you have an account and have unlocked the skyline, a small headline strip scrolls along the very top of the page whenever there is news to share. It runs across the full width of the screen. Hover over it to pause it.</p>
       <h3>Profiles</h3>
-      <p>Every logged-in player has a public profile: when they joined, their records (most nails in one life, total nails, best run, karma, time played and more) and the achievements they have earned. The <strong>players</strong> button opens a search by name, and clicking a name on either leaderboard opens that player's profile. <strong>My profile</strong> shows your own. Profile stats update when a life ends, so the life in progress is not counted until it finishes.</p>
+      <p>Every logged-in player has a public profile: when they joined, their land, their records (most nails in one life, total nails, best run, karma, time played and more) and the achievements they have earned. The <strong>players</strong> button opens a search by name, and clicking a name on either leaderboard opens that player's profile. <strong>My profile</strong> shows your own. Profile stats update when a life ends, so the life in progress is not counted until it finishes.</p>
 
       <h2 id="g-tips">20. Strategy notes</h2>
       <ul>
@@ -1177,6 +1212,7 @@
         <tr><td>Monastery</td><td>Needs a reincarnation and 3 tao, earned each life; hall $10,000 + 100,000 nails, &times;2.5 each, 2 seats; a monk moves the lean 0.2% per second; heavy lean costs up to 75% of harmony; each foreman +10% factory output per copper</td></tr>
         <tr><td>Swarm unlocks</td><td>1 tao held + 1 factory (open from the start after a reincarnation)</td></tr>
         <tr><td>Tao at the start of a new life</td><td>1 (2 from 13 karma, 3 for Nirvana)</td></tr>
+        <tr><td>Lands</td><td>Chosen when you reincarnate; one benefit and one drawback each, between 10% and 25%</td></tr>
         <tr><td>Factory floor</td><td>Unlocks at 10 factories; 5&times;5, Mk2 6&times;6 ($500M + 10M nails), Mk3 7&times;7 ($20B + 1B nails + 100 t copper); modules 1.5&times; dearer each; sell for 75%; prices start at battery $800,000, copper press $2M, blueprint table $5M, maker or breaker die $10M, cooler $1.5M</td></tr>
         <tr><td>Swarm flip</td><td>Converts machines at 1 breaker = 10 makers, no loss; no copper; 0.25 s cooldown</td></tr>
         <tr><td>Collapse</td><td>Imbalance &ge; 0.5 (3-to-1) for 1.5 s; yields 1 unstable core; unlocks the skyline</td></tr>
@@ -1220,6 +1256,14 @@
     <div class="sheet-title">admin</div>
     <div id="adminBody"></div>
     <div class="sheet-actions"><button id="btnAdminClose">close</button></div>
+  </div>
+</div>
+
+<div id="landMapOverlay" class="sheet-overlay">
+  <div class="sheet-box">
+    <div class="sheet-title">map</div>
+    <div id="landMapBody"></div>
+    <div class="sheet-actions"><button id="btnLandMapClose">close</button></div>
   </div>
 </div>
 
@@ -1540,6 +1584,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
 <script src="js/firebase-config.js"></script>
 
+<script src="js/regions.js"></script>
 <script src="js/state.js"></script>
 <script src="js/formulas.js"></script>
 <script src="js/dom.js"></script>
@@ -1559,6 +1604,7 @@
 <script src="js/lifetime.js"></script>
 <script src="js/achievements.js"></script>
 <script src="js/profiles.js"></script>
+<script src="js/landmap.js"></script>
 <script src="js/moremenu.js"></script>
 <script src="js/medallions.js"></script>
 <script src="js/gifts.js"></script>

@@ -67,7 +67,7 @@ function monasteryHallNailCost() {
 function monasteryTargetLean() {
   var P = taoRateBonus();
   var A = state.nailMakers * NAILMAKER_RATE * IRON_PER_NAIL;
-  var B = state.breakers * BREAKER_INTAKE_RATE * activeIronTileCount();
+  var B = state.breakers * BREAKER_INTAKE_RATE * regionMult("breakerSpeed") * activeIronTileCount();
   if (P <= 0 || A <= 0 || B <= 0) return 0;
   var s = (B - A) * (1 + P) / (P * (A + B));
   return Math.max(-1, Math.min(1, s));

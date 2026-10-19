@@ -111,7 +111,7 @@ function cloudSaveLifetime() {
     stats: lifetime,
     achievementCount: Object.keys(lifetime.achievements).length,
     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-  }).catch(function (err) {
+  }, { merge: true }).catch(function (err) { // merge: the profile also holds the player's land (cloudsave.js), which this must not erase
     console.warn("Profile sync failed -- check the Firestore rules for the 'profiles' collection", err);
   });
 }

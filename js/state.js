@@ -277,14 +277,19 @@ function depositCapacityForMap(mapIndex) {
 // How many deposits a map gets, from banked karma. Reads the live game
 // state; before it exists (the very first defaultState() call) or for a
 // karma-less player it's just the base count.
-function mapDepositCount() {
+// regionId (optional) is the land to count for; the reincarnation screen passes the one being looked at.
+function mapDepositCount(regionId) {
   var karma = (typeof state !== "undefined" && state && typeof state.karma === "number") ? state.karma : 0;
-  if (karma < 1) return DEPOSITS_PER_MAP;
-  var extra = DEPOSITS_FIRST_KARMA_BONUS + Math.floor((karma - 1) * DEPOSITS_PER_EXTRA_KARMA);
-  return Math.min(DEPOSITS_MAX, DEPOSITS_PER_MAP + extra);
+  var count = DEPOSITS_PER_MAP;
+  if (karma >= 1) {
+    var extra = DEPOSITS_FIRST_KARMA_BONUS + Math.floor((karma - 1) * DEPOSITS_PER_EXTRA_KARMA);
+    count = Math.min(DEPOSITS_MAX, DEPOSITS_PER_MAP + extra);
+  }
+  var landMult = typeof regionMult === "function" ? regionMult("deposits", regionId) : 1;
+  return Math.max(1, Math.min(DEPOSITS_MAX, Math.round(count * landMult)));
 }
 
-function generateMapTiles(mapIndex) {
+function generateMapTiles(mapIndex, regionId) {
   var rand = mulberry32(mapIndex * 7919 + 13);
   var capacity = depositCapacityForMap(mapIndex);
   var tiles = [];
@@ -298,7 +303,7 @@ function generateMapTiles(mapIndex) {
 
   var placed = 0;
   var attempts = 0;
-  var depositTarget = mapDepositCount();
+  var depositTarget = mapDepositCount(regionId);
   while (placed < depositTarget && attempts < 1000) {
     attempts++;
     var r = Math.floor(rand() * MAP_ROWS);
@@ -437,12 +442,12 @@ var CORE_ISOTOPES_BASE = 1;
 // sustained imbalance collapses the swarm and banks one unstable core.
 // ----------------------------------------------------------------
 var SWARM_MAJORITY_TOLERANCE = 0.05; // matches YINYANG_BALANCE_TOLERANCE's definition of real parity
-var SWARM_MAJORITY_SPEED_MULT = 1.8; // TESTING: temporarily disabled -- all dots move at the same base speed regardless of majority/minority. Restore to something like 2.4 once the rest of the loop is confirmed to feel right.
+var SWARM_MAJORITY_SPEED_MULT = 1; // TESTING: temporarily disabled -- all dots move at the same base speed regardless of majority/minority. Restore to something like 2.4 once the rest of the loop is confirmed to feel right.
 var SWARM_COLLAPSE_IMBALANCE_THRESHOLD = 0.5; // 0.5 = a 3-to-1 split between the two sides (0.43 would be 2.5-to-1, 0.33 is 2-to-1). Raised from 0.32 (~2-to-1) to make collapse a real commitment. Old note:  // |imbalance| has to cross this -- eased down from 0.85 (nearly every dot one color), then from 0.4 (which was still easy to hover just under during active play). Now a clear ~2-to-1 majority is enough.
 // All dots move faster the further out of balance you are: speed x (1 + this * |imbalance|).
 // At the collapse line (0.5) that is 1.5x; at total one-sided imbalance it is 2x.
 var SWARM_IMBALANCE_SPEED_BONUS = 1;
-var SWARM_COLLAPSE_SUSTAIN_SEC = 5; // ...and stay there this long (the grey-out) before it actually collapses
+var SWARM_COLLAPSE_SUSTAIN_SEC = 1.5; // ...and stay there this long (the grey-out) before it actually collapses
 var SWARM_COLLAPSE_FUEL_GAIN = 1; // unstable core banked per collapse
 
 function defaultState() {
@@ -498,6 +503,7 @@ function defaultState() {
     tao: 0, // tao points -- earned by Yin/Yang laps or rare reincarnation awards
     karma: 0, // permanent across reincarnations -- carried over explicitly, never wiped by a reset
     nirvanaAchieved: false, // a true permanent achievement -- survives even suicide, unlike karma
+    region: "",             // the land chosen at reincarnation (see regions.js); empty for a first life
 
     // Production ticks every frame (fast, smooth climb). Selling and
     // breaker nail-consumption settle in chunks rather than

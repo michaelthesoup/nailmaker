@@ -25,6 +25,22 @@ function deleteAllSaves() {
   }
 }
 
+// The land you live in is public (profiles.region, shown on the map screen). It is written from here,
+// with the save, because by now the live game is the real one: right after logging in on a new device the
+// game is still blank until the cloud save has loaded, and a blank game must not overwrite your land.
+// Only written when it differs from what this session last wrote.
+var lastSyncedRegion = null;
+
+function syncRegionToProfile(user) {
+  var region = state.region || "";
+  if (region === lastSyncedRegion) return;
+  lastSyncedRegion = region;
+  db.collection("profiles").doc(user.uid).set({ region: region }, { merge: true }).catch(function (err) {
+    lastSyncedRegion = null; // try again next time
+    console.warn("Couldn't save your land to your profile", err);
+  });
+}
+
 function cloudSaveState() {
   var user = currentAuthUser();
   if (!user) return;
@@ -35,6 +51,7 @@ function cloudSaveState() {
   }).catch(function (err) {
     console.error("Cloud autosave failed", err);
   });
+  syncRegionToProfile(user);
 }
 
 function cloudLoadState(uid) {
@@ -68,6 +85,7 @@ function stopCloudAutosave() {
 }
 
 firebase.auth().onAuthStateChanged(function (user) {
+  lastSyncedRegion = null; // a different account, or a fresh login: write the land again
   if (user) {
     cloudLoadState(user.uid).then(function (data) {
       if (data) {

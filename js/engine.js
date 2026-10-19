@@ -81,8 +81,9 @@ function tick(dt, skipRender) {
     if (soldPerSec > 0 && state.unsold > 0) {
       var sold = Math.min(state.unsold, soldPerSec * settleInterval);
       state.unsold -= sold;
-      state.funds += sold * state.price;
-      state.totalEarned += sold * state.price;
+      var revenue = sold * state.price * regionMult("saleMult"); // some lands pay more or less per nail
+      state.funds += revenue;
+      state.totalEarned += revenue;
     }
   }
 

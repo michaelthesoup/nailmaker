@@ -30,7 +30,7 @@ var PRICE_DEMAND_SENSITIVITY = 1;
 
 function publicDemandPD() {
   if (state.price <= 0) return 0;
-  return marketingMultiplier() * Math.pow(0.8 / state.price, PRICE_DEMAND_SENSITIVITY) * yinYangPDMultiplier() * cityFeverMult();
+  return marketingMultiplier() * Math.pow(0.8 / state.price, PRICE_DEMAND_SENSITIVITY) * yinYangPDMultiplier() * cityFeverMult() * regionMult("demandMult");
 }
 
 function avgNailsSoldPerSec() {
@@ -55,7 +55,7 @@ function optimalPriceForCurrentProduction() {
   var targetDemand = targetSales <= salesAtDemand100
     ? Math.pow(targetSales / 0.07, 1 / (1 + DEMAND_CURVE_EXPONENT))
     : Math.pow(targetSales / 7, 1 / DEMAND_CURVE_EXPONENT);
-  var demandMultiplier = marketingMultiplier() * yinYangPDMultiplier() * cityFeverMult();
+  var demandMultiplier = marketingMultiplier() * yinYangPDMultiplier() * cityFeverMult() * regionMult("demandMult");
   var price = 0.8 * Math.pow(demandMultiplier / targetDemand, 1 / PRICE_DEMAND_SENSITIVITY);
   if (!isFinite(price) || price >= Number.MAX_VALUE / 100) return Number.MAX_VALUE;
 
@@ -73,16 +73,16 @@ function optimalPriceForCurrentProduction() {
 }
 
 function priceForMarketing() {
-  return MARKETING_BASE_COST * Math.pow(MARKETING_GROWTH, state.marketingLevel);
+  return MARKETING_BASE_COST * Math.pow(MARKETING_GROWTH, state.marketingLevel) * regionMult("marketingCost");
 }
 
 function nailMakerCostEffective() {
-  return NAILMAKER_COST;
+  return NAILMAKER_COST * regionMult("machineCost");
 }
 
 function factoryBuildCostEffective() {
   var discount = typeof moduleFactoryDiscount === "function" ? moduleFactoryDiscount() : 0; // blueprint tables (floor.js)
-  return FACTORY_BUILD_COST_FUNDS * Math.pow(FACTORY_COST_GROWTH, state.factories) * (1 - discount);
+  return FACTORY_BUILD_COST_FUNDS * Math.pow(FACTORY_COST_GROWTH, state.factories) * (1 - discount) * regionMult("factoryCost") * regionMult("machineCost");
 }
 
 function factorySquaredBuildCostEffective() {
@@ -108,7 +108,7 @@ function factoryCopperCostEffective() {
   var f = factoryMakerFraction();
   var base = FACTORY_COST_BREAKER_SIDE_COPPER * (1 - f) + FACTORY_COST_MAKER_SIDE_COPPER * f;
   var save = typeof moduleCopperSave === "function" ? moduleCopperSave() : 0; // copper presses (floor.js)
-  return base / (1 + foremanOutputBonus()) * (1 - save);
+  return base / (1 + foremanOutputBonus()) * (1 - save) * regionMult("copperCost");
 }
 
 function factorySquaredCopperCostEffective() {
@@ -116,7 +116,7 @@ function factorySquaredCopperCostEffective() {
 }
 
 function breakerBuildCostEffective() {
-  return BREAKER_BUILD_COST_FUNDS;
+  return BREAKER_BUILD_COST_FUNDS * regionMult("machineCost");
 }
 
 function nailMakerRateEffective() {
@@ -126,7 +126,7 @@ function nailMakerRateEffective() {
 
 function breakerIntakeEffective() {
   if (!state.breakersOn) return 0;
-  return BREAKER_INTAKE_RATE * (1 + breakerRateBonus());
+  return BREAKER_INTAKE_RATE * (1 + breakerRateBonus()) * regionMult("breakerSpeed");
 }
 
 // Theoretical rates, computed straight from current state -- always
@@ -328,7 +328,7 @@ function yinYangTickAmount() {
 }
 
 function yinYangTickInterval() {
-  return 1; // settles once per real second -- no speed upgrades anymore
+  return 1 / regionMult("yinYangSpeed"); // once per real second, a little faster or slower in some lands (regions.js)
 }
 
 function yinYangStatusLabel() {

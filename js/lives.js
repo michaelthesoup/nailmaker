@@ -151,6 +151,8 @@ function showEndScreen(opts) {
       sheetAddText(body, opts.ritual.taoAward ? "+" + opts.ritual.taoAward + " tao awarded" : "no tao awarded", "sheet-sub");
       if (opts.ritual.world) {
         sheetAddHeading(body, "the world you were reborn into");
+        var land = typeof regionById === "function" ? regionById(opts.ritual.region) : null;
+        if (land) sheetAddRows(body, [["land", land.name]]);
         sheetAddRows(body, worldSummaryRows(opts.ritual.world));
         sheetAddRows(body, marketSummaryRows(opts.ritual.world));
       }

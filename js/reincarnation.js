@@ -10,11 +10,12 @@
 //    flickering wall of characters either way -- almost all noise,
 //    resolving into your fate once it settles.
 //
-// Being reborn starts a fresh map 1 (karma only adds deposits to it) and
-// a small established business whose opening price is matched to the
-// market so it actually runs. The main parts of the game are already unlocked
-// (the monastery still needs 3 tao, see monastery.js). The
-// reveal shows all of it before you commit.
+// Being reborn means choosing a land (regions.js), then starting a fresh map 1
+// (karma only adds deposits to it) and a small established business whose
+// opening price is matched to the market and the land so it actually runs.
+// The main parts of the game are already unlocked (the monastery still needs
+// 3 tao, see monastery.js). The reveal shows the land map first, then the
+// rest of your new life once a land is chosen, before you commit.
 // ----------------------------------------------------------------
 
 var RC_GRID_ROWS = 16;
@@ -37,35 +38,35 @@ var rc = null; // active ritual state while the overlay is open
 // workshop at the first-life price of $0.08 with demand nowhere near
 // matching your machines. (Same maths as publicDemandPD/avgNailsSoldPerSec,
 // evaluated for the new life's tao and marketing.)
-function rebirthDemandAt(price, marketingLevel, tao) {
-  var mult = Math.pow(MARKETING_LEVEL_MULT, marketingLevel) * (1 + Math.max(0, tao) * YINYANG_PD_BONUS_PER_LEVEL);
+function rebirthDemandAt(price, marketingLevel, tao, regionId) {
+  var mult = Math.pow(MARKETING_LEVEL_MULT, marketingLevel) * (1 + Math.max(0, tao) * YINYANG_PD_BONUS_PER_LEVEL) * regionMult("demandMult", regionId);
   var pd = mult * Math.pow(0.8 / price, PRICE_DEMAND_SENSITIVITY);
   return { pd: pd, sold: Math.min(1, pd / 100) * 7 * Math.pow(pd, DEMAND_CURVE_EXPONENT) };
 }
 
-function rebirthMatchedPrice(makers, marketingLevel, tao) {
+function rebirthMatchedPrice(makers, marketingLevel, tao, regionId) {
   if (makers <= 0) return PRICE_MAX;
   var production = makers * NAILMAKER_RATE * (1 + Math.max(0, tao) * TAO_RATE_BONUS_PER_POINT);
   var lo = PRICE_MIN, hi = 10;
-  if (rebirthDemandAt(lo, marketingLevel, tao).sold < production) return PRICE_MIN; // can't keep up even at the floor
+  if (rebirthDemandAt(lo, marketingLevel, tao, regionId).sold < production) return PRICE_MIN; // can't keep up even at the floor
   for (var i = 0; i < 50; i++) {
     var mid = (lo + hi) / 2;
-    if (rebirthDemandAt(mid, marketingLevel, tao).sold >= production) lo = mid; else hi = mid;
+    if (rebirthDemandAt(mid, marketingLevel, tao, regionId).sold >= production) lo = mid; else hi = mid;
   }
   return Math.max(PRICE_MIN, Math.floor(lo * 100) / 100);
 }
 
 // Builds the new life's world for a rolled result: breakers sized to feed the
 // granted makers on a fresh map 1 (karma only adds deposits), and the opening
-// market. Called with state.karma already raised to the new total.
-function planWorld(result, taoAward, granted) {
+// market, for the chosen land (regionId). Called with state.karma already raised to the new total.
+function planWorld(result, taoAward, granted, regionId) {
   var mult = 1 + taoAward * TAO_RATE_BONUS_PER_POINT; // mirrors productionRateBonusMultiplier() for the tao the NEW life starts with
   var makerRate = NAILMAKER_RATE * mult;
-  var breakerRate = BREAKER_INTAKE_RATE * mult;
+  var breakerRate = BREAKER_INTAKE_RATE * mult * regionMult("breakerSpeed", regionId);
   var ironDemand = granted.nailMakers * makerRate * IRON_PER_NAIL;
 
   var mapIndex = 1;
-  var tiles = generateMapTiles(mapIndex);
+  var tiles = generateMapTiles(mapIndex, regionId);
   var ironTiles = 0, copperTiles = 0;
   for (var r = 0; r < MAP_ROWS; r++) for (var c = 0; c < MAP_COLS; c++) {
     if (tiles[r][c].remaining > 0) { if (tiles[r][c].type === "i") ironTiles++; else copperTiles++; }
@@ -79,8 +80,8 @@ function planWorld(result, taoAward, granted) {
   var totalOre = mapRemainingWeight(tiles);
   var clearSec = breakers > 0 ? capacity / (breakers * breakerRate) : 0;
 
-  var startPrice = rebirthMatchedPrice(granted.nailMakers, granted.marketingLevel, taoAward);
-  var demand = rebirthDemandAt(startPrice, granted.marketingLevel, taoAward);
+  var startPrice = rebirthMatchedPrice(granted.nailMakers, granted.marketingLevel, taoAward, regionId);
+  var demand = rebirthDemandAt(startPrice, granted.marketingLevel, taoAward, regionId);
   var production = granted.nailMakers * makerRate;
 
   return {
@@ -90,7 +91,7 @@ function planWorld(result, taoAward, granted) {
     breakers: breakers,
     startPrice: startPrice, demandPct: Math.round(demand.pd),
     soldPerSec: Math.min(demand.sold, production),
-    revenuePerSec: Math.min(demand.sold, production) * startPrice,
+    revenuePerSec: Math.min(demand.sold, production) * startPrice * regionMult("saleMult", regionId),
     production: production
   };
 }
@@ -125,7 +126,7 @@ function startReincarnation() {
   var confirmed = window.confirm(
     "Be reincarnated?\n\n" +
     "You'll gain " + karmaAvailable + " karma (" + newTotalKarma + " total, forever). " +
-    "This life ends and you are reborn with a fresh map (karma adds more deposits to it), the game's main parts already unlocked, and a head start that grows with karma. " +
+    "This life ends and you are reborn in a land of your choosing, on a fresh map (karma adds more deposits to it), with the game's main parts already unlocked and a head start that grows with karma. " +
     "Every starting bonus is rolled independently and nothing is guaranteed.\n\n" +
     "This can't be undone."
   );
@@ -157,16 +158,17 @@ function runReincarnationRitual(result) {
   };
 
   var taoAward = reincarnationTaoAward(result, state.karma);
-  var world = planWorld(result, taoAward, granted);
-  granted.breakers = world.breakers;
+  granted.breakers = 0; // sized once a land is chosen (rcChooseRegion), since the land changes the map and the breakers
 
   rc = {
+    result: result,
     title: result.title,
     granted: granted,
     taoAward: taoAward,
-    world: world,
-    newMapIndex: world.mapIndex,
-    newMapTiles: world.tiles,
+    region: "",
+    world: null,
+    newMapIndex: 1,
+    newMapTiles: null,
     cells: [],
     flickerTimer: null
   };
@@ -244,17 +246,7 @@ function rcAddBlock(parent, className, index) {
   return div;
 }
 
-function rcMapPreview(tiles) {
-  var lines = [];
-  for (var r = 0; r < MAP_ROWS; r++) {
-    var line = "";
-    for (var c = 0; c < MAP_COLS; c++) line += tiles[r][c].remaining > 0 ? tiles[r][c].type : ".";
-    lines.push(line);
-  }
-  return lines.join("\n");
-}
-
-// The noise settles and the grid becomes a report on the world you are reborn into.
+// The noise settles into the title of your next life and the map of lands to choose from.
 function resolveRitual() {
   clearInterval(rc.flickerTimer);
   var grid = el.reincarnateGrid;
@@ -272,23 +264,65 @@ function resolveRitual() {
   heading.textContent = title.isNirvana ? "NIRVANA" : "your next life begins with " + title.label;
   head.appendChild(heading);
 
-  var uni = rcAddBlock(grid, "", n++);
-  var nm = document.createElement("div"); nm.className = "rc-universe"; nm.textContent = "a new world";
-  var fl = document.createElement("div"); fl.className = "rc-flavor";
-  fl.textContent = "The same hands, fresh ground. Your karma has put more deposits in it.";
-  uni.appendChild(nm); uni.appendChild(fl);
+  var land = rcAddBlock(grid, "rc-card", n++);
+  sheetAddHeading(land, "choose your land");
+  var mapBox = document.createElement("div");
+  land.appendChild(mapBox);
+  rc.landInfo = document.createElement("div");
+  land.appendChild(rc.landInfo);
+  rc.grid = grid;
+  rc.mapApi = buildRegionMap(mapBox, rcChooseRegion);
+}
 
-  var ground = rcAddBlock(grid, "rc-card", n++);
-  sheetAddHeading(ground, "the ground");
-  var pre = document.createElement("div");
-  pre.className = "rc-map";
-  pre.textContent = rcMapPreview(u.tiles);
-  ground.appendChild(pre);
-  sheetAddText(ground, "i = iron deposit, c = copper deposit. Every deposit is " + fmtWeight(u.capacity) + " deep.");
-  sheetAddRows(ground, worldSummaryRows(u));
+// Picking a land sizes the rest of the new life for it (map, breakers, opening price) and shows
+// it. The first pick fades the rest of the report in; later picks just rewrite it. The begin
+// button only appears once a land is chosen.
+function rcChooseRegion(id) {
+  if (!rc || !regionById(id)) return;
+  var first = !rc.region;
+  rc.region = id;
+  rc.mapApi.select(id);
 
-  var biz = rcAddBlock(grid, "rc-card", n++);
-  sheetAddHeading(biz, "your business");
+  var region = regionById(id);
+  rc.landInfo.innerHTML = "";
+  var nameLine = document.createElement("div");
+  nameLine.style.fontWeight = "bold";
+  nameLine.style.marginTop = "6px";
+  nameLine.textContent = region.name;
+  rc.landInfo.appendChild(nameLine);
+  regionEffectLines(region).forEach(function (line) {
+    var d = document.createElement("div");
+    d.textContent = (line[1] ? "+ " : "\u2212 ") + line[0];
+    rc.landInfo.appendChild(d);
+  });
+
+  rc.world = planWorld(rc.result, rc.taoAward, rc.granted, id);
+  rc.granted.breakers = rc.world.breakers;
+  rc.newMapIndex = rc.world.mapIndex;
+  rc.newMapTiles = rc.world.tiles;
+
+  if (first) {
+    rc.bizBox = rcAddBlock(rc.grid, "rc-card", 0);
+    rc.mktBox = rcAddBlock(rc.grid, "rc-card", 1);
+    rc.codesBox = rcAddBlock(rc.grid, "rc-codes", 2);
+  }
+  rcRenderDependent();
+
+  if (first) {
+    rc.revealTimer = setTimeout(function () {
+      el.reincarnateStatus.textContent = "";
+      el.btnReincarnateConfirm.style.display = "inline-block";
+      el.reincarnateOverlay.scrollTop = el.reincarnateOverlay.scrollHeight;
+    }, 3 * RC_BLOCK_STAGGER_SEC * 1000 + 300);
+  }
+}
+
+// The parts of the report that depend on the land: your business and the market.
+function rcRenderDependent() {
+  var g = rc.granted, u = rc.world;
+
+  rc.bizBox.innerHTML = "";
+  sheetAddHeading(rc.bizBox, "your business");
   var rows = [];
   if (g.nailMakers) rows.push(["nail makers", "+" + g.nailMakers]);
   if (g.breakers) rows.push(["nail breakers", "+" + g.breakers + " (sized to feed your makers)"]);
@@ -298,22 +332,15 @@ function resolveRitual() {
   if (g.ironAmt) rows.push(["iron", "+" + fmtWeight(g.ironAmt)]);
   if (g.copperAmt) rows.push(["copper", "+" + fmtWeight(g.copperAmt)]);
   rows.push(["tao", rc.taoAward ? "+" + rc.taoAward : "none this life"]);
-  sheetAddRows(biz, rows);
-  if (rows.length === 1) sheetAddText(biz, "Nothing but your hands this time. The ground is yours again, with more deposits than before.");
+  sheetAddRows(rc.bizBox, rows);
+  if (rows.length === 1) sheetAddText(rc.bizBox, "Nothing but your hands this time. The ground is yours again, with more deposits than before.");
 
-  var mkt = rcAddBlock(grid, "rc-card", n++);
-  sheetAddHeading(mkt, "the market");
-  sheetAddRows(mkt, marketSummaryRows(u));
-  if (g.nailMakers > 0) sheetAddText(mkt, "Priced so public demand just absorbs what your makers produce. Raise it for more per nail, lower it to sell faster.");
+  rc.mktBox.innerHTML = "";
+  sheetAddHeading(rc.mktBox, "the market");
+  sheetAddRows(rc.mktBox, marketSummaryRows(u));
+  if (g.nailMakers > 0) sheetAddText(rc.mktBox, "Priced so public demand just absorbs what your makers produce. Raise it for more per nail, lower it to sell faster.");
 
-  var codes = rcAddBlock(grid, "rc-codes", n++);
-  codes.textContent = buildGrantedCodeSummary(g);
-
-  rc.revealTimer = setTimeout(function () {
-    el.reincarnateStatus.textContent = "";
-    el.btnReincarnateConfirm.style.display = "inline-block";
-    el.reincarnateOverlay.scrollTop = el.reincarnateOverlay.scrollHeight;
-  }, n * RC_BLOCK_STAGGER_SEC * 1000 + 300);
+  rc.codesBox.textContent = buildGrantedCodeSummary(g);
 }
 
 function buildGrantedCodeSummary(granted) {
@@ -344,6 +371,7 @@ el.btnReincarnate.addEventListener("click", startReincarnation);
 
 el.btnReincarnateConfirm.addEventListener("click", function () {
   var ritual = rc;
+  if (!ritual || !ritual.region) return; // a land has to be chosen first
   rc = null;
   el.reincarnateOverlay.style.display = "none";
 
@@ -379,6 +407,7 @@ el.btnReincarnateConfirm.addEventListener("click", function () {
 
   deleteAllSaves();
   state = defaultState();
+  state.region = ritual.region; // the land chosen in the ritual (regions.js)
   state.pastLives = pastLivesCarried;
   state.karma = karmaCarried;
   state.nirvanaAchieved = nirvanaCarried;

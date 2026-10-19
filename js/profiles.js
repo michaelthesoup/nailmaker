@@ -167,7 +167,7 @@ function renderProfile(d, uid) {
   sheetAddText(body, "joined " + fmtDate(joined) + (me && me.uid === uid ? " \u00b7 this is you" : ""), "sheet-sub");
 
   sheetAddHeading(body, "records");
-  sheetAddRows(body, [
+  var records = [
     ["most nails in one life", fmtInt(stats.bestLifeNails)],
     ["total nails made", fmtInt(stats.totalNails)],
     ["best run (all its lives)", fmtInt(stats.bestRunNails)],
@@ -179,7 +179,10 @@ function renderProfile(d, uid) {
     ["nailbombs dropped", String(stats.nailbombs)],
     ["deepest map", String(stats.deepestMap)],
     ["Nirvana reached", stats.nirvanaLives > 0 ? "yes" : "not yet"]
-  ]);
+  ];
+  var land = typeof regionById === "function" ? regionById(d.region) : null;
+  if (land) records.unshift(["land", land.name]);
+  sheetAddRows(body, records);
 
   var medalBox = document.createElement("div");
   body.appendChild(medalBox);

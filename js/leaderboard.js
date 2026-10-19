@@ -34,7 +34,7 @@ function fetchEveryone() {
     var players = [];
     res[0].forEach(function (doc) {
       var p = doc.data();
-      players.push({ uid: p.uid || doc.id, name: p.name || "player" });
+      players.push({ uid: p.uid || doc.id, name: p.name || "player", region: p.region || "" });
     });
     var banned = {};
     if (res[1]) res[1].forEach(function (doc) { banned[doc.id] = true; });
