@@ -191,6 +191,7 @@ function adminSelectTarget(uid, name) {
   adminPanels.players.results.innerHTML = "";
   adminPanels.players.search.value = "";
   adminPanels.players.status.textContent = "";
+  adminRefreshMedalList();
   db.collection("banned").doc(uid).get().then(function (doc) {
     if (adminTarget && adminTarget.uid === uid && doc.exists) {
       adminPanels.players.status.textContent = adminTarget.name + " is currently banned from the leaderboards.";
@@ -342,6 +343,70 @@ function adminRestorePlayer(uid, name, statusNode) {
   });
 }
 
+// ---- medallions given by hand (any player, any time) ----
+// A gift medallion is its own document with weekId "gift", so it never gets mixed up with a week's top three
+// (the weekly tab only looks at documents for that week). It shows on the profile and as a gold dot on the boards.
+function adminRefreshMedalList() {
+  var box = adminPanels.players.medalBox;
+  if (!box) return;
+  box.innerHTML = "";
+  if (!adminTarget) return;
+  var target = adminTarget;
+  db.collection("medallions").where("uid", "==", target.uid).get().then(function (snap) {
+    if (!adminTarget || adminTarget.uid !== target.uid) return;
+    box.innerHTML = "";
+    if (snap.empty) { sheetAddText(box, target.name + " has no medallions"); return; }
+    var docs = [];
+    snap.forEach(function (doc) { docs.push({ id: doc.id, d: doc.data() }); });
+    docs.sort(function (x, y) { return (y.d.weekIndex - x.d.weekIndex) || (x.d.rank - y.d.rank); });
+    docs.forEach(function (item) {
+      var row = adminMake("div", "row");
+      var label = MEDALLION_NAMES[item.d.rank] + " \u00b7 " + (item.d.gift ? "special award" : medallionWeekLabel(item.d.weekIndex));
+      row.appendChild(adminMake("span", "label", label));
+      var rm = adminMake("button", "", "remove");
+      rm.addEventListener("click", function () { adminRemoveMedallion(item.id, label); });
+      row.appendChild(rm);
+      box.appendChild(row);
+    });
+  }).catch(function (err) {
+    console.error(err);
+    sheetAddText(box, "couldn't read medallions -- check the Firestore rules for 'medallions'");
+  });
+}
+
+function adminGiveMedallion(rank, status) {
+  if (!adminTarget) { status.textContent = "select a player first"; return; }
+  var target = adminTarget;
+  if (!window.confirm("Give " + target.name + " a " + MEDALLION_NAMES[rank] + " medallion?")) return;
+  db.collection("medallions").add({
+    weekId: "gift", weekIndex: currentWeekIndex(), rank: rank, medal: MEDALLION_NAMES[rank],
+    uid: target.uid, name: target.name, score: 0, karma: 0, gift: true,
+    awardedAt: firebase.firestore.FieldValue.serverTimestamp()
+  }).then(function () {
+    if (typeof everyoneCache !== "undefined") everyoneCache.at = 0; // the boards should re-read who holds medallions
+    status.textContent = "gave " + target.name + " a " + MEDALLION_NAMES[rank] + " medallion (they see a notice next time they log in).";
+    adminRefreshMedalList();
+    if (typeof renderLeaderboard === "function") renderLeaderboard();
+  }).catch(function (err) {
+    console.error(err);
+    status.textContent = "couldn't give it -- check the Firestore rules for 'medallions'";
+  });
+}
+
+function adminRemoveMedallion(id, label) {
+  var status = adminPanels.players.status;
+  if (!window.confirm("Remove the " + label + " from " + (adminTarget ? adminTarget.name : "this player") + "?")) return;
+  db.collection("medallions").doc(id).delete().then(function () {
+    if (typeof everyoneCache !== "undefined") everyoneCache.at = 0;
+    status.textContent = "removed the " + label + ".";
+    adminRefreshMedalList();
+    if (typeof renderLeaderboard === "function") renderLeaderboard();
+  }).catch(function (err) {
+    console.error(err);
+    status.textContent = "couldn't remove it -- check the Firestore rules for 'medallions'";
+  });
+}
+
 function buildPlayersPanel(p) {
   sheetAddHeading(p, "find a player");
   var targetLine = adminMake("div", "hint", "no player selected");
@@ -365,6 +430,16 @@ function buildPlayersPanel(p) {
   var defs = gifts.map(function (g) { return [g[0], function () { adminGive(g[1], g[2]); }]; });
   adminButtons(p, defs);
 
+  sheetAddHeading(p, "medallions");
+  var medalStatus = adminStatus(p);
+  adminButtons(p, [
+    ["give gold", function () { adminGiveMedallion(1, medalStatus); }],
+    ["give silver", function () { adminGiveMedallion(2, medalStatus); }],
+    ["give bronze", function () { adminGiveMedallion(3, medalStatus); }]
+  ]);
+  var medalBox = adminMake("div");
+  p.appendChild(medalBox);
+
   sheetAddHeading(p, "leaderboards");
   var status = adminStatus(p);
   adminButtons(p, [
@@ -383,6 +458,8 @@ function buildPlayersPanel(p) {
   adminPanels.players.search = search;
   adminPanels.players.results = results;
   adminPanels.players.status = status;
+  adminPanels.players.medalStatus = medalStatus;
+  adminPanels.players.medalBox = medalBox;
 }
 
 // ---------------- tab "weekly" ----------------

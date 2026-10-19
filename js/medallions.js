@@ -27,6 +27,14 @@ function fetchMedallions(uid) {
   });
 }
 
+// The small gold circle shown beside the name of anyone who holds a medallion (leaderboard rows).
+function medallionDot(count) {
+  var dot = document.createElement("span");
+  dot.className = "medal-dot";
+  dot.title = count === 1 ? "1 medallion" : count + " medallions";
+  return dot;
+}
+
 // Counts and the list, in the stats-screen style (used on profiles).
 function renderMedallionRows(parent, list) {
   if (list.length === 0) {
@@ -43,7 +51,12 @@ function renderMedallionRows(parent, list) {
   var rows = [];
   for (var j = 0; j < list.length; j++) {
     var m = list[j];
-    rows.push([MEDALLION_NAMES[m.rank] + " \u00b7 " + medallionWeekLabel(m.weekIndex), fmtInt(m.score) + " nails"]);
+    if (m.gift) { // handed out by the admin for something other than a weekly finish
+      var when = m.awardedAt && m.awardedAt.toMillis ? new Date(m.awardedAt.toMillis()).toLocaleDateString() : "";
+      rows.push([MEDALLION_NAMES[m.rank] + " \u00b7 special award", when]);
+    } else {
+      rows.push([MEDALLION_NAMES[m.rank] + " \u00b7 " + medallionWeekLabel(m.weekIndex), fmtInt(m.score) + " nails"]);
+    }
   }
   sheetAddRows(parent, rows);
 }

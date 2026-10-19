@@ -20,7 +20,7 @@ var LOCAL_LEADERBOARD_KEY = "nailMakerLeaderboard";
 var LEADERBOARD_MAX_ENTRIES = 100;   // the local (this browser) list
 var LEADERBOARD_ONLINE_MAX = 500;    // rows shown on the online boards
 var EVERYONE_CACHE_MS = 2 * 60 * 1000;
-var everyoneCache = { at: 0, players: null, banned: null };
+var everyoneCache = { at: 0, players: null, banned: null, medals: null };
 
 // Every account (taken from the public profiles) and who is banned from the boards.
 // Cached for a couple of minutes so flicking between tabs doesn't re-read everyone.
@@ -28,7 +28,8 @@ function fetchEveryone() {
   if (everyoneCache.players && Date.now() - everyoneCache.at < EVERYONE_CACHE_MS) return Promise.resolve(everyoneCache);
   return Promise.all([
     db.collection("profiles").limit(1000).get(),
-    db.collection("banned").get().catch(function () { return null; }) // not readable yet -> simply hide no one
+    db.collection("banned").get().catch(function () { return null; }), // not readable yet -> simply hide no one
+    db.collection("medallions").get().catch(function () { return null; }) // not readable yet -> simply no gold dots
   ]).then(function (res) {
     var players = [];
     res[0].forEach(function (doc) {
@@ -37,7 +38,9 @@ function fetchEveryone() {
     });
     var banned = {};
     if (res[1]) res[1].forEach(function (doc) { banned[doc.id] = true; });
-    everyoneCache = { at: Date.now(), players: players, banned: banned };
+    var medals = {}; // uid -> how many medallions they hold
+    if (res[2]) res[2].forEach(function (doc) { var uid = doc.data().uid; if (uid) medals[uid] = (medals[uid] || 0) + 1; });
+    everyoneCache = { at: Date.now(), players: players, banned: banned, medals: medals };
     return everyoneCache;
   });
 }
@@ -186,6 +189,8 @@ function renderLeaderboardRows(list) {
         nameText.addEventListener("click", function () { openProfile(entry.uid, entry); });
       })(list[i]);
     }
+    var medalCount = list[i].uid && everyoneCache.medals ? everyoneCache.medals[list[i].uid] : 0;
+    if (medalCount > 0 && typeof medallionDot === "function") nameSpan.appendChild(medallionDot(medalCount));
     if (list[i].uid && typeof presenceDot === "function") {
       var dot = presenceDot();
       dot.setAttribute("data-uid", list[i].uid);

@@ -622,6 +622,17 @@
     vertical-align: middle;
   }
 
+  /* gold dot beside players who hold a medallion */
+  .medal-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    margin-left: 6px;
+    border-radius: 50%;
+    background: #f1c40f;
+    vertical-align: middle;
+  }
+
   /* factory floor: the module grid */
   :root { --floor-cell: 44px; }
   .floor-grid { display: grid; width: max-content; max-width: 100%; margin: 8px auto; }
@@ -1127,7 +1138,7 @@
       <h3>Chat</h3>
       <p>The leaderboard panel has a third tab, <strong>chat</strong>: a global chat for logged-in players. It shows the latest 50 messages live while the tab is open (it switches off when you leave the tab). Messages are plain text up to 200 characters, with a few seconds between them. The chat tab shows a count of unread messages while you are on another tab. Click a name to see that player's profile; a green dot means they are online. Players who have been kicked off the leaderboards can't chat either. Be kind: messages can be deleted and players removed.</p>
       <h3>Medallions</h3>
-      <p>When a week ends, the top three players on that week's board earn a <strong>gold</strong>, <strong>silver</strong> or <strong>bronze medallion</strong>. They are awarded by hand after the board has been checked, so they may arrive a little after the week closes. You get a notice the next time you log in, and medallions are listed on your profile.</p>
+      <p>When a week ends, the top three players on that week's board earn a <strong>gold</strong>, <strong>silver</strong> or <strong>bronze medallion</strong>. They are awarded by hand after the board has been checked, so they may arrive a little after the week closes. You get a notice the next time you log in, and medallions are listed on your profile. The admin can also hand one out for something special. Anyone who holds a medallion has a small gold dot beside their name on the leaderboard.</p>
       <h3>The news ticker</h3>
       <p>Once you have an account and have unlocked the skyline, a small headline strip scrolls along the very top of the page whenever there is news to share. It runs across the full width of the screen. Hover over it to pause it.</p>
       <h3>Profiles</h3>
