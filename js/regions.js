@@ -1,61 +1,79 @@
 "use strict";
 
 // ----------------------------------------------------------------
-// Lands. When you reincarnate you choose where to be reborn from a small
-// map. Every land has a few effects, each a plain multiplier (1 = no change),
-// that apply for that whole life. Nothing is granted or set up at birth: the
-// game just asks regionMult() whenever it works something out, so a land can
-// never leave the game in a half-built state. Someone who has never
-// reincarnated has no land, and every multiplier is 1.
+// Lands. Everyone starts their first life in the capital, in the middle of the
+// map, which has no bonuses. When you reincarnate you choose where to be
+// reborn: the capital again, or one of the islands around it. Every island has
+// one or two big bonuses (and no drawbacks) that apply for that whole life.
+// Nothing is granted or set up at birth: the game just asks regionMult() and
+// friends whenever it works something out, so a land can never leave the game
+// in a half-built state.
 //
 // The text shown to the player is generated from the numbers below, so the
-// ritual, the stats screen and the numbers themselves can never disagree.
+// ritual, the map screen and the numbers themselves can never disagree.
 //
-//   factoryCost   price of a factory                 machineCost  price of makers, breakers and factories
-//   copperCost    copper a factory cycle uses        breakerSpeed ore per nail the breakers take
-//   saleMult      money per nail sold                demandMult   public demand
-//   marketingCost price of marketing levels          yinYangSpeed how fast the yin & yang bars fill
-//   deposits      how many deposits each map gets
+// An effect is one of three kinds:
+//   mult  a multiplier, 1 = no change         (most of them)
+//   add   a number added to something          (deposits)
+//   set   replaces a game number outright      (factoryGrowth)
+//
+//   machineCost   price of makers, breakers and factories
+//   factoryCost   price of a factory only                    (spare)
+//   factoryGrowth how much dearer each factory makes the next (the game's own number is FACTORY_COST_GROWTH)
+//   copperCost    copper a factory cycle uses
+//   breakerSpeed  ore per nail the breakers take             (spare)
+//   saleMult      money per nail sold
+//   demandMult    public demand
+//   marketingCost price of marketing levels                  (spare)
+//   yinYangSpeed  how fast the yin & yang bars fill
+//   deposits      deposits added to every map
 // ----------------------------------------------------------------
 
 var REGIONS = [
-  { id: "peaks",    name: "Iron peaks",     glyph: "^", effects: { factoryCost: 0.85, saleMult: 0.90 } },
-  { id: "basin",    name: "Copper basin",   glyph: ":", effects: { copperCost: 0.80, breakerSpeed: 0.90 } },
-  { id: "coast",    name: "Merchant coast", glyph: "~", effects: { saleMult: 1.15, factoryCost: 1.20 } },
-  { id: "holy",     name: "Holy land",      glyph: "+", effects: { yinYangSpeed: 1.15, factoryCost: 1.15 } },
-  { id: "capital",  name: "The capital",    glyph: "#", effects: { demandMult: 1.20, marketingCost: 1.25 } },
-  { id: "forest",   name: "Old forest",     glyph: "T", effects: { deposits: 1.25, yinYangSpeed: 0.90 } },
-  { id: "frontier", name: "Frontier",       glyph: ",", effects: { machineCost: 0.90, demandMult: 0.85 } }
+  { id: "capital",    name: "the capital",   glyph: "#", effects: {} },
+  { id: "holy",       name: "holy land",     glyph: "+", effects: { yinYangSpeed: 2 } },
+  { id: "gilded",     name: "gilded shore",  glyph: "$", effects: { saleMult: 1.5 } },
+  { id: "rusthaven",  name: "rusthaven",     glyph: "^", effects: { deposits: 15 } },
+  { id: "lanternport", name: "lanternport",  glyph: "*", effects: { demandMult: 1.5 } },
+  { id: "gearhold",   name: "gearhold",      glyph: "%", effects: { machineCost: 0.5, factoryGrowth: 1.1 } },
+  { id: "verdigris",  name: "verdigris",     glyph: "=", effects: { copperCost: 0.5 } }
 ];
 
-// The picture: digits are lands (1 = the first above), anything else is sea.
+// The picture: digits are lands (1 = the first above, the capital in the middle), anything else is sea.
 var REGION_MAP_COLS = 30;
 var REGION_MAP_ROWS = [
   "..............................",
-  "....11111111.....33333333.....",
-  "...1111111111...3333333333....",
-  "...111111111112333333333333...",
-  "....222222.555555555.444444...",
-  "..2222222225555555555444444444",
-  "...222222225555555555444444...",
-  "....66666665555555777444444...",
-  ".....666666666777777777.......",
-  "......6666666677777777........",
-  ".......66666...777777.........",
+  "...22222222........33333333...",
+  "..2222222222......3333333333..",
+  "...22222222........33333333...",
+  "...........11111111...........",
+  "..44444.....1111111111.55555..",
+  ".4444444....1111111111..555555",
+  ".4444444....1111111111..555555",
+  "..44444.....1111111111.55555..",
+  "...........11111111...........",
+  "...66666666........77777777...",
+  "..6666666666......7777777777..",
+  "...66666666........77777777...",
   ".............................."
 ];
 
-// text for each effect: whether a higher number is good for the player, and the words for up and down
+function regionPct(n) { return String(Math.round(Math.abs(n) * 100)); }
+
+// text for each effect. mult: whether a higher number is good for the player, and the words for up and down.
 var REGION_EFFECT_TEXT = {
-  factoryCost:   { goodWhen: "low",  up: "factories {p}% dearer",         down: "factories {p}% cheaper" },
-  machineCost:   { goodWhen: "low",  up: "machines {p}% dearer",          down: "machines {p}% cheaper" },
-  copperCost:    { goodWhen: "low",  up: "factory copper cost {p}% higher", down: "factory copper cost {p}% lower" },
-  breakerSpeed:  { goodWhen: "high", up: "breakers {p}% faster",          down: "breakers {p}% slower" },
-  saleMult:      { goodWhen: "high", up: "nails sell for {p}% more",      down: "nails sell for {p}% less" },
-  yinYangSpeed:  { goodWhen: "high", up: "yin & yang {p}% faster",        down: "yin & yang {p}% slower" },
-  demandMult:    { goodWhen: "high", up: "public demand {p}% higher",     down: "public demand {p}% lower" },
-  marketingCost: { goodWhen: "low",  up: "marketing {p}% dearer",         down: "marketing {p}% cheaper" },
-  deposits:      { goodWhen: "high", up: "{p}% more deposits",            down: "{p}% fewer deposits" }
+  machineCost:   { kind: "mult", goodWhen: "low",  up: "machines {p}% dearer",            down: "machines {p}% cheaper" },
+  factoryCost:   { kind: "mult", goodWhen: "low",  up: "factories {p}% dearer",           down: "factories {p}% cheaper" },
+  copperCost:    { kind: "mult", goodWhen: "low",  up: "factory copper cost {p}% higher", down: "factory copper cost {p}% lower" },
+  breakerSpeed:  { kind: "mult", goodWhen: "high", up: "breakers {p}% faster",            down: "breakers {p}% slower" },
+  saleMult:      { kind: "mult", goodWhen: "high", up: "nails sell for {p}% more",        down: "nails sell for {p}% less" },
+  demandMult:    { kind: "mult", goodWhen: "high", up: "public demand {p}% higher",       down: "public demand {p}% lower" },
+  marketingCost: { kind: "mult", goodWhen: "low",  up: "marketing {p}% dearer",           down: "marketing {p}% cheaper" },
+  yinYangSpeed:  { kind: "mult", goodWhen: "high", up: "yin & yang {p}% faster",          down: "yin & yang {p}% slower" },
+  deposits:      { kind: "add",  text: function (n) { return n + " more deposits on every map"; } },
+  factoryGrowth: { kind: "set",  text: function (v) {
+    return "each factory is only " + regionPct(v - 1) + "% dearer than the last (not " + regionPct(FACTORY_COST_GROWTH - 1) + "%)";
+  } }
 };
 
 function regionById(id) {
@@ -63,37 +81,56 @@ function regionById(id) {
   return null;
 }
 
-// The multiplier a land applies to one thing; 1 when there is no land. With no id given it
-// uses the land of the life being played. (The ritual passes the land being looked at instead.)
-function regionMult(key, regionId) {
+// The raw number a land gives for one thing, or undefined. With no id given it uses the land of the
+// life being played. (The ritual passes the land being looked at instead.)
+function regionEffect(key, regionId) {
   if (regionId === undefined) regionId = (typeof state !== "undefined" && state) ? state.region : "";
   var region = regionById(regionId);
-  if (!region) return 1;
-  var v = region.effects[key];
+  return region ? region.effects[key] : undefined;
+}
+
+function regionMult(key, regionId) {
+  var v = regionEffect(key, regionId);
   return typeof v === "number" ? v : 1;
 }
 
-// [[text, isGood], ...] with the good ones first
+function regionAdd(key, regionId) {
+  var v = regionEffect(key, regionId);
+  return typeof v === "number" ? v : 0;
+}
+
+function regionSet(key, fallback, regionId) {
+  var v = regionEffect(key, regionId);
+  return typeof v === "number" ? v : fallback;
+}
+
+// [[text, isGood], ...] with the good ones first. Empty for the capital.
 function regionEffectLines(region) {
   var lines = [];
   for (var key in region.effects) {
     var t = REGION_EFFECT_TEXT[key];
     var v = region.effects[key];
-    if (!t || typeof v !== "number" || v === 1) continue;
-    var up = v > 1;
-    lines.push([(up ? t.up : t.down).replace("{p}", String(Math.round(Math.abs(v - 1) * 100))), (t.goodWhen === "high") === up]);
+    if (!t || typeof v !== "number") continue;
+    if (t.kind === "mult") {
+      if (v === 1) continue;
+      var up = v > 1;
+      lines.push([(up ? t.up : t.down).replace("{p}", regionPct(v - 1)), (t.goodWhen === "high") === up]);
+    } else {
+      lines.push([t.text(v), true]);
+    }
   }
   lines.sort(function (a, b) { return (b[1] ? 1 : 0) - (a[1] ? 1 : 0); });
   return lines;
 }
 
 // Draws the map and a row of names into container. onPick(id) is called when a land is clicked.
-// Returns { select(id) } so the caller can mark the chosen land.
+// Returns { select(id), setCounts(counts) } so the caller can mark the chosen land and show player counts.
 function buildRegionMap(container, onPick) {
   container.innerHTML = "";
   var map = document.createElement("div");
   map.className = "region-map";
   var cells = [];
+  var buttons = [];
 
   function paint(hoverId, selectedId) {
     for (var i = 0; i < cells.length; i++) {
@@ -146,7 +183,6 @@ function buildRegionMap(container, onPick) {
 
   var names = document.createElement("div");
   names.className = "region-names";
-  var buttons = [];
   REGIONS.forEach(function (region) {
     var btn = document.createElement("button");
     btn.className = "region-name";

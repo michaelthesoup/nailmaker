@@ -285,8 +285,8 @@ function mapDepositCount(regionId) {
     var extra = DEPOSITS_FIRST_KARMA_BONUS + Math.floor((karma - 1) * DEPOSITS_PER_EXTRA_KARMA);
     count = Math.min(DEPOSITS_MAX, DEPOSITS_PER_MAP + extra);
   }
-  var landMult = typeof regionMult === "function" ? regionMult("deposits", regionId) : 1;
-  return Math.max(1, Math.min(DEPOSITS_MAX, Math.round(count * landMult)));
+  var landExtra = typeof regionAdd === "function" ? regionAdd("deposits", regionId) : 0; // some lands add deposits to every map
+  return Math.max(1, Math.min(DEPOSITS_MAX, count + landExtra));
 }
 
 function generateMapTiles(mapIndex, regionId) {
@@ -503,7 +503,7 @@ function defaultState() {
     tao: 0, // tao points -- earned by Yin/Yang laps or rare reincarnation awards
     karma: 0, // permanent across reincarnations -- carried over explicitly, never wiped by a reset
     nirvanaAchieved: false, // a true permanent achievement -- survives even suicide, unlike karma
-    region: "",             // the land chosen at reincarnation (see regions.js); empty for a first life
+    region: "capital",      // the land you live in (see regions.js): everyone starts in the capital and may choose another at reincarnation
 
     // Production ticks every frame (fast, smooth climb). Selling and
     // breaker nail-consumption settle in chunks rather than

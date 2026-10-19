@@ -82,7 +82,7 @@ function nailMakerCostEffective() {
 
 function factoryBuildCostEffective() {
   var discount = typeof moduleFactoryDiscount === "function" ? moduleFactoryDiscount() : 0; // blueprint tables (floor.js)
-  return FACTORY_BUILD_COST_FUNDS * Math.pow(FACTORY_COST_GROWTH, state.factories) * (1 - discount) * regionMult("factoryCost") * regionMult("machineCost");
+  return FACTORY_BUILD_COST_FUNDS * Math.pow(regionSet("factoryGrowth", FACTORY_COST_GROWTH), state.factories) * (1 - discount) * regionMult("factoryCost") * regionMult("machineCost");
 }
 
 function factorySquaredBuildCostEffective() {

@@ -290,11 +290,17 @@ function rcChooseRegion(id) {
   nameLine.style.marginTop = "6px";
   nameLine.textContent = region.name;
   rc.landInfo.appendChild(nameLine);
-  regionEffectLines(region).forEach(function (line) {
+  var lines = regionEffectLines(region);
+  lines.forEach(function (line) {
     var d = document.createElement("div");
     d.textContent = (line[1] ? "+ " : "\u2212 ") + line[0];
     rc.landInfo.appendChild(d);
   });
+  if (lines.length === 0) {
+    var none = document.createElement("div");
+    none.textContent = "no bonuses";
+    rc.landInfo.appendChild(none);
+  }
 
   rc.world = planWorld(rc.result, rc.taoAward, rc.granted, id);
   rc.granted.breakers = rc.world.breakers;

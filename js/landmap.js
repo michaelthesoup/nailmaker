@@ -22,7 +22,7 @@ var landMapToken = 0;        // ignores a reply that arrives after the screen wa
 
 // Shown in the "more" menu only once there is something to see.
 function landMapUnlocked() {
-  return state.karma >= 1 || !!regionById(state.region);
+  return state.karma >= 1;
 }
 
 function landMapSort(a, b) {
@@ -41,11 +41,17 @@ function landMapRenderInfo() {
   name.style.marginTop = "6px";
   name.textContent = land.name + (land.id === state.region ? " (your land)" : "");
   box.appendChild(name);
-  regionEffectLines(land).forEach(function (line) {
+  var lines = regionEffectLines(land);
+  lines.forEach(function (line) {
     var d = document.createElement("div");
     d.textContent = (line[1] ? "+ " : "\u2212 ") + line[0];
     box.appendChild(d);
   });
+  if (lines.length === 0) {
+    var none = document.createElement("div");
+    none.textContent = "no bonuses";
+    box.appendChild(none);
+  }
 
   sheetAddHeading(box, "who lives here");
   if (!currentAuthUser()) { sheetAddText(box, "log in to see who lives here"); return; }
@@ -79,12 +85,12 @@ function landMapLoadResidents(token) {
     if (token !== landMapToken) return;
     var byLand = {};
     all.players.forEach(function (p) {
-      if (p.uid === user.uid || (all.banned && all.banned[p.uid]) || !regionById(p.region)) return;
-      (byLand[p.region] = byLand[p.region] || []).push({ uid: p.uid, name: p.name });
+      if (p.uid === user.uid || (all.banned && all.banned[p.uid])) return;
+      var home = regionById(p.region) ? p.region : "capital"; // no land on the profile yet = still in the capital
+      (byLand[home] = byLand[home] || []).push({ uid: p.uid, name: p.name });
     });
-    if (regionById(state.region)) { // you, from the live game
-      (byLand[state.region] = byLand[state.region] || []).push({ uid: user.uid, name: user.displayName || "player" });
-    }
+    var mine = regionById(state.region) ? state.region : "capital"; // you, from the live game
+    (byLand[mine] = byLand[mine] || []).push({ uid: user.uid, name: user.displayName || "player" });
     var counts = {};
     for (var id in byLand) { byLand[id].sort(landMapSort); counts[id] = byLand[id].length; }
     landMapResidents = byLand;
@@ -107,14 +113,11 @@ function openLandMap() {
   body.innerHTML = "";
 
   sheetAddHeading(body, "your land");
-  var mine = regionById(state.region);
-  if (mine) {
-    var rows = [["land", mine.name]];
-    regionEffectLines(mine).forEach(function (line) { rows.push([line[1] ? "benefit" : "drawback", line[0]]); });
-    sheetAddRows(body, rows);
-  } else {
-    sheetAddText(body, "none yet");
-  }
+  var mine = regionById(state.region) || regionById("capital");
+  var rows = [["land", mine.name]];
+  regionEffectLines(mine).forEach(function (line) { rows.push(["bonus", line[0]]); });
+  if (rows.length === 1) rows.push(["bonus", "none"]);
+  sheetAddRows(body, rows);
 
   sheetAddHeading(body, "the lands");
   var mapBox = document.createElement("div");
@@ -123,8 +126,8 @@ function openLandMap() {
   body.appendChild(landMapInfo);
   landMapApi = buildRegionMap(mapBox, landMapSelect);
 
-  landMapSelected = mine ? mine.id : "";
-  if (mine) landMapSelect(mine.id);
+  landMapSelected = mine.id;
+  landMapSelect(mine.id);
 
   landMapLoadResidents(token);
   el.landMapOverlay.style.display = "flex";

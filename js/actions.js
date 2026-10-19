@@ -266,6 +266,7 @@ function migrateLoadedState() {
   delete state.cityKarmaLocked;
 
   if (!Array.isArray(state.pastLives)) state.pastLives = [];
+  if (typeof regionById === "function" && !regionById(state.region)) state.region = "capital"; // saves from before lands, or a land that no longer exists
   if (typeof floorNormalize === "function") floorNormalize(); // factory floor modules
 }
 
