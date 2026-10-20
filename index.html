@@ -930,7 +930,7 @@
       <h2 id="g-makers">5. Nail makers</h2>
       <p>A <strong>nail maker</strong> is a machine that turns iron into nails with no clicking. It costs a flat <strong>$5</strong>, forever (the price never rises), with a one-second pause between purchases. Each one produces <strong>1 nail per second</strong> and consumes <strong>1 g of iron per second</strong> while doing so.</p>
       <p>If your iron runs out, your makers stall: they can only make as many nails as your iron stock allows. This is the central tension of the early game, because iron has to come from somewhere. You can buy it for money, or you can mine it, which brings in nail breakers.</p>
-      <p>The machinery panel shows, under the nail maker line, how much iron per second your makers consume and how many nails per second they produce (what they are really making, see above). Both figures include the tao bonus (section 11).</p>
+      <p>The machinery panel shows, under the nail maker line, how much iron per second your makers consume and how many nails per second they produce at full speed. These are the numbers the swarm and yin &amp; yang compare against what your breakers bring in, so they update instantly when you buy a machine and never lag. They stay at full speed even when your iron has run dry; the <em>avg nails/s</em> in the business panel is where you see what is really being made. Both figures include the tao bonus (section 11).</p>
 
       <h2 id="g-breakers">6. Nail breakers and the extraction map</h2>
       <p>A <strong>nail breaker</strong> is the opposite of a nail maker. It costs <strong>$75</strong> with a one-second pause between purchases. Each breaker fires <strong>1 nail per second</strong> from your unsold inventory into the ground, and what comes back is iron and copper. Buying your first breaker reveals the <strong>extraction map</strong> and the copper and factory controls.</p>
@@ -960,9 +960,9 @@
       <h3>Cost</h3>
       <p>The first factory costs <strong>$1,000</strong>. Each factory you own multiplies the price of the next by 1.4, so the price is <code>$1,000 &times; 1.4<sup>factories owned</sup></code>.</p>
       <h3>What a factory does</h3>
-      <p>Each factory completes one cycle per second. Production is a continuous stream: with 1 factory you get a machine about every second, with 10 you get about ten a second spread evenly, and with 1,000 it becomes a rapid flood, not a single batch landing once a second. Every cycle spends copper and produces exactly one machine, either a nail maker or a nail breaker. If you lack copper, finished cycles wait (up to one per factory) and are built as soon as you have enough, so a copper shortage pauses factories rather than breaking anything. The machinery panel shows how much copper per second your factories are consuming and how many units per minute they produce.</p>
+      <p>Each factory completes one cycle per second. Production is a continuous stream: with 1 factory you get a machine about every second, with 10 you get about ten a second spread evenly, and with 1,000 it becomes a rapid flood, not a single batch landing once a second. Every cycle spends copper and produces exactly one machine, either a nail maker or a nail breaker. If you lack copper, finished cycles wait (up to one per factory) and are built as soon as you have enough, so a copper shortage pauses factories rather than breaking anything. The machinery panel shows how much copper per second your factories are consuming and exactly how many nail makers and nail breakers they are building per second. That figure follows the balance slider's split and includes any extra machines your factory floor's dies add; if copper has run short it shows what is really being built instead of what the factories could do.</p>
       <h3>The balance slider</h3>
-      <p>Once you own a factory, a slider appears. It controls what factories build, from 0 (all nail breakers, black) to 100 (all nail makers, white), in steps of 5. The two percentages above the bar show the current split: the breaker share on the black side, the maker share on the white side. The split is exact over time, not just on average: a factory set to 90% makers produces nine makers for every breaker.</p>
+      <p>Once you own a factory, a slider appears. It controls what factories build, from 0 (all nail breakers, black) to 100 (all nail makers, white), in steps of 5. Your first factory starts at 90% nail makers and 10% nail breakers. The two percentages above the bar show the current split: the breaker share on the black side, the maker share on the white side. The split is exact over time, not just on average: a factory set to 90% makers produces nine makers for every breaker.</p>
       <h3>What it costs in copper</h3>
       <p>A breaker is heavy mining equipment and a maker is a light machine, so they cost different amounts of copper. Per cycle, a factory spends <code>1,000 g &times; (breaker share) + 100 g &times; (maker share)</code>. All breakers costs 1,000 g per machine, all makers costs 100 g per machine, and the midpoint of 50/50 costs 550 g per cycle on average. Copper is the only material factories use. They never need iron or funds beyond the purchase price. Copper presses on the factory floor and foremen from the monastery (section 14) both lower what a cycle costs.</p>
       <p>Choosing the slider is therefore both a balance decision (section 10) and a speed decision: building makers is ten times cheaper in copper, but a pile of makers with no iron supply simply stalls.</p>
@@ -1001,7 +1001,7 @@
         <li>If iron demand is at least as large as supply (making is ahead, or exactly tied), <strong>yang</strong> rises.</li>
         <li>If supply is larger than demand (breaking is ahead), <strong>yin</strong> rises.</li>
       </ul>
-      <p>The slider in the panel shows the gap between the two bars as a position between yin and yang, and a status label reads <em>BALANCED</em>, <em>YANG-LEANING</em> or <em>YIN-LEANING</em>. It reads balanced when the smaller bar is at least 90% of the larger.</p>
+      <p>The slider in the panel shows the gap between the two bars as a position between yin and yang, and a status label reads <em>BALANCED</em>, <em>YANG-LEANING</em> or <em>YIN-LEANING</em>. It reads balanced when the smaller bar is at least 90% of the larger. Whichever side is ahead right now, the one whose bar is the one ticking, has its name and number shown in <strong>bold</strong>.</p>
       <h3>Earning tao</h3>
       <p>When <strong>both bars reach 100</strong>, you earn <strong>1 tao</strong> and both bars reset to zero. Because only one bar can tick at a time, this cannot be achieved by sitting still: you have to spend time on the yang side and time on the yin side. The only way to fill both is to genuinely cross back and forth over true balance as your build changes, which is exactly the point.</p>
       <h3>What held tao does</h3>
@@ -1081,10 +1081,10 @@
       <h3>Unlocking</h3>
       <p>The swarm panel appears when you hold <strong>at least 1 tao and own at least one factory</strong>. Getting to 1 tao already proves you can balance; the factory proves you have an automated economy for the swarm to correct. After a reincarnation the swarm is open from the first second of every life.</p>
       <h3>What the dots are</h3>
-      <p>The swarm is 30 dots drifting around a small field. It is a live picture of your economy: the proportion of white dots is the makers' share of your iron rate, and the proportion of black dots is the breakers' share. Fifteen white and fifteen black means true balance. Mostly white means making outweighs breaking; mostly black means the reverse. Within 5% of true balance the swarm counts as balanced.</p>
-      <p>A status line above the field tells you in words where you stand, using different wording from yin &amp; yang: <em>balanced</em>, <em>too many makers</em> or <em>too many breakers</em>. Under the field it counts the balls (for example 18 white and 12 black), shows how much iron your breakers make and your makers use per second, and your maker and breaker counts. A message line at the bottom reports what a click did, or why it could not.</p>
+      <p>The swarm is 30 dots drifting around a small field. It is a live picture of your economy: the proportion of white dots is the makers' share of your iron rate, and the proportion of black dots is the breakers' share. Fifteen white and fifteen black means the two sides are close. Mostly white means making outweighs breaking; mostly black means the reverse. The split is a compressed picture, so it can read 15 and 15 while one side is still a hair ahead: the status line below is the exact answer.</p>
+      <p>A status line above the field says which side is ahead: <em>makers &gt; breakers</em> or <em>makers &lt; breakers</em>. It compares the two iron numbers shown under nail makers and nail breakers, how much iron your makers can use per second against how much your breakers bring in, and it flips exactly where those two numbers cross. A tie reads makers &gt; breakers. There is no balanced state: it is always one or the other. Under the field it counts the balls (for example 18 white and 12 black), shows how much iron your breakers make and your makers use per second, and your maker and breaker counts. A message line at the bottom reports what a click did, or why it could not.</p>
       <p>The dots are a deliberately compressed picture. They follow a log scale of demand to supply, so it takes an enormous imbalance, about 50 makers' worth against 1 breaker's, before only 3 balls of one color remain (and never fewer). The collapse line of 3-to-1 shows up as roughly 18 balls against 12.</p>
-      <p>The dots also shy away from your cursor when you get near them. The more imbalanced your economy, the harder they dodge and the faster every dot moves (up to 1.5&times; at the collapse line); at true balance they drift slowly and barely react, so balance is the easy state. After you land a click, that dot is briefly stunned so you can chain hits fairly.</p>
+      <p>The dots also shy away from your cursor when you get near them. The more imbalanced your economy, the harder they dodge and the faster every dot moves (up to 1.5&times; at the collapse line); the closer your two sides are, the slower they drift and the less they react. After you land a click, that dot is briefly stunned so you can chain hits fairly.</p>
       <h3>Clicking</h3>
       <p>Clicking a dot flips its colour by <strong>converting machines of one type into the other</strong>, so that your real iron rates match the new dot split. In practice: if you have too much of one colour, click a dot of that colour. A click on a black dot makes it white: breakers are converted into makers. A click on a white dot makes it black: makers are converted into breakers. The number converted is the smallest that moves the split by one dot, which at large scale can be a lot of machines.</p>
       <p>The exchange rate is the factory's own: a breaker costs a factory 1,000 g of copper and a maker 100 g, so <strong>1 breaker is worth 10 makers</strong>, and nothing is lost in the conversion: 10 breakers become 100 makers, and 10 makers become 1 breaker. Flipping costs no copper. If the conversion isn't possible (for instance you would have to convert your last machine of a type), the ball is flung away from your click and the message line says why. A click that would make the split more lopsided than the swarm can show is ignored. Clicks have a quarter-second cooldown.</p>
@@ -1376,16 +1376,16 @@
 
             <div class="balance-slider-wrap" id="factoryBalanceSliderWrap" style="display:none;">
               <div class="balance-slider-labels">
-                <span>&#9679; breakers <b id="valFactoryBreakerPct">50%</b></span>
-                <span><b id="valFactoryMakerPct">50%</b> makers &#9675;</span>
+                <span>&#9679; breakers <b id="valFactoryBreakerPct">10%</b></span>
+                <span><b id="valFactoryMakerPct">90%</b> makers &#9675;</span>
               </div>
-              <input type="range" id="sliderFactoryBalance" min="0" max="100" step="5" value="50">
+              <input type="range" id="sliderFactoryBalance" min="0" max="100" step="5" value="90">
               <div class="hint" id="valFactoryMaterialUse" style="text-align:center; margin-top:4px;">consuming 0 g copper/s</div>
               <div id="floorWrap" style="display:none; text-align:center; margin-top:6px;"><button id="btnFloor">factory floor</button></div>
             </div>
 
             <div class="hint">
-              producing: <span id="valFactoryOutputRate">0.0</span> units/min
+              producing: <span id="valFactoryMakerRate">0</span> makers/s &middot; <span id="valFactoryBreakerRate">0</span> breakers/s
             </div>
           </div>
         </div>
@@ -1469,8 +1469,8 @@
         <div class="panel" id="yinYangSection" style="margin-top:0; display:none;">
           <div class="panel-header">yin &amp; yang</div>
           <div class="panel-body">
-            <div class="row"><span class="label">yin (breaking):</span><span class="value" id="valYin">0.0</span></div>
-            <div class="row"><span class="label">yang (making):</span><span class="value" id="valYang">0.0</span></div>
+            <div class="row"><span class="label" id="lblYin">yin (breaking):</span><span class="value" id="valYin">0.0</span></div>
+            <div class="row"><span class="label" id="lblYang">yang (making):</span><span class="value" id="valYang">0.0</span></div>
             <div class="row"><span class="label">tao:</span><span class="value" id="valYinYangLevel">0</span></div>
 
             <div class="yy-bar-wrap">
@@ -1509,7 +1509,7 @@
       <div class="panel" id="swarmSection" style="margin-top:0; display:none;">
           <div class="panel-header">the foundry swarm</div>
           <div class="panel-body">
-            <div id="swarmStatus" style="font-weight:bold; text-align:center;">balanced</div>
+            <div id="swarmStatus" style="font-weight:bold; text-align:center;">makers &gt; breakers</div>
             <canvas id="swarmCanvas" width="288" height="224" style="width:100%; height:224px; display:block; background:var(--paper); border:1px solid var(--ink); cursor:crosshair;"></canvas>
             <div class="hint" id="swarmDotCounts" style="text-align:center; margin-top:6px;">30 balls</div>
             <div class="hint" id="swarmIronRates" style="text-align:center;">iron: 0 g/s made &middot; 0 g/s used</div>

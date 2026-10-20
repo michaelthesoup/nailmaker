@@ -90,12 +90,8 @@ function swarmSpawnDot(side) {
   };
 }
 
-function swarmWithinTolerance() {
-  return Math.abs(ironStructuralImbalance()) <= SWARM_MAJORITY_TOLERANCE;
-}
-
 function swarmMajoritySide() {
-  return ironDemandRate() >= ironSupplyRate() ? "maker" : "breaker";
+  return makersAhead() ? "maker" : "breaker";
 }
 
 // Keeps the fixed dot pool's color split matching the LIVE real
@@ -128,10 +124,10 @@ function swarmSyncDots() {
     }
   }
 
-  var balanced = swarmWithinTolerance();
+  var even = ironDemandRate() === ironSupplyRate();
   var majority = swarmMajoritySide();
   for (i = 0; i < swarmDots.length; i++) {
-    swarmDots[i].speedy = !balanced && swarmDots[i].side === majority;
+    swarmDots[i].speedy = !even && swarmDots[i].side === majority;
   }
 }
 
@@ -160,27 +156,14 @@ function swarmCountMakerDots() {
   return n;
 }
 
-// What the swarm is telling you, in words that are deliberately different
-// from the yin & yang panel's labels.
+// What the swarm is telling you: which side is ahead, from the same two numbers shown under the nail makers
+// and breakers (iron used per second against iron made per second). There is no "balanced": it is always one
+// or the other, and it flips exactly where those numbers cross. A tie reads makers > breakers.
 function swarmStatusInfo() {
-  var demand = ironDemandRate();
-  var supply = ironSupplyRate();
-  if (demand <= 0 && supply <= 0) {
-    return { label: "nothing to balance yet" };
+  if (ironDemandRate() <= 0 && ironSupplyRate() <= 0) {
+    return { label: "nothing running yet" };
   }
-  if (supply <= 0) {
-    return { label: "too many makers" };
-  }
-  if (demand <= 0) {
-    return { label: "too many breakers" };
-  }
-  if (swarmWithinTolerance()) {
-    return { label: "balanced" };
-  }
-  if (demand > supply) {
-    return { label: "too many makers" };
-  }
-  return { label: "too many breakers" };
+  return { label: makersAhead() ? "makers > breakers" : "makers < breakers" };
 }
 
 function swarmImbalanceMagnitude() {
@@ -290,7 +273,7 @@ function swarmStep(nowMs) {
   }
 
   if (el.swarmIronRates) {
-    el.swarmIronRates.textContent = "iron: " + fmtWeight(ironSupplyRate()) + "/s made \u00b7 " + fmtWeight(ironDemandRate()) + "/s used";
+    el.swarmIronRates.textContent = "iron: " + fmtRate(ironSupplyRate()) + "/s made \u00b7 " + fmtRate(ironDemandRate()) + "/s used";
   }
   if (el.swarmUnitCounts) {
     var statusNote = "";

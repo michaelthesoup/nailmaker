@@ -48,7 +48,7 @@ var FACTORY_PERIOD_SEC = 1;
 // two, i.e. half of each added together.
 var FACTORY_COST_BREAKER_SIDE_COPPER = 1000; // grams, at slider = 0 (all breakers)
 var FACTORY_COST_MAKER_SIDE_COPPER = 100; // grams, at slider = 100 (all nail makers)
-var FACTORY_BALANCE_DEFAULT = 50; // 0-100, nail-maker share
+var FACTORY_BALANCE_DEFAULT = 90; // 0-100, nail-maker share. A first factory builds 90% makers and 10% breakers.
 
 var BREAKER_BUILD_COST_FUNDS = 75;
 var BREAKER_COOLDOWN_MS = 1000; // pacing between buys, like nail makers
@@ -441,13 +441,12 @@ var CORE_ISOTOPES_BASE = 1;
 // the opposite machine type to match the resulting ratio. Severe
 // sustained imbalance collapses the swarm and banks one unstable core.
 // ----------------------------------------------------------------
-var SWARM_MAJORITY_TOLERANCE = 0.05; // matches YINYANG_BALANCE_TOLERANCE's definition of real parity
-var SWARM_MAJORITY_SPEED_MULT = 1.5; // TESTING: temporarily disabled -- all dots move at the same base speed regardless of majority/minority. Restore to something like 2.4 once the rest of the loop is confirmed to feel right.
+var SWARM_MAJORITY_SPEED_MULT = 1; // TESTING: temporarily disabled -- all dots move at the same base speed regardless of majority/minority. Restore to something like 2.4 once the rest of the loop is confirmed to feel right.
 var SWARM_COLLAPSE_IMBALANCE_THRESHOLD = 0.5; // 0.5 = a 3-to-1 split between the two sides (0.43 would be 2.5-to-1, 0.33 is 2-to-1). Raised from 0.32 (~2-to-1) to make collapse a real commitment. Old note:  // |imbalance| has to cross this -- eased down from 0.85 (nearly every dot one color), then from 0.4 (which was still easy to hover just under during active play). Now a clear ~2-to-1 majority is enough.
 // All dots move faster the further out of balance you are: speed x (1 + this * |imbalance|).
 // At the collapse line (0.5) that is 1.5x; at total one-sided imbalance it is 2x.
-var SWARM_IMBALANCE_SPEED_BONUS = 1.5;
-var SWARM_COLLAPSE_SUSTAIN_SEC = 5; // ...and stay there this long (the grey-out) before it actually collapses
+var SWARM_IMBALANCE_SPEED_BONUS = 1;
+var SWARM_COLLAPSE_SUSTAIN_SEC = 1.5; // ...and stay there this long (the grey-out) before it actually collapses
 var SWARM_COLLAPSE_FUEL_GAIN = 1; // unstable core banked per collapse
 
 function defaultState() {

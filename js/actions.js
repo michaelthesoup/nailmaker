@@ -89,6 +89,7 @@ el.btnBuyFactory.addEventListener("click", function () {
   if (state.funds < cost) return;
 
   state.funds -= cost;
+  if (state.factories === 0) state.factoryBalance = FACTORY_BALANCE_DEFAULT; // your first factory builds 90% makers, 10% breakers
   state.factories += 1;
   render();
 });

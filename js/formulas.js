@@ -132,6 +132,24 @@ function breakerIntakeEffective() {
 // Theoretical rates, computed straight from current state -- always
 // instantly accurate to breaker count and how many deposits are
 // currently active, never a lagging or flickering historical average.
+// How many nail makers and nail breakers the factories are building per second, exactly: cycles per second
+// times the balance slider's split, with any extra machines the floor's dies add. When copper has run short
+// it shows what is really being built (measured, see engine.js) instead of what they could do.
+function factoryOutputRates() {
+  if (!state.factoriesOn || state.factories <= 0) return { makers: 0, breakers: 0 };
+  var speed = typeof moduleSpeedMult === "function" ? moduleSpeedMult() : 1;
+  var capacity = state.factories * speed / FACTORY_PERIOD_SEC; // cycles per second at full speed
+  var cost = factoryCopperCostEffective();
+  var copperShort = cost > 0 && state.copperAmt < capacity * cost && actualFactoryCyclesPerSec < capacity * 0.97;
+  var cycles = copperShort ? Math.min(actualFactoryCyclesPerSec, capacity) : capacity;
+  var bonus = typeof moduleBonuses === "function" ? moduleBonuses() : null;
+  var makerShare = state.factoryBalance / 100;
+  return {
+    makers: cycles * makerShare * (1 + (bonus ? bonus.makerYield : 0)),
+    breakers: cycles * (1 - makerShare) * (1 + (bonus ? bonus.breakerYield : 0))
+  };
+}
+
 function breakerTheoreticalRates() {
   var ammoRate = state.breakers * breakerIntakeEffective(); // nails/sec ammo
   var activeTiles = activeDepositTiles(state.mapTiles);
@@ -213,6 +231,13 @@ function ironSupplyRate() {
 
 // -1 (all supply, yin-leaning/breaking-heavy) .. 0 (balanced) ..
 // +1 (all demand, yang-leaning/making-heavy)
+// Which side is ahead, from the SAME two numbers the panels show: what your makers could use per second
+// against what your breakers could bring in. There is no "balanced": it is always one or the other, and it
+// flips exactly where those two numbers cross. A tie counts as makers (the yang tick, as in settleYinYang).
+function makersAhead() {
+  return ironDemandRate() >= ironSupplyRate();
+}
+
 function ironStructuralImbalance() {
   var demand = ironDemandRate();
   var supply = ironSupplyRate();

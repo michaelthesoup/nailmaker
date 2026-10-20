@@ -24,6 +24,16 @@ function recordNailRate(made, dt) {
   actualNailsPerSec += (made / dt - actualNailsPerSec) * k;
 }
 
+// Same idea for factories: cycles actually completed per second (smoothed), used by factoryOutputRates()
+// to show what is really being built once copper has run short. Not saved.
+var actualFactoryCyclesPerSec = 0;
+
+function recordFactoryRate(cycles, dt) {
+  if (!(dt > 0)) return;
+  var k = 1 - Math.exp(-dt / RATE_SMOOTH_SEC);
+  actualFactoryCyclesPerSec += (cycles / dt - actualFactoryCyclesPerSec) * k;
+}
+
 // Factory-floor yield bonuses (floor.js) give a fraction of an extra machine per cycle;
 // the fraction is carried between cycles in state[key] so nothing is lost to rounding.
 // With no bonus this returns exactly n.
@@ -109,6 +119,7 @@ function tick(dt, skipRender) {
     state.factoryProgress = Math.min(state.factories * Math.max(1, factorySpeed), (state.factoryProgress || 0) + state.factories * factorySpeed * dt / FACTORY_PERIOD_SEC);
     var cycles = Math.floor(state.factoryProgress + 1e-9);
     if (cycles > 0 && cycleCopperCost > 0) cycles = Math.min(cycles, Math.floor(state.copperAmt / cycleCopperCost));
+    recordFactoryRate(cycles, dt);
     if (cycles > 0) {
       state.copperAmt -= cycles * cycleCopperCost;
       state.factoryProgress -= cycles;
@@ -126,6 +137,7 @@ function tick(dt, skipRender) {
     }
   } else {
     state.factoryProgress = 0;
+    recordFactoryRate(0, dt);
   }
 
   checkYinYangUnlock();

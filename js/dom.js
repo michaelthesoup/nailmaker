@@ -112,7 +112,8 @@ var el = {
   btnAdminClose: document.getElementById("btnAdminClose"),
 
   factoryMaterialUse: document.getElementById("valFactoryMaterialUse"),
-  factoryOutputRate: document.getElementById("valFactoryOutputRate"),
+  factoryMakerRate: document.getElementById("valFactoryMakerRate"),
+  factoryBreakerRate: document.getElementById("valFactoryBreakerRate"),
   sliderFactoryBalance: document.getElementById("sliderFactoryBalance"),
   factoryBreakerPct: document.getElementById("valFactoryBreakerPct"),
   factoryMakerPct: document.getElementById("valFactoryMakerPct"),
@@ -143,6 +144,8 @@ var el = {
   yinYangSection: document.getElementById("yinYangSection"),
   yin: document.getElementById("valYin"),
   yang: document.getElementById("valYang"),
+  yinLabel: document.getElementById("lblYin"),
+  yangLabel: document.getElementById("lblYang"),
   yinYangLevel: document.getElementById("valYinYangLevel"),
   sliderYinYang: document.getElementById("sliderYinYang"),
   yinYangStatus: document.getElementById("valYinYangStatus"),
@@ -234,6 +237,21 @@ function fmtInt(n) {
 function fmtDecimal(n, places) {
   if (Math.abs(n) >= 1000) return fmtAbbrev(n);
   return n.toFixed(places === undefined ? 1 : places);
+}
+
+// A per-second number with up to two decimals (never rounded away: 100 and 101 must not both read "100"),
+// big ones named as usual. 0.9 -> "0.9", 12 -> "12", 0.125 -> "0.13".
+function fmtRateNum(n) {
+  if (!isFinite(n)) return "0";
+  if (Math.abs(n) >= 1000) return fmtAbbrev(n);
+  return n.toFixed(2).replace(/\.?0+$/, "");
+}
+
+// A weight per second (iron, copper) with the same care: grams keep their decimals, bigger ones use fmtWeight's units.
+function fmtRate(grams) {
+  if (!isFinite(grams)) return "0 g";
+  if (grams < 1000) return fmtRateNum(grams) + " g";
+  return fmtWeight(grams);
 }
 
 function fmtWeight(grams) {

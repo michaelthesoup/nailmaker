@@ -31,16 +31,18 @@ function render() {
   var foremanPct = Math.round(foremanOutputBonus() * 100); // foremen (monastery) raise factory output per copper
   el.factoryBonus.textContent = foremanPct > 0 ? "+" + foremanPct + "%" : "";
   el.breakers.textContent = state.breakers;
-  // What the makers could do with unlimited iron...
+  // What the makers could do with unlimited iron. This is the number shown under the nail makers, because it is
+  // the same one the swarm and yin & yang compare against what the breakers bring in (ironDemandRate):
+  // the two always agree, instantly, and the labels flip exactly where the numbers cross.
   var capacityNailsPerSec = state.nailMakers * nailMakerRateEffective();
-  // ...versus what they really do. With iron on hand they run flat out. Once iron has run dry
-  // (under a second's worth left, and production measurably below capacity) they can only turn out
-  // what arrives, so the measured rate is shown instead.
+  el.nailMakerNailsRate.textContent = fmtRateNum(capacityNailsPerSec);
+  el.nailMakerIronRate.textContent = fmtRate(ironDemandRate());
+  // What they REALLY make: with iron on hand they run flat out, but once iron has run dry (under a second's
+  // worth left, and production measurably below capacity) they can only turn out what arrives, so the
+  // measured rate is used instead. This one feeds the business panel's income figures below.
   var ironLow = state.ironAmt < capacityNailsPerSec * IRON_PER_NAIL;
   var ironStarved = capacityNailsPerSec > 0 && ironLow && actualNailsPerSec < capacityNailsPerSec * 0.97;
-  var theoreticalNailsPerSec = ironStarved ? Math.min(actualNailsPerSec, capacityNailsPerSec) : capacityNailsPerSec; // what is really being made
-  el.nailMakerNailsRate.textContent = fmtDecimal(theoreticalNailsPerSec);
-  el.nailMakerIronRate.textContent = fmtWeight(theoreticalNailsPerSec * IRON_PER_NAIL);
+  var theoreticalNailsPerSec = ironStarved ? Math.min(actualNailsPerSec, capacityNailsPerSec) : capacityNailsPerSec;
   var theoreticalSoldPerSec = avgNailsSoldPerSec();
   // Demand alone can say "the market would take 62 nails/sec," but if
   // production can't actually make that many, sustained revenue can't
@@ -54,7 +56,9 @@ function render() {
   var factorySpeedMult = typeof moduleSpeedMult === "function" ? moduleSpeedMult() : 1;
   var factoryCopperRate = state.factories * factorySpeedMult * (1 / FACTORY_PERIOD_SEC) * factoryCopperCostEffective();
   el.factoryMaterialUse.textContent = "consuming " + fmtWeight(factoryCopperRate) + " copper/s";
-  el.factoryOutputRate.textContent = fmtDecimal(state.factories * factorySpeedMult * (1 / FACTORY_PERIOD_SEC) * 60);
+  var factoryOut = factoryOutputRates();
+  el.factoryMakerRate.textContent = fmtRateNum(factoryOut.makers);
+  el.factoryBreakerRate.textContent = fmtRateNum(factoryOut.breakers);
 
   el.sliderFactoryBalance.value = state.factoryBalance;
   // Share of factory output going to each machine type (white = makers, black = breakers).
@@ -72,16 +76,16 @@ function render() {
     el.factorySquaredBonus.textContent = foremanPct > 0 ? "+" + foremanPct + "%" : "";
     var fsCopperRate = state.factorySquared * (1 / FACTORY_SQUARED_PERIOD_SEC) * factorySquaredCopperCostEffective();
     el.factorySquaredMaterialUse.textContent = "consuming " + fmtWeight(fsCopperRate) + " copper/s";
-    el.factorySquaredOutputRate.textContent = fmtDecimal(state.factorySquared * (1 / FACTORY_SQUARED_PERIOD_SEC) * 60) + " factories/min";
+    el.factorySquaredOutputRate.textContent = fmtRateNum(state.factorySquared * (1 / FACTORY_SQUARED_PERIOD_SEC)) + " factories/s";
     el.btnBuyFactorySquared.textContent = "buy (" + fmtMoney(factorySquaredBuildCostEffective()) + ")";
     el.btnBuyFactorySquared.disabled = state.funds < factorySquaredBuildCostEffective();
   }
 
   // ---- machinery: nail breakers ----
   var breakerRates = breakerTheoreticalRates();
-  el.breakerNailsRate.textContent = fmtDecimal(breakerRates.ammoRate);
-  el.breakerIronRate.textContent = fmtWeight(breakerRates.ironRate);
-  el.breakerCopperRate.textContent = fmtWeight(breakerRates.copperRate);
+  el.breakerNailsRate.textContent = fmtRateNum(breakerRates.ammoRate);
+  el.breakerIronRate.textContent = fmtRate(ironSupplyRate()); // the same number the swarm and yin & yang compare (see makersAhead)
+  el.breakerCopperRate.textContent = fmtRate(breakerRates.copperRate);
 
   var breakerReady = buyButtonLabel(
     el.btnBuyBreaker,
@@ -120,6 +124,12 @@ function render() {
   if (state.unlockedYinYang) {
     el.yin.textContent = fmtInt(state.yin) + " / " + YINYANG_MAX;
     el.yang.textContent = fmtInt(state.yang) + " / " + YINYANG_MAX;
+    // The side that is ahead right now (the one whose bar is ticking) is shown in bold.
+    var anyIron = ironDemandRate() > 0 || ironSupplyRate() > 0;
+    var yangAhead = anyIron && makersAhead();
+    var yinAhead = anyIron && !makersAhead();
+    el.yinLabel.style.fontWeight = el.yin.style.fontWeight = yinAhead ? "bold" : "normal";
+    el.yangLabel.style.fontWeight = el.yang.style.fontWeight = yangAhead ? "bold" : "normal";
     el.yinYangLevel.textContent = state.tao;
 
     var diff = state.yang - state.yin;
