@@ -387,8 +387,14 @@ function yinYangPDMultiplier() {
 // whichever side is barely ahead, which naturally slows down near zero
 // imbalance since the sign keeps flipping. If both bars are sitting at
 // 100 together, that's a tao point.
+// The most tao you can hold (a fixed limit for now). Tao you already hold above it is kept, it just stops growing.
+function taoCap() {
+  return TAO_CAP;
+}
+
 function settleYinYang() {
   if (state.unlockedYinYang) {
+    if (state.tao >= taoCap()) return; // at the cap the bars hold still
     var imbalance = ironStructuralImbalance();
 
     if (imbalance >= 0) {

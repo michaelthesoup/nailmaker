@@ -118,20 +118,25 @@ function marketSummaryRows(w) {
 
 // ---------------- starting the ritual ----------------
 
+// How much karma the reincarnation in progress really adds: the tao earned, held to the karma cap.
+var reincarnationKarmaGain = 0;
+
 function startReincarnation() {
   var karmaAvailable = Math.floor(state.tao / KARMA_TAO_THRESHOLD);
   if (karmaAvailable < 1) return;
 
-  var newTotalKarma = state.karma + karmaAvailable;
+  var karmaGain = Math.min(karmaAvailable, Math.max(0, KARMA_CAP - state.karma));
+  var newTotalKarma = state.karma + karmaGain;
   var confirmed = window.confirm(
     "Be reincarnated?\n\n" +
-    "You'll gain " + karmaAvailable + " karma (" + newTotalKarma + " total, forever). " +
+    (karmaGain > 0 ? "You'll gain " + karmaGain + " karma (" + newTotalKarma + " total, forever). " : "Your karma is already at its cap of " + KARMA_CAP + ", so this adds none. ") +
     "This life ends and you are reborn in a land of your choosing, on a fresh map (karma adds more deposits to it), with the game's main parts already unlocked and a head start that grows with karma. " +
     "Every starting bonus is rolled independently and nothing is guaranteed.\n\n" +
     "This can't be undone."
   );
   if (!confirmed) return;
 
+  reincarnationKarmaGain = karmaGain;
   state.karma = newTotalKarma;
   runReincarnationRitual(rollStartingBonuses(newTotalKarma));
 }
@@ -384,7 +389,7 @@ el.btnReincarnateConfirm.addEventListener("click", function () {
   var user = currentAuthUser();
   var name = user ? (user.displayName || "player") : "anonymous"; // only logged-in players post scores
   // state.karma already includes the karma this life just earned; the weekly board shows the karma it STARTED with.
-  var karmaAtStart = state.karma - Math.floor(state.tao / KARMA_TAO_THRESHOLD);
+  var karmaAtStart = state.karma - reincarnationKarmaGain;
   submitScore(name, Math.floor(state.totalNailsMade), { karma: karmaAtStart, timeSec: state.simTime });
 
   var karmaCarried = state.karma;
@@ -400,7 +405,7 @@ el.btnReincarnateConfirm.addEventListener("click", function () {
   var justReachedNirvana = ritual.title.isNirvana && !state.nirvanaAchieved;
 
   // Log the life that's ending (karma was already added in startReincarnation).
-  var karmaGained = Math.floor(state.tao / KARMA_TAO_THRESHOLD);
+  var karmaGained = reincarnationKarmaGain;
   var endedLife = buildLifeRecord({
     how: "reincarnated",
     karmaGained: karmaGained,

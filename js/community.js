@@ -34,7 +34,7 @@ var COMMUNITY_HARMONY_FALLOFF = 2;        // target harmony = 1 - |imbalance| * 
 var COMMUNITY_LEAN_DRAIN_MAX = 0.75;
 var COMMUNITY_HARMONY_RISE_PER_SEC = 0.02; // harmony climbs slowly toward a better target (~50s from nothing to full)
 var COMMUNITY_HARMONY_FALL_PER_SEC = 0.05; // ...and falls faster toward a worse one
-var COMMUNITY_NIRVANA_KARMA = 80;         // the dot reaches the center at this karma (nirvana is ~44% likely per rebirth there)
+var COMMUNITY_NIRVANA_KARMA = NIRVANA_KARMA; // the dot reaches the center at this karma, which is where Nirvana happens
 
 function communityCapacity() {
   return COMMUNITY_BASE_CAPACITY + COMMUNITY_CAPACITY_PER_KARMA * Math.max(0, Math.floor(state.karma));
@@ -88,6 +88,7 @@ function communityTick(dt) {
   if (state.members <= 0) return;
   state.merit += communityMeritRate() * dt;
   while (state.merit >= COMMUNITY_MERIT_PER_TAO) {
+    if (state.tao >= taoCap()) { state.merit = COMMUNITY_MERIT_PER_TAO; break; } // at the tao cap the ring just stays full
     state.merit -= COMMUNITY_MERIT_PER_TAO;
     state.tao += 1; // real tao: lifts negative tao back toward zero too
   }

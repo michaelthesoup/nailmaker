@@ -124,6 +124,12 @@ var YINYANG_PD_BONUS_PER_LEVEL = 0.1; // +10% public demand per held tao point
 // it's not spent, it just permanently raises how many stats you get
 // to rewrite each time you're reborn.
 var KARMA_TAO_THRESHOLD = 3; // tao points per 1 karma, checked at the moment of reincarnating
+// Temporary limits, for now: tao cannot grow past TAO_CAP, karma cannot grow past KARMA_CAP, and Nirvana is
+// reached exactly when your karma gets to NIRVANA_KARMA (it is no longer a roll). One life can therefore earn
+// at most TAO_CAP / KARMA_TAO_THRESHOLD karma.
+var TAO_CAP = 30;
+var KARMA_CAP = 100;
+var NIRVANA_KARMA = 100;
 
 // Reincarnation is a choice between two paths:
 //  - Suicide (the "end run" button): ends everything, karma resets to
@@ -239,6 +245,11 @@ function rollStartingBonuses(karma) {
   for (var q = 0; q < 5; q++) {
     quality += pickStartingBonusTier(karma);
   }
+
+  // Nirvana is not left to luck for now: reaching NIRVANA_KARMA makes this rebirth Nirvana, and below it
+  // Nirvana cannot happen (the roll is held to the best ordinary title).
+  if (karma >= NIRVANA_KARMA) quality = Math.max(quality, 18);
+  else quality = Math.min(quality, 17);
 
   var title = startingTitleForQuality(quality);
   return { granted: granted, title: title, quality: quality };

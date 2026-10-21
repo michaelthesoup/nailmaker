@@ -31,7 +31,7 @@
 
 var REGIONS = [
   { id: "capital",    name: "the capital",   glyph: "#", effects: {} },
-  { id: "holy",       name: "israel",     glyph: "+", effects: { yinYangSpeed: 2 } },
+  { id: "holy",       name: "holy land",     glyph: "+", effects: { yinYangSpeed: 2 } },
   { id: "gilded",     name: "gilded shore",  glyph: "$", effects: { saleMult: 1.5 } },
   { id: "rusthaven",  name: "rusthaven",     glyph: "^", effects: { deposits: 15 } },
   { id: "lanternport", name: "lanternport",  glyph: "*", effects: { demandMult: 1.5 } },

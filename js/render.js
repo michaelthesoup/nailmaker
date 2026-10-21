@@ -130,7 +130,7 @@ function render() {
     var yinAhead = anyIron && !makersAhead();
     el.yinLabel.style.fontWeight = el.yin.style.fontWeight = yinAhead ? "bold" : "normal";
     el.yangLabel.style.fontWeight = el.yang.style.fontWeight = yangAhead ? "bold" : "normal";
-    el.yinYangLevel.textContent = state.tao;
+    el.yinYangLevel.textContent = state.tao + " / " + taoCap();
 
     var diff = state.yang - state.yin;
     var pos = Math.max(0, Math.min(100, 50 + diff / 2));
@@ -145,13 +145,14 @@ function render() {
     el.valKarma.textContent = fmtInt(state.karma + negativeKarma);
     el.btnPastLives.textContent = "past lives (" + (state.pastLives ? state.pastLives.length : 0) + ")";
     var karmaAvailable = Math.floor(state.tao / KARMA_TAO_THRESHOLD);
+    var karmaGain = Math.min(karmaAvailable, Math.max(0, KARMA_CAP - state.karma)); // karma stops at its cap
     // No explanatory text: the button just says what you would gain once you can.
     if (state.tao < 0 || karmaAvailable < 1) {
       el.btnReincarnate.disabled = true;
       el.btnReincarnate.textContent = "reincarnate";
     } else {
       el.btnReincarnate.disabled = false;
-      el.btnReincarnate.textContent = "reincarnate (+" + karmaAvailable + " karma)";
+      el.btnReincarnate.textContent = karmaGain > 0 ? "reincarnate (+" + karmaGain + " karma)" : "reincarnate";
     }
   }
 
