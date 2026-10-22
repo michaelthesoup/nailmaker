@@ -119,7 +119,7 @@ function showEndScreen(opts) {
       : "Another life of Nirvana.";
   } else {
     title.textContent = "A LIFE ENDS";
-    subtitle = "Your karma carries forward. Your next life begins with " + life.title + ".";
+    subtitle = "Your karma and your skills carry forward. You begin again from the very beginning.";
   }
   body.appendChild(title);
   sheetAddText(body, subtitle, "sheet-sub");
@@ -145,18 +145,6 @@ function showEndScreen(opts) {
       ["gained this life", "+" + life.karmaGained],
       ["total karma", String(life.karmaTotal)]
     ]);
-    if (opts.ritual) {
-      sheetAddHeading(body, "your next life begins with");
-      sheetAddText(body, buildGrantedText(opts.ritual.granted), "sheet-sub");
-      sheetAddText(body, opts.ritual.taoAward ? "+" + opts.ritual.taoAward + " tao awarded" : "no tao awarded", "sheet-sub");
-      if (opts.ritual.world) {
-        sheetAddHeading(body, "the world you were reborn into");
-        var land = typeof regionById === "function" ? regionById(opts.ritual.region) : null;
-        if (land) sheetAddRows(body, [["land", land.name]]);
-        sheetAddRows(body, worldSummaryRows(opts.ritual.world));
-        sheetAddRows(body, marketSummaryRows(opts.ritual.world));
-      }
-    }
   } else if (opts.karmaLost > 0) {
     sheetAddHeading(body, "karma");
     sheetAddRows(body, [["karma lost", String(opts.karmaLost)]]);
@@ -210,7 +198,7 @@ function renderPastLives() {
   table.className = "lives-table";
 
   var head = document.createElement("tr");
-  var cols = ["#", "nails", "time", "makers / breakers / factories", "map", "bombs", "karma", "began as"];
+  var cols = ["#", "nails", "time", "makers / breakers / factories", "map", "bombs", "karma"];
   for (var c = 0; c < cols.length; c++) {
     var th = document.createElement("th");
     th.textContent = cols[c];
@@ -228,8 +216,7 @@ function renderPastLives() {
       fmtInt(l.makers) + " / " + fmtInt(l.breakers) + " / " + fmtInt(l.factories),
       String(l.map),
       String(l.bombs),
-      "+" + l.karmaGained + " (" + l.karmaTotal + ")",
-      l.nirvana ? "NIRVANA" : (l.title || "")
+      "+" + l.karmaGained + " (" + l.karmaTotal + ")" + (l.nirvana ? " NIRVANA" : "")
     ];
     for (var k = 0; k < cells.length; k++) {
       var td = document.createElement("td");
@@ -240,7 +227,7 @@ function renderPastLives() {
   }
   wrap.appendChild(table);
   body.appendChild(wrap);
-  sheetAddText(body, "\"began as\" is the title the NEXT life started with after that reincarnation. Karma shows gained (new total).");
+  sheetAddText(body, "Karma shows gained (new total).");
 }
 
 el.btnPastLives.addEventListener("click", function () {

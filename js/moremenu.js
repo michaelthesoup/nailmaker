@@ -4,7 +4,7 @@
 // The "more" menu. Keeps the top of the page to the business (save, load,
 // end run) and tucks everything else behind one button. The guide is always
 // in it; achievements only appear once the player has earned one (see
-// achievements.js), the map once they have reincarnated (landmap.js), and
+// achievements.js), and
 // players only appear for logged-in accounts.
 // ----------------------------------------------------------------
 
@@ -18,7 +18,6 @@ function setMoreMenuOpen(open) {
 
 // Shows each item only when it is useful.
 function updateMoreMenu() {
-  if (el.btnLandMap) el.btnLandMap.style.display = (typeof landMapUnlocked === "function" && landMapUnlocked()) ? "" : "none";
   if (el.btnPlayers) el.btnPlayers.style.display = (typeof currentAuthUser === "function" && currentAuthUser()) ? "" : "none";
   if (el.btnAdmin) el.btnAdmin.style.display = (typeof isCheatAllowed === "function" && isCheatAllowed()) ? "" : "none";
   if (typeof updateAchievementButton === "function") updateAchievementButton();

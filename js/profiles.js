@@ -180,8 +180,6 @@ function renderProfile(d, uid) {
     ["deepest map", String(stats.deepestMap)],
     ["Nirvana reached", stats.nirvanaLives > 0 ? "yes" : "not yet"]
   ];
-  var land = typeof regionById === "function" ? regionById(d.region) : null;
-  if (land) records.unshift(["land", land.name]);
   sheetAddRows(body, records);
 
   var medalBox = document.createElement("div");

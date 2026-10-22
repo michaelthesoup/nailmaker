@@ -48,7 +48,7 @@ function render() {
   // production can't actually make that many, sustained revenue can't
   // reach that either -- so revenue is capped at whichever is smaller.
   var sustainableSoldPerSec = Math.min(theoreticalSoldPerSec, theoreticalNailsPerSec);
-  el.avgRev.textContent = fmtMoney(sustainableSoldPerSec * state.price * regionMult("saleMult"));
+  el.avgRev.textContent = fmtMoney(sustainableSoldPerSec * state.price * skillMult("saleMult"));
   el.avgNails.textContent = fmtDecimal(theoreticalNailsPerSec);
   el.mapIndexLabel.textContent = state.mapIndex;
 
@@ -122,18 +122,19 @@ function render() {
   checkYinYangUnlock();
   checkSwarmUnlock();
   if (state.unlockedYinYang) {
-    el.yin.textContent = fmtInt(state.yin) + " / " + YINYANG_MAX;
-    el.yang.textContent = fmtInt(state.yang) + " / " + YINYANG_MAX;
+    var yyMax = yinYangMax(); // each tao held makes the next one dearer
+    el.yin.textContent = fmtInt(state.yin) + " / " + fmtInt(yyMax);
+    el.yang.textContent = fmtInt(state.yang) + " / " + fmtInt(yyMax);
     // The side that is ahead right now (the one whose bar is ticking) is shown in bold.
     var anyIron = ironDemandRate() > 0 || ironSupplyRate() > 0;
     var yangAhead = anyIron && makersAhead();
     var yinAhead = anyIron && !makersAhead();
     el.yinLabel.style.fontWeight = el.yin.style.fontWeight = yinAhead ? "bold" : "normal";
     el.yangLabel.style.fontWeight = el.yang.style.fontWeight = yangAhead ? "bold" : "normal";
-    el.yinYangLevel.textContent = state.tao + " / " + taoCap();
+    el.yinYangLevel.textContent = fmtInt(state.tao);
 
     var diff = state.yang - state.yin;
-    var pos = Math.max(0, Math.min(100, 50 + diff / 2));
+    var pos = Math.max(0, Math.min(100, 50 + (diff / yyMax) * 50));
     el.sliderYinYang.value = pos;
     var yyGray = Math.round(255 * (pos / 100));
     el.sliderYinYang.style.accentColor = "rgb(" + yyGray + "," + yyGray + "," + yyGray + ")";
@@ -145,7 +146,7 @@ function render() {
     el.valKarma.textContent = fmtInt(state.karma + negativeKarma);
     el.btnPastLives.textContent = "past lives (" + (state.pastLives ? state.pastLives.length : 0) + ")";
     var karmaAvailable = Math.floor(state.tao / KARMA_TAO_THRESHOLD);
-    var karmaGain = Math.min(karmaAvailable, Math.max(0, KARMA_CAP - state.karma)); // karma stops at its cap
+    var karmaGain = reincarnationKarmaGainNow(); // karma stops at its cap; the skill tree can add to it
     // No explanatory text: the button just says what you would gain once you can.
     if (state.tao < 0 || karmaAvailable < 1) {
       el.btnReincarnate.disabled = true;

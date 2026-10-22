@@ -501,46 +501,25 @@
   }
   .rc-block { opacity: 0; animation: rcFadeUp 0.7s ease forwards; }
   @keyframes rcFadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
-  .rc-tag { letter-spacing: 5px; font-size: 12px; margin-top: 6px; }
-  .rc-universe { font-size: 30px; font-weight: bold; letter-spacing: 1px; margin: 4px 0 2px; }
-  .rc-flavor { font-size: 13px; margin-bottom: 8px; }
-  .rc-card { border: 1px solid var(--ink); padding: 8px 16px 12px; margin: 14px auto 0; max-width: 560px; text-align: left; }
-  .rc-card .sheet-heading { margin-top: 8px; }
-  .rc-map {
-    font-family: "Courier New", Courier, monospace;
-    font-size: 13px;
-    line-height: 1.15;
-    letter-spacing: 3px;
-    white-space: pre;
-    text-align: center;
-    border: 1px solid var(--ink);
-    padding: 8px 0;
-    margin: 8px 0 4px;
-    overflow-x: auto;
-  }
-  .rc-codes { font-family: "Courier New", Courier, monospace; letter-spacing: 2px; margin-top: 14px; font-size: 13px; }
 
-
-  /* the map of lands shown when you reincarnate (regions.js) */
-  .region-map {
-    font-family: "Courier New", Courier, monospace;
-    font-size: 15px;
-    line-height: 1.2;
-    letter-spacing: 3px;
-    white-space: pre;
-    text-align: center;
-    border: 1px solid var(--ink);
-    padding: 8px 0;
-    margin: 8px 0 4px;
-    overflow-x: auto;
-    user-select: none;
-  }
-  .region-map .sea { opacity: 0.3; }
-  .region-map .land { cursor: pointer; }
-  .region-map .land.hov { background: color-mix(in srgb, var(--paper) 85%, var(--ink) 15%); }
-  .region-map .land.sel { background: var(--ink); color: var(--paper); }
-  .region-names { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin: 8px 0; }
-  .region-name.on { font-weight: bold; text-decoration: underline; }
+  /* the skill tree (skills.js, skillsui.js): the second half of the reincarnation screen */
+  .skill-tree { display: block; width: 100%; margin: 6px auto 0; user-select: none; }
+  .skill-tree line { stroke: var(--ink); stroke-width: 1.5; opacity: 0.25; }
+  .skill-tree line.on { stroke-width: 3; opacity: 1; }
+  .skill-tree .node { cursor: pointer; }
+  .skill-tree .node circle { fill: var(--paper); stroke: var(--ink); stroke-width: 2; }
+  .skill-tree .node.owned circle { fill: var(--ink); }
+  .skill-tree .node.open circle { stroke-width: 5; }
+  .skill-tree .node.locked { opacity: 0.35; }
+  .skill-tree .node circle.selring { fill: none; stroke-width: 2.5; stroke-dasharray: 7 5; }
+  .skill-tree text { fill: var(--ink); font-size: 15px; text-anchor: middle; font-family: inherit; pointer-events: none; }
+  .skill-tree text.in { font-size: 19px; }
+  .skill-tree .node.owned text.in { fill: var(--paper); }
+  .skill-tree text.halo { fill: var(--paper); stroke: var(--paper); stroke-width: 6px; stroke-linejoin: round; }
+  /* the bar fixed to the bottom of the reincarnation screen: points, the selected skill, and the buttons */
+  .rc-bar { position: sticky; bottom: 0; z-index: 5; background: var(--paper); border-top: 1px solid var(--ink); padding: 10px 8px 14px; margin-top: 10px; font-size: 14px; }
+  .rc-bar-actions { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 8px; }
+  #btnReincarnateConfirm { margin-top: 10px; }
 
   /* leaderboard tabs, clickable names, and the profile screen */
   .lb-tab-active { font-weight: bold; text-decoration: underline; }
@@ -819,7 +798,6 @@
     <button id="btnMore">more</button>
     <div id="moreMenu">
       <button id="btnGuide">guide</button>
-      <button id="btnLandMap" style="display:none;">map</button>
       <button id="btnStats" style="display:none;">achievements (0/0)</button>
       <button id="btnPlayers" style="display:none;">players</button>
       <button id="btnAdmin" style="display:none;">admin</button>
@@ -867,7 +845,7 @@
       <p>Nail Maker is an incremental game. You begin with $25, 100 grams of iron and nothing else, and you grow that into a self-running industrial economy by making nails and selling them. Everything in the game feeds back into the same loop: iron becomes nails, nails become money (or become ammunition for mining), money and mined metal become machines, and machines make more nails.</p>
       <p>On top of that basic economy sit two longer-term layers that give the game its shape:</p>
       <ul>
-        <li><strong>Balance (the Taoist and Buddhist layer).</strong> Your economy has two opposing forces: <em>making</em> (nail makers, which consume iron) and <em>breaking</em> (nail breakers, which produce iron). Keeping those forces in proportion, and deliberately crossing back and forth across true balance, fills the yin and yang bars and earns <strong>tao</strong>. Tao is turned into <strong>karma</strong> by <strong>reincarnation</strong>, which ends your current life and starts a new one with better starting bonuses. Enough karma eventually reaches <strong>Nirvana</strong>, which is as close to a finish line as the game has.</li>
+        <li><strong>Balance (the Taoist and Buddhist layer).</strong> Your economy has two opposing forces: <em>making</em> (nail makers, which consume iron) and <em>breaking</em> (nail breakers, which produce iron). Keeping those forces in proportion, and deliberately crossing back and forth across true balance, fills the yin and yang bars and earns <strong>tao</strong>. Tao is turned into <strong>karma</strong> by <strong>reincarnation</strong>, which ends your current life and starts a new one from the very beginning, with karma that you can spend on skills. Enough karma eventually reaches <strong>Nirvana</strong>, which is as close to a finish line as the game has.</li>
         <li><strong>Acceleration (the destructive layer).</strong> If you push your economy badly out of balance on purpose, the foundry swarm collapses into an <strong>unstable core</strong>. Unstable cores let you build and launch <strong>nailbombs</strong> at your own skyline. Nailbombs wreck part of your machinery, but they raise public demand permanently and enormously. The price is that every nailbomb drains your tao and can push it below zero. While tao is negative you cannot reincarnate, and your karma standing drops by 1 for every 3 tao you are down.</li>
       </ul>
       <p>Reincarnation also opens up the <strong>community</strong> and, later, the <strong>monastery</strong>: people who earn tao for you and steer your machines (sections 13 and 14).</p>
@@ -876,7 +854,7 @@
 
       <h2 id="g-layout">2. The screen</h2>
       <h3>Top of the page</h3>
-      <p>The large counter at the top-left shows <em>nails</em>, the total number of nails you have made in this life. It is also shown in the browser tab title. Under it are four buttons: <strong>save</strong> and <strong>load</strong> (local browser saving), <strong>end run</strong> (end this life for good, see section 18) and <strong>more</strong>, which opens a small menu with the <strong>guide</strong> (this page), <strong>map</strong> (it appears after your first reincarnation), <strong>achievements</strong> (it appears once you have earned your first one) and <strong>players</strong> (it appears once you are logged in).</p>
+      <p>The large counter at the top-left shows <em>nails</em>, the total number of nails you have made in this life. It is also shown in the browser tab title. Under it are four buttons: <strong>save</strong> and <strong>load</strong> (local browser saving), <strong>end run</strong> (end this life for good, see section 18) and <strong>more</strong>, which opens a small menu with the <strong>guide</strong> (this page), <strong>achievements</strong> (it appears once you have earned your first one) and <strong>players</strong> (it appears once you are logged in).</p>
       <h3>The three columns</h3>
       <ul>
         <li><strong>Left column:</strong> the business panel (funds, price, demand, marketing, iron), the <em>make nail</em> button and the machinery panel (nail makers, nail breakers, copper, factories). Below them, once you have them, sit the monastery and the factory&sup2; panel.</li>
@@ -935,7 +913,7 @@
       <h2 id="g-breakers">6. Nail breakers and the extraction map</h2>
       <p>A <strong>nail breaker</strong> is the opposite of a nail maker. It costs <strong>$75</strong> with a one-second pause between purchases. Each breaker fires <strong>1 nail per second</strong> from your unsold inventory into the ground, and what comes back is iron and copper. Buying your first breaker reveals the <strong>extraction map</strong> and the copper and factory controls.</p>
       <h3>How mining works</h3>
-      <p>The map is a grid of 10 rows by 21 columns. A player with no karma gets 15 deposits per map, each randomly iron or copper (about half and half). Karma enriches the ground: 1 karma raises it to 20 deposits, and each additional karma adds a little more (about one per two karma), up to a maximum of 60. The extra deposits are added to the same layout, so the original 15 stay where they were. One nail hits <strong>every active deposit once</strong>. Each hit removes 1 g from that deposit and hands you 1 g of that deposit's material. So if the map currently has 8 iron deposits and 7 copper deposits, one nail returns 8 g of iron and 7 g of copper. A nail costs you one nail and returns a lot more material than that, which is why breakers are so powerful. More deposits means more material from every single nail, so karma makes mining directly more productive, not just your starting bonuses.</p>
+      <p>The map is a grid of 10 rows by 21 columns. A player with no karma gets 15 deposits per map, each randomly iron or copper (about half and half). Karma enriches the ground: 1 karma raises it to 20 deposits, and each additional karma adds a little more (about one per two karma), up to a maximum of 60. The extra deposits are added to the same layout, so the original 15 stay where they were. One nail hits <strong>every active deposit once</strong>. Each hit removes 1 g from that deposit and hands you 1 g of that deposit's material. So if the map currently has 8 iron deposits and 7 copper deposits, one nail returns 8 g of iron and 7 g of copper. A nail costs you one nail and returns a lot more material than that, which is why breakers are so powerful. More deposits means more material from every single nail, so karma makes mining directly more productive.</p>
       <p>Since every nail hits every deposit equally, all the deposits on a map drain together and run out at the same moment. Map 1's deposits hold 2,000 g each, so 2,000 nails of ammunition clear the entire map.</p>
       <h3>Reading the map</h3>
       <ul>
@@ -974,7 +952,7 @@
       <p>You can <strong>expand the floor</strong>: Mk2 (6 &times; 6) costs $500 million and 10 million unsold nails; Mk3 (7 &times; 7) costs $20 billion, 1 billion unsold nails and 100 tonnes of copper. Modules are lost when a life ends, but the button stays, so you can start rebuilding your floor straight away.</p>
 
       <h2 id="g-factory2">9. Factory&sup2;</h2>
-      <p>Factory&sup2; ("factory squared") is the next step of automation: a factory that builds factories. It unlocks only when you own at least <strong>100,000 nail makers and 100,000 nail breakers</strong>, and its panel appears below the machinery panel. After a reincarnation the panel is there from the first second of every life.</p>
+      <p>Factory&sup2; ("factory squared") is the next step of automation: a factory that builds factories. It unlocks only when you own at least <strong>100,000 nail makers and 100,000 nail breakers</strong>, and its panel appears below the machinery panel.</p>
       <ul>
         <li><strong>Cost:</strong> $1,000,000,000 for the first, with each one you own making the next 10% more expensive.</li>
         <li><strong>Output:</strong> each factory&sup2; produces one regular factory per second.</li>
@@ -996,14 +974,14 @@
       <h3>Unlocking</h3>
       <p>The yin &amp; yang panel appears when you own <strong>at least one nail maker and at least one nail breaker</strong>. It is not about stockpiles: it is about the relationship between making and breaking existing at all.</p>
       <h3>How the bars fill</h3>
-      <p>There are two bars, yin (breaking) and yang (making), each running from 0 to 100. Once per real second, <strong>exactly one</strong> of them rises by 1:</p>
+      <p>There are two bars, yin (breaking) and yang (making), each running from 0 to the size shown beside it (100 for your first tao, more after that: see <em>The cost of tao</em> below). Once per real second, <strong>exactly one</strong> of them rises by 1:</p>
       <ul>
         <li>If iron demand is at least as large as supply (making is ahead, or exactly tied), <strong>yang</strong> rises.</li>
         <li>If supply is larger than demand (breaking is ahead), <strong>yin</strong> rises.</li>
       </ul>
       <p>The slider in the panel shows the gap between the two bars as a position between yin and yang, and a status label reads <em>BALANCED</em>, <em>YANG-LEANING</em> or <em>YIN-LEANING</em>. It reads balanced when the smaller bar is at least 90% of the larger. Whichever side is ahead right now, the one whose bar is the one ticking, has its name and number shown in <strong>bold</strong>.</p>
       <h3>Earning tao</h3>
-      <p>When <strong>both bars reach 100</strong>, you earn <strong>1 tao</strong> and both bars reset to zero. Because only one bar can tick at a time, this cannot be achieved by sitting still: you have to spend time on the yang side and time on the yin side. The only way to fill both is to genuinely cross back and forth over true balance as your build changes, which is exactly the point.</p>
+      <p>When <strong>both bars are full</strong> (100 for your first tao), you earn <strong>1 tao</strong> and both bars reset to zero. Because only one bar can tick at a time, this cannot be achieved by sitting still: you have to spend time on the yang side and time on the yin side. The only way to fill both is to genuinely cross back and forth over true balance as your build changes, which is exactly the point.</p>
       <h3>What held tao does</h3>
       <ul>
         <li><strong>+50% rate</strong> for every nail maker and nail breaker, per tao point held. The total is shown as a small percentage next to the nail makers and nail breakers counts.</li>
@@ -1011,49 +989,29 @@
         <li><strong>Negative tao gives 0%.</strong> If your tao drops below zero (nailbombs do this), the bonuses are simply zero. They never become a penalty: production and demand are never reduced below their base.</li>
       </ul>
       <p>The word "held" matters. These bonuses depend on the tao you hold right now, so spending or losing tao removes the bonus immediately. Reincarnation (next section) converts tao into karma, which is permanent, but your new life only starts with the small tao award described there.</p>
-      <h3>The tao cap</h3>
-      <p>You can only hold <strong>30 tao</strong>. The counter shows it as held over cap, for example 7 / 30. At the cap the yin &amp; yang bars hold still (they stop ticking) and the community's merit ring just stays full. Tao above the cap is never taken away, so if you are over it you keep what you have, it simply stops growing. Spending or losing tao (nailbombs) frees up room again. Since 3 tao make 1 karma, the most karma a single life can earn is 10.</p>
+      <h3>The cost of tao</h3>
+      <p>There is no limit on how much tao you can hold, but every tao you hold makes the next one <strong>dearer</strong>. The bars have to reach <strong>100</strong> for your first tao, <strong>110</strong> for your second, <strong>121</strong> for your third, and so on: each tao held makes them 1.1&times; bigger than before, so the growth is exponential (about 259 at 10 tao, 673 at 20 and 1,745 at 30). The numbers beside the bars show the size they have to reach. The community's merit ring grows in exactly the same way, so it cannot hand you tao for free once the bars have got dear. Spending or losing tao (nailbombs do this) makes the bars smaller again, and negative tao counts as none.</p>
+      <p>The enlightenment side of the skill tree (section 12) is the answer to this: faster bars, a faster community, cheaper merit, and a gentler growth than 1.1&times; per tao.</p>
 
       <h2 id="g-reincarnation">12. Reincarnation and karma</h2>
       <p>Reincarnation lets you end a life and carry something real into the next. It lives at the bottom of the yin &amp; yang panel, with a karma counter above it.</p>
       <h3>Converting tao into karma</h3>
-      <p>Every <strong>3 tao</strong> becomes <strong>1 karma</strong>, calculated at the moment you reincarnate (leftover tao that does not make a full 3 is simply lost with the life). The button stays disabled until you hold at least 3 tao. Karma is capped at <strong>100</strong>: once you are there further reincarnations add none (the button then just reads <em>reincarnate</em>). Karma never goes away: it is not spent, it is added to a permanent total that follows you through every future life, and it increases the odds of strong starting bonuses.</p>
+      <p>Every <strong>3 tao</strong> becomes <strong>1 karma</strong>, calculated at the moment you reincarnate (leftover tao that does not make a full 3 is simply lost with the life). The button stays disabled until you hold at least 3 tao. Karma is capped at <strong>100</strong>: once you are there further reincarnations add none (the button then just reads <em>reincarnate</em>). Karma never goes away: it is not spent, it is added to a permanent total that follows you through every future life, and every karma is also <strong>3 skill points</strong> for the skill tree (see <em>Skills</em> below).</p>
       <h3>The ritual</h3>
-      <p>After you confirm, a wall of flickering characters fills the screen. It is mostly noise, and after a short wait it resolves into the title of your next life and a map of seven lands. Choose where you will be reborn (click the map or a name under it) and the rest of the report appears: your starting business, and the market, including your opening price. You can change your mind and pick another land as often as you like. Then press <em>begin new life</em>.</p>
-      <h3>Your land</h3>
-      <p>Everyone starts their first life in <strong>the capital</strong>, in the middle of the map, which has no bonuses. When you reincarnate you choose where to be reborn: the capital again, or one of the six islands around it. Each island gives your whole next life one or two big bonuses and no drawbacks, and you choose again each time you reincarnate. Nothing is handed to you at birth: the bonus is simply applied to costs, rates and prices for as long as you live there. You can see your land's bonuses at any time in the <strong>map</strong> screen from the <em>more</em> menu, which also shows the whole map: click any land to see its bonuses and which players live there (you need to be logged in to see the players). &ldquo;Machines&rdquo; means nail makers, nail breakers and factories.</p>
-      <table>
-        <tr><th>Land</th><th>Bonuses</th></tr>
-        <tr><td>the capital (<code>#</code>)</td><td>none (everyone starts here)</td></tr>
-        <tr><td>holy land (<code>+</code>)</td><td>yin &amp; yang 100% faster</td></tr>
-        <tr><td>gilded shore (<code>$</code>)</td><td>nails sell for 50% more</td></tr>
-        <tr><td>rusthaven (<code>^</code>)</td><td>15 more deposits on every map</td></tr>
-        <tr><td>lanternport (<code>*</code>)</td><td>public demand 50% higher</td></tr>
-        <tr><td>gearhold (<code>%</code>)</td><td>machines 50% cheaper; each factory is only 10% dearer than the last (not 40%)</td></tr>
-        <tr><td>verdigris (<code>=</code>)</td><td>factory copper cost 50% lower</td></tr>
-      </table>
-      <p>Your starting breakers, the map's deposits and your opening price are all worked out for the land you pick, so the report always matches the life you will actually have.</p>
-      <h3>Starting bonuses</h3>
-      <p>Each bonus is rolled on its own, so one life can be rich in one area and ordinary in another. Nothing is guaranteed. The amounts grow with your total karma, and each roll is randomised to between roughly 60% and 140% of its expected value.</p>
-      <table>
-        <tr><th>Bonus</th><th>Starts to appear</th><th>Notes</th></tr>
-        <tr><td>Funds, iron, copper</td><td>Any karma</td><td>Always rolls something, even at 1 karma. At about 32 karma expect roughly $2 million, 5 tonnes of iron and 2 tonnes of copper.</td></tr>
-        <tr><td>Nail makers</td><td>Above 2 karma</td><td>Reliable by around 10 karma. About 1,300 at 32 karma.</td></tr>
-        <tr><td>Marketing levels</td><td>Above 10 karma</td><td>About level 18 at 32 karma.</td></tr>
-        <tr><td>Factories</td><td>Above 15 karma</td><td>The rarest bonus.</td></tr>
-        <tr><td>Nail breakers</td><td>Not rolled</td><td>Sized to balance the nail makers you were granted.</td></tr>
-      </table>
-      <p>Below a bonus's threshold you can still get a small token amount by luck, but not a real one. Breakers are deliberately not random: the game works out how many are needed to structurally balance your granted makers. Every life starts on a fresh map 1, and karma (and one of the islands) add deposits to it. The opening price is set so that public demand just absorbs what your starting makers produce in your land, so you are not reborn into a workshop whose nails nobody buys. Raise it for more per nail, or lower it to sell faster.</p>
-      <h3>Titles and Nirvana</h3>
-      <p>A separate roll (five independent rolls whose results rise with karma) decides the title of your next life. Mostly it is flavour, in rising order: <em>a quiet beginning</em>, <em>an encouraging start</em>, <em>an established workshop</em>, <em>a name people know</em> and <em>an empire already in motion</em>. <strong>Nirvana</strong> is not left to luck: it is the rebirth you get when your karma reaches <strong>100</strong>, and until then it cannot happen.</p>
+      <p>After you confirm, a wall of flickering characters fills the screen. It fills in, flickers for a while, and then settles into the <strong>skill tree</strong>. Spend your skill points there, then press <em>begin new life</em>. The tree can only be opened here, at the moment you reincarnate.</p>
+      <p>You are reborn at the <strong>very beginning</strong>, like a brand new player: no machines, no money, nothing already unlocked, a fresh map 1 and the usual first price. Nothing is handed to you. What you earned is what comes with you (see below).</p>
+      <h3>Skills</h3>
+      <p>Karma is your <strong>skill points</strong>: every karma you hold is <strong>3 skill points</strong>. Karma itself is never spent (it still gives community room, deposits and the road to Nirvana), only your points go down when you learn something.</p>
+      <p>The tree starts at <strong>the middle</strong>. Under it is one node, <em>greed</em>, and above it is one node, <em>enlightenment</em>. Learn either and it branches into four more, and each of those branches on again as you learn them. You only ever see what you have learned and the next step off it: everything deeper stays hidden until you get there. Click a node to read it, then press <em>learn</em> in the bar at the bottom of the screen. A filled node is learned, a heavy ring is one you can learn right now, and a faint one is out of reach; the number inside a node is its price.</p>
+      <p><strong>Down is greed</strong>: the machine, with cheaper machines and marketing, more demand, better prices, faster makers and breakers, and more ore. <strong>Up is enlightenment</strong>: tao, karma and the community, with stronger tao, faster yin &amp; yang, a faster community, a gentler cost of tao and more karma. A life can follow <strong>only one</strong> of them: while you hold a skill on one side the other side is closed.</p>
+      <p>Each time you reincarnate you can change your mind. <em>Take back all</em> returns every point and opens both sides again, and a skill with nothing learned beyond it can be taken back on its own. Unspent points stay yours for next time. Your skills come with you when you reincarnate; ending a run wipes them with everything else. Nothing is handed over when you learn a skill: costs, rates and prices are simply worked out with it applied, so it works from the first second of your new life. &ldquo;Machines&rdquo; means nail makers, nail breakers and factories.</p>
+      <h3>Nirvana</h3>
+      <p><strong>Nirvana</strong> is not left to luck: it is the rebirth you get when your karma reaches <strong>100</strong>, and until then it cannot happen.</p>
       <p>Nirvana is a permanent achievement. Once reached, it survives everything, including ending a run and losing your karma. It is the game's closest thing to a victory, but it does not stop you: you can keep playing.</p>
-      <h3>Tao at the start of the next life</h3>
-      <p>You are given a modest head start in tao: 1 normally, 2 once your total karma reaches 13, and 3 if the life is Nirvana.</p>
       <h3>What carries over and what does not</h3>
       <ul>
-        <li><strong>Carried over:</strong> your total karma; Nirvana; your past lives log; your yin and yang bar progress; the factory floor button; and your auto-next-map setting.</li>
-        <li><strong>Open from the first second:</strong> the map, machinery, factory&sup2;, yin &amp; yang, the swarm and the skyline. The monastery is not on this list (section 14).</li>
-        <li><strong>Reset:</strong> funds, iron, copper, all machines, marketing, price (replaced by your opening price), your land (you choose again), the map (a fresh map 1), the community's members and merit, the monastery, the factory floor's modules and size, unstable cores, and nailbomb progress (bombs, fever and the market scar).</li>
+        <li><strong>Carried over:</strong> your total karma; Nirvana; your skill tree; your past lives log; and your auto-next-map setting.</li>
+        <li><strong>Reset:</strong> everything else: funds, iron, copper, all machines, marketing and price, the map (a fresh map 1), everything you had unlocked (the machinery, yin &amp; yang, the swarm and the skyline all appear again the usual way), your tao and the yin and yang bars, the community's members and merit, the monastery, the factory floor and its modules, unstable cores, and nailbomb progress (bombs, fever and the market scar).</li>
       </ul>
       <p>Reincarnating submits your final nail count to the leaderboard and deletes your old saves, so you cannot load your way back. You are asked to confirm first, because it cannot be undone.</p>
 
@@ -1061,8 +1019,8 @@
       <p>Your first reincarnation unlocks the <strong>community</strong> panel, beneath yin &amp; yang. It is drawn from a diagram in Buddhist teaching with three labels: the dot at the top is <em>&#3593;&#3633;&#3609;</em> ("I"), the spinning yin-yang in the center is <em>&#3648;&#3619;&#3634;</em> ("we"), and the big circle is <em>&#3607;&#3633;&#3657;&#3591;&#3627;&#3617;&#3604;</em> ("the whole"). It lasts as long as you hold any karma, so ending a run takes it away until you reincarnate again.</p>
       <ul>
         <li><strong>The dot is your karma.</strong> It drifts from the top of the panel toward the center as your karma grows, and reaches it at 100 karma, which is where Nirvana happens.</li>
-        <li><strong>The center is your members.</strong> Recruit members with unsold nails: 50 for the first, with each one costing 1.4&times; more than the last. The room for members is 1 plus 2 for every karma you hold. Each member who is meditating makes 0.25 merit per second, and the more members, the larger and faster the center spins. Monks and foremen (section 14) are members too, but they come off the count shown, so 3 / 3 with one monk reads 2 / 3 and that monk makes no merit. The price of the next recruit follows everyone you have recruited, not the number shown. Members reset when you reincarnate or end a run.</li>
-        <li><strong>The ring is merit.</strong> It fills around the big circle. At 100 merit you gain <strong>1 tao</strong> and the ring resets. This is real tao: it gives the same +50% machine speed and +10% demand as tao you earn by hand, and it also raises negative tao back toward zero.</li>
+        <li><strong>The center is your members.</strong> Recruit members with unsold nails: 50 for the first, with each one costing 1.4&times; more than the last. The room for members is 1 plus 2 for every karma you hold, plus any the skill tree gives. Each member who is meditating makes 0.25 merit per second, and the more members, the larger and faster the center spins. Monks and foremen (section 14) are members too, but they come off the count shown, so 3 / 3 with one monk reads 2 / 3 and that monk makes no merit. The price of the next recruit follows everyone you have recruited, not the number shown. Members reset when you reincarnate or end a run.</li>
+        <li><strong>The ring is merit.</strong> It fills around the big circle. The ring holds 100 merit for your first tao and grows with every tao you hold, like the yin &amp; yang bars (see <em>The cost of tao</em>); when it fills you gain <strong>1 tao</strong> and the ring resets. This is real tao: it gives the same +50% machine speed and +10% demand as tao you earn by hand, and it also raises negative tao back toward zero.</li>
         <li><strong>Harmony multiplies merit.</strong> Harmony is a meter from 0% to 100% that follows how balanced your economy is (section 10): 100% at perfect balance, 0% at the 3-to-1 collapse line. It <em>climbs slowly</em> (about 50 seconds from nothing to full) but <em>falls faster</em>, so a stretch of imbalance costs you, and fixing your build restores it gradually, not instantly. The arrow beside the percentage shows which way it is heading.</li>
       </ul>
       <p>The community does not replace balancing by hand. It earns tao quietly while you keep a balanced economy, and the yin and yang bars still give you tao the active way. Doing both together is the fastest.</p>
@@ -1081,7 +1039,7 @@
 
       <h2 id="g-swarm">15. The foundry swarm</h2>
       <h3>Unlocking</h3>
-      <p>The swarm panel appears when you hold <strong>at least 1 tao and own at least one factory</strong>. Getting to 1 tao already proves you can balance; the factory proves you have an automated economy for the swarm to correct. After a reincarnation the swarm is open from the first second of every life.</p>
+      <p>The swarm panel appears when you hold <strong>at least 1 tao and own at least one factory</strong>. Getting to 1 tao already proves you can balance; the factory proves you have an automated economy for the swarm to correct.</p>
       <h3>What the dots are</h3>
       <p>The swarm is 30 dots drifting around a small field. It is a live picture of your economy: the proportion of white dots is the makers' share of your iron rate, and the proportion of black dots is the breakers' share. Fifteen white and fifteen black means the two sides are close. Mostly white means making outweighs breaking; mostly black means the reverse. The split is a compressed picture, so it can read 15 and 15 while one side is still a hair ahead: the status line below is the exact answer.</p>
       <p>A status line above the field says which side is ahead: <em>makers &gt; breakers</em> or <em>makers &lt; breakers</em>. It compares the two iron numbers shown under nail makers and nail breakers, how much iron your makers can use per second against how much your breakers bring in, and it flips exactly where those two numbers cross. A tie reads makers &gt; breakers. There is no balanced state: it is always one or the other. Under the field it counts the balls (for example 18 white and 12 black), shows how much iron your breakers make and your makers use per second, and your maker and breaker counts. A message line at the bottom reports what a click did, or why it could not.</p>
@@ -1107,7 +1065,7 @@
 
       <h2 id="g-skyline">17. The skyline and nailbombs</h2>
       <h3>The skyline</h3>
-      <p>The skyline panel appears the first time the swarm collapses, or from the start of any life after a reincarnation. It is a slowly scrolling city that is a direct picture of your economy: buildings for nail makers, nail breakers and factories are generated in proportion to your real counts, so too many breakers (or makers, or factories) shows up as a skyline dominated by that kind of building. Pedestrians walk the ground and run when something terrible happens.</p>
+      <p>The skyline panel appears the first time the swarm collapses. It is a slowly scrolling city that is a direct picture of your economy: buildings for nail makers, nail breakers and factories are generated in proportion to your real counts, so too many breakers (or makers, or factories) shows up as a skyline dominated by that kind of building. Pedestrians walk the ground and run when something terrible happens.</p>
       <h3>The foundry core and nailbomb cost</h3>
       <p>Under the skyline is the foundry core, which shows what the next nailbomb needs:</p>
       <ul>
@@ -1153,7 +1111,7 @@
       </table>
       <p>Both ending options ask you to confirm. Both submit the life's nail count to the leaderboard (if you are logged in) and delete your local and cloud saves so the old life cannot be reloaded. Ending a run with karma in the bank warns you plainly that the karma will be lost.</p>
       <h3>The end screen and the past lives log</h3>
-      <p>Whenever a life ends, by reincarnation or by ending the run, an end screen summarizes it: your final nail count, time lived, money earned, the machines you ended with, marketing level, map reached, swarm collapses, nailbombs dropped and tao, plus totals across all your lives. A reincarnation also shows the karma you gained and the starting bonuses of your next life. The NIRVANA message appears here too.</p>
+      <p>Whenever a life ends, by reincarnation or by ending the run, an end screen summarizes it: your final nail count, time lived, money earned, the machines you ended with, marketing level, map reached, swarm collapses, nailbombs dropped and tao, plus totals across all your lives. A reincarnation also shows the karma you gained. The NIRVANA message appears here too.</p>
       <p>Each reincarnation adds that life to your <strong>past lives</strong> log, opened with the <em>past lives</em> button at the bottom of the yin &amp; yang panel. The log is saved with your game and follows you from life to life. <strong>Ending a run erases it</strong>, along with your karma.</p>
 
       <h2 id="g-saving">19. Saving, accounts and online play</h2>
@@ -1179,7 +1137,7 @@
       <h3>The news ticker</h3>
       <p>Once you have an account and have unlocked the skyline, a small headline strip scrolls along the very top of the page whenever there is news to share. It runs across the full width of the screen. Hover over it to pause it.</p>
       <h3>Profiles</h3>
-      <p>Every logged-in player has a public profile: when they joined, their land, their records (most nails in one life, total nails, best run, karma, time played and more) and the achievements they have earned. The <strong>players</strong> button opens a search by name, and clicking a name on either leaderboard opens that player's profile. <strong>My profile</strong> shows your own. Profile stats update when a life ends, so the life in progress is not counted until it finishes.</p>
+      <p>Every logged-in player has a public profile: when they joined, their records (most nails in one life, total nails, best run, karma, time played and more) and the achievements they have earned. The <strong>players</strong> button opens a search by name, and clicking a name on either leaderboard opens that player's profile. <strong>My profile</strong> shows your own. Profile stats update when a life ends, so the life in progress is not counted until it finishes.</p>
 
       <h2 id="g-tips">20. Strategy notes</h2>
       <ul>
@@ -1207,16 +1165,16 @@
         <tr><td>Copper sells for</td><td>$0.05 per gram</td></tr>
         <tr><td>Factory</td><td>$1,000 &times; 1.4<sup>owned</sup>; 1 s cycle; 100 g copper per maker, 1,000 g per breaker</td></tr>
         <tr><td>Factory&sup2;</td><td>Unlocks at 100,000 makers and 100,000 breakers; $1,000,000,000 &times; 1.1<sup>owned</sup>; 10,000,000 g copper per factory built</td></tr>
-        <tr><td>Yin &amp; yang</td><td>Unlocks with 1 maker + 1 breaker; one bar +1 per second; both at 100 = 1 tao</td></tr>
+        <tr><td>Yin &amp; yang</td><td>Unlocks with 1 maker + 1 breaker; one bar +1 per second; both full = 1 tao; the bars are 100 for the first tao and &times;1.1 for every tao held</td></tr>
         <tr><td>Each held tao</td><td>+50% maker and breaker rate, +10% public demand</td></tr>
         <tr><td>Karma</td><td>1 per 3 tao at reincarnation; every 3 tao below zero is &minus;1 on the counter</td></tr>
-        <tr><td>Community</td><td>Unlocks with any karma; member cost 50 nails &times; 1.4<sup>members</sup>; room 1 + 2 per karma; 0.25 merit/s per meditating member &times; harmony; 100 merit = 1 tao; harmony +2%/s up, &minus;5%/s down</td></tr>
+        <tr><td>Community</td><td>Unlocks with any karma; member cost 50 nails &times; 1.4<sup>members</sup>; room 1 + 2 per karma; 0.25 merit/s per meditating member &times; harmony; 100 merit &times; 1.1<sup>tao held</sup> = 1 tao; harmony +2%/s up, &minus;5%/s down</td></tr>
         <tr><td>Monastery</td><td>Needs a reincarnation and 3 tao, earned each life; hall $10,000 + 100,000 nails, &times;2.5 each, 2 seats; a monk moves the lean 0.2% per second; heavy lean costs up to 75% of harmony; each foreman +10% factory output per copper</td></tr>
-        <tr><td>Swarm unlocks</td><td>1 tao held + 1 factory (open from the start after a reincarnation)</td></tr>
-        <tr><td>Tao cap</td><td>30; at the cap the yin &amp; yang bars hold still and community merit stops at a full ring; tao above the cap is kept</td></tr>
+        <tr><td>Swarm unlocks</td><td>1 tao held + 1 factory</td></tr>
+        <tr><td>Cost of tao</td><td>No cap; the bars and the merit ring are 100 &times; 1.1<sup>tao held</sup> (100, 110, 121, ...); the enlightenment skills ease it</td></tr>
         <tr><td>Karma cap</td><td>100; Nirvana is reached when karma gets to 100</td></tr>
         <tr><td>Tao at the start of a new life</td><td>1 (2 from 13 karma, 3 for Nirvana)</td></tr>
-        <tr><td>Lands</td><td>Everyone starts in the capital (no bonuses); at each reincarnation you can pick it again or one of six islands, each with one or two big bonuses and no drawbacks</td></tr>
+        <tr><td>Skills</td><td>3 skill points per karma; spent only on the reincarnation screen; one path per life (greed down, enlightenment up); kept through reincarnation, wiped by ending a run</td></tr>
         <tr><td>Factory floor</td><td>Unlocks at 10 factories; 5&times;5, Mk2 6&times;6 ($500M + 10M nails), Mk3 7&times;7 ($20B + 1B nails + 100 t copper); modules 1.5&times; dearer each; sell for 75%; prices start at battery $800,000, copper press $2M, blueprint table $5M, maker or breaker die $10M, cooler $1.5M</td></tr>
         <tr><td>Swarm flip</td><td>Converts machines at 1 breaker = 10 makers, no loss; no copper; 0.25 s cooldown</td></tr>
         <tr><td>Collapse</td><td>Imbalance &ge; 0.5 (3-to-1) for 1.5 s; yields 1 unstable core; unlocks the skyline</td></tr>
@@ -1262,15 +1220,6 @@
     <div class="sheet-actions"><button id="btnAdminClose">close</button></div>
   </div>
 </div>
-
-<div id="landMapOverlay" class="sheet-overlay">
-  <div class="sheet-box">
-    <div class="sheet-title">map</div>
-    <div id="landMapBody"></div>
-    <div class="sheet-actions"><button id="btnLandMapClose">close</button></div>
-  </div>
-</div>
-
 <div id="profileOverlay" class="sheet-overlay">
   <div class="sheet-box">
     <div class="sheet-title">players</div>
@@ -1296,7 +1245,10 @@
   <div style="width:100%; max-width:960px; padding:24px 12px; text-align:center;">
     <div id="reincarnateStatus" class="hint" style="font-size:13px; margin-bottom:10px;"></div>
     <div id="reincarnateGrid"></div>
-    <button id="btnReincarnateConfirm" style="margin-top:16px; display:none;">begin new life</button>
+    <div id="reincarnateBar" class="rc-bar" style="display:none;">
+      <div id="reincarnateBarBody"></div>
+      <button id="btnReincarnateConfirm">begin new life</button>
+    </div>
   </div>
 </div>
 
@@ -1588,7 +1540,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
 <script src="js/firebase-config.js"></script>
 
-<script src="js/regions.js"></script>
+<script src="js/skills.js"></script>
 <script src="js/state.js"></script>
 <script src="js/formulas.js"></script>
 <script src="js/dom.js"></script>
@@ -1608,7 +1560,7 @@
 <script src="js/lifetime.js"></script>
 <script src="js/achievements.js"></script>
 <script src="js/profiles.js"></script>
-<script src="js/landmap.js"></script>
+<script src="js/skillsui.js"></script>
 <script src="js/moremenu.js"></script>
 <script src="js/medallions.js"></script>
 <script src="js/gifts.js"></script>

@@ -37,7 +37,13 @@ var COMMUNITY_HARMONY_FALL_PER_SEC = 0.05; // ...and falls faster toward a worse
 var COMMUNITY_NIRVANA_KARMA = NIRVANA_KARMA; // the dot reaches the center at this karma, which is where Nirvana happens
 
 function communityCapacity() {
-  return COMMUNITY_BASE_CAPACITY + COMMUNITY_CAPACITY_PER_KARMA * Math.max(0, Math.floor(state.karma));
+  return COMMUNITY_BASE_CAPACITY + COMMUNITY_CAPACITY_PER_KARMA * Math.max(0, Math.floor(state.karma)) + Math.max(0, Math.floor(skillAdd("communityRoom")));
+}
+
+// Merit for the next tao. Like the yin & yang bars it grows with every tao held (taoCostMult in formulas.js),
+// so the community can't make tao for free once the bars have got dear; the skill tree can cheapen it.
+function communityMeritPerTao() {
+  return COMMUNITY_MERIT_PER_TAO * taoCostMult() * skillMult("meritCost");
 }
 
 function communityMemberCost() {
@@ -72,7 +78,7 @@ function communityHarmony() {
 // monastery.js) are members working in the monastery instead.
 function communityMeritRate() {
   var meditating = Math.max(0, state.members - state.monks - (state.foremen || 0));
-  return meditating * COMMUNITY_MERIT_PER_MEMBER_SEC * communityHarmony();
+  return meditating * COMMUNITY_MERIT_PER_MEMBER_SEC * communityHarmony() * skillMult("communitySpeed");
 }
 
 // Called every game tick (engine.js).
@@ -87,10 +93,11 @@ function communityTick(dt) {
 
   if (state.members <= 0) return;
   state.merit += communityMeritRate() * dt;
-  while (state.merit >= COMMUNITY_MERIT_PER_TAO) {
-    if (state.tao >= taoCap()) { state.merit = COMMUNITY_MERIT_PER_TAO; break; } // at the tao cap the ring just stays full
-    state.merit -= COMMUNITY_MERIT_PER_TAO;
+  var perTao = communityMeritPerTao();
+  while (state.merit >= perTao) {
+    state.merit -= perTao;
     state.tao += 1; // real tao: lifts negative tao back toward zero too
+    perTao = communityMeritPerTao(); // the next one is dearer
   }
 }
 
@@ -118,9 +125,9 @@ function renderCommunity() {
   var trend = harmonyTarget > harmony + 0.005 ? " \u2191" : (harmonyTarget < harmony - 0.005 ? " \u2193" : "");
   el.communityHarmony.textContent = Math.round(harmony * 100) + "%" + trend;
   el.communityRate.textContent = rate > 0
-    ? "+" + rate.toFixed(2) + "/s (1 tao per " + fmtDuration(COMMUNITY_MERIT_PER_TAO / rate) + ")"
+    ? "+" + rate.toFixed(2) + "/s (1 tao per " + fmtDuration(communityMeritPerTao() / rate) + ")"
     : "none";
-  el.communityMerit.textContent = Math.floor(state.merit) + " / " + COMMUNITY_MERIT_PER_TAO;
+  el.communityMerit.textContent = fmtInt(state.merit) + " / " + fmtInt(communityMeritPerTao());
 
   var cost = communityMemberCost();
   if (state.members >= cap) {
@@ -193,7 +200,7 @@ function drawCommunity() {
   ctx.lineWidth = 1.5;
   ctx.strokeStyle = ink;
   ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.stroke();
-  var meritFrac = Math.min(1, state.merit / COMMUNITY_MERIT_PER_TAO);
+  var meritFrac = Math.min(1, state.merit / communityMeritPerTao());
   if (meritFrac > 0) {
     ctx.lineWidth = 6;
     ctx.beginPath();

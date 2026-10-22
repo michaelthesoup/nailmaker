@@ -174,8 +174,8 @@ function buildMePanel(p) {
   adminRow(p, "karma", function () { return String(state.karma); }, adminAmountButtons("karma", [1, 5], { min: 0, whole: true, minus: true }));
   adminRow(p, "nailbombs dropped", function () { return String(state.cityBombs); }, adminAmountButtons("cityBombs", [1, 10], { min: 0, whole: true }));
   adminRow(p, "yin & yang", function () { return fmtInt(state.yin) + " / " + fmtInt(state.yang); }, [
-    ["fill yin", function () { adminSet("yin", YINYANG_MAX); }],
-    ["fill yang", function () { adminSet("yang", YINYANG_MAX); }],
+    ["fill yin", function () { adminSet("yin", yinYangMax()); }],
+    ["fill yang", function () { adminSet("yang", yinYangMax()); }],
     ["reset both", function () { if (adminAllowed()) { state.yin = 0; state.yang = 0; adminAfter("yin"); } }]
   ]);
 

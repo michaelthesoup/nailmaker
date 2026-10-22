@@ -124,10 +124,12 @@ var YINYANG_PD_BONUS_PER_LEVEL = 0.1; // +10% public demand per held tao point
 // it's not spent, it just permanently raises how many stats you get
 // to rewrite each time you're reborn.
 var KARMA_TAO_THRESHOLD = 3; // tao points per 1 karma, checked at the moment of reincarnating
-// Temporary limits, for now: tao cannot grow past TAO_CAP, karma cannot grow past KARMA_CAP, and Nirvana is
-// reached exactly when your karma gets to NIRVANA_KARMA (it is no longer a roll). One life can therefore earn
-// at most TAO_CAP / KARMA_TAO_THRESHOLD karma.
-var TAO_CAP = 30;
+// There is no limit on tao any more. Instead every tao you hold makes the next one dearer: the yin and yang bars
+// (and the community's merit ring) are YINYANG_MAX for your first tao, then x TAO_COST_GROWTH for each tao held
+// (100, 110, 121, ...), so tao gets exponentially harder to come by. The skill tree's enlightenment side eases
+// this (see skills.js: taoGrowth). Karma cannot grow past KARMA_CAP, and Nirvana is reached exactly when your
+// karma gets to NIRVANA_KARMA (it is no longer a roll).
+var TAO_COST_GROWTH = 1.1;
 var KARMA_CAP = 100;
 var NIRVANA_KARMA = 100;
 
@@ -143,123 +145,6 @@ function randRange(min, max) {
 }
 function randInt(min, max) {
   return Math.floor(randRange(min, max + 1));
-}
-
-// ----------------------------------------------------------------
-// Starting bonuses on reincarnation. Each field belongs to a tier with
-// its own karma threshold. Below threshold, a field mostly rolls 0,
-// with only a small "if you're lucky" chance at a token amount.
-// Above threshold, the amount grows smoothly with karma via
-// coeff * (karma - threshold)^exponent, then gets randomized +/-40%
-// so nothing is ever guaranteed. Higher tiers never replace lower
-// ones -- a high-karma player still rolls big Tier 1 numbers AND
-// starts getting real Tier 3/4 rewards on top.
-//
-// IMPORTANT: ironAmt and copperAmt MUST stay in this field list.
-// reincarnation.js reads result.granted.ironAmt/copperAmt directly --
-// if either field is missing here, that arithmetic silently produces
-// NaN, which then corrupts iron/copper/unsold for the rest of the run.
-// ----------------------------------------------------------------
-
-var STARTING_BONUS_FIELD_CONFIG = {
-  // Tier 1 (low) -- always rolls something, even at 1-2 karma.
-  // Coefficients calibrated so karma ~32 lands around: funds ~$2M,
-  // iron ~5 tonnes, copper ~2 tonnes.
-  funds:          { threshold: 0,  coeff: 17457.6, exponent: 1.368, luckyMin: 500,  luckyMax: 1500, luckyChance: 1.0 },
-  ironAmt:        { threshold: 0,  coeff: 35083.3, exponent: 1.431, luckyMin: 5000, luckyMax: 20000, luckyChance: 1.0 },
-  copperAmt:      { threshold: 0,  coeff: 7442.5,  exponent: 1.614, luckyMin: 2000, luckyMax: 8000, luckyChance: 1.0 },
-  // Tier 2 (low-mid) -- starts around karma 2, reliable by ~10.
-  // Coefficient calibrated so karma ~32 lands around 1,300 makers.
-  nailMakers:     { threshold: 2,  coeff: 43.33,   exponent: 1.0,   luckyMin: 1,   luckyMax: 1,   luckyChance: 0.15 },
-  // Tier 4 (high) -- starts around karma 10-15, reliable by ~30.
-  // marketingLevel calibrated so karma ~32 lands around level 18.
-  // factories has no explicit target given -- this is an estimate,
-  // tune it if 15ish factories at karma 32 feels off.
-  marketingLevel: { threshold: 10, coeff: 0.818,   exponent: 1.0,   luckyMin: 1,   luckyMax: 2,   luckyChance: 0.15 },
-  factories:      { threshold: 15, coeff: 0.882,   exponent: 1.0,   luckyMin: 1,   luckyMax: 1,   luckyChance: 0.10 }
-};
-
-// Nail breakers are NOT in the generic config above -- they're
-// deliberately computed to structurally balance against whatever
-// nailMakers amount just got rolled (see rollStartingBonuses below
-// and the map-sizing logic in reincarnation.js), rather than being an
-// independent random roll like everything else.
-var STARTING_BONUS_FIELDS = ["funds", "ironAmt", "copperAmt", "nailMakers", "marketingLevel", "factories"];
-
-var STARTING_TITLES = [
-  { maxQuality: 0, label: "a quiet beginning" },
-  { maxQuality: 4, label: "an encouraging start" },
-  { maxQuality: 8, label: "an established workshop" },
-  { maxQuality: 12, label: "a name people know" },
-  { maxQuality: 17, label: "an empire already in motion" },
-  { maxQuality: Infinity, label: "nirvana", isNirvana: true },
-];
-
-// Used ONLY for quality/title pacing now (see rollStartingBonuses
-// below) -- kept exactly as it always worked so nirvana pacing doesn't
-// shift just because the actual granted-amount formulas were reworked.
-var STARTING_BONUS_QUALITY_TIER_COUNT = 6;
-function pickStartingBonusTier(karma) {
-  var roll = Math.random() * (karma + 10);
-  return Math.min(STARTING_BONUS_QUALITY_TIER_COUNT - 1, Math.floor(roll / 10));
-}
-
-function startingTitleForQuality(quality) {
-  for (var i = 0; i < STARTING_TITLES.length; i++) {
-    if (quality <= STARTING_TITLES[i].maxQuality) return STARTING_TITLES[i];
-  }
-  return STARTING_TITLES[STARTING_TITLES.length - 1];
-}
-
-// Rolls one field's amount for a given karma. Below threshold, the
-// main formula doesn't run at all -- only a small, rare chance at a
-// token "lucky" amount. This always returns a real number, never
-// undefined, which is what the NaN bug above depended on not happening.
-function rollFieldAmount(config, karma) {
-  var scale = Math.max(0, karma - config.threshold);
-  if (scale <= 0) {
-    if (Math.random() < config.luckyChance) {
-      return randInt(config.luckyMin, config.luckyMax);
-    }
-    return 0;
-  }
-  var midpoint = config.coeff * Math.pow(scale, config.exponent);
-  return Math.max(0, randRange(midpoint * 0.6, midpoint * 1.4));
-}
-
-function rollStartingBonuses(karma) {
-  var granted = {};
-  for (var i = 0; i < STARTING_BONUS_FIELDS.length; i++) {
-    var field = STARTING_BONUS_FIELDS[i];
-    var config = STARTING_BONUS_FIELD_CONFIG[field];
-    var amount = rollFieldAmount(config, karma);
-    granted[field] = (field === "funds" || field === "ironAmt" || field === "copperAmt")
-      ? Math.round(amount * 100) / 100
-      : Math.round(amount);
-  }
-
-  // Quality/title: an independent roll from the original distribution,
-  // unrelated to the field formulas above -- purely decides flavor
-  // title and nirvana pacing.
-  var quality = 0;
-  for (var q = 0; q < 5; q++) {
-    quality += pickStartingBonusTier(karma);
-  }
-
-  // Nirvana is not left to luck for now: reaching NIRVANA_KARMA makes this rebirth Nirvana, and below it
-  // Nirvana cannot happen (the roll is held to the best ordinary title).
-  if (karma >= NIRVANA_KARMA) quality = Math.max(quality, 18);
-  else quality = Math.min(quality, 17);
-
-  var title = startingTitleForQuality(quality);
-  return { granted: granted, title: title, quality: quality };
-}
-
-// Tao is normally earned by completing a Yin/Yang lap. Reincarnation grants
-// a modest head start, with stronger titles completing more of the cycle.
-function reincarnationTaoAward(result, karma) {
-  if (result.title.isNirvana) return 3;
-  return karma >= 13 ? 2 : 1;
 }
 
 // Usernames allowed to use the cheat box. Checked against the logged-in
@@ -288,19 +173,18 @@ function depositCapacityForMap(mapIndex) {
 // How many deposits a map gets, from banked karma. Reads the live game
 // state; before it exists (the very first defaultState() call) or for a
 // karma-less player it's just the base count.
-// regionId (optional) is the land to count for; the reincarnation screen passes the one being looked at.
-function mapDepositCount(regionId) {
+function mapDepositCount() {
   var karma = (typeof state !== "undefined" && state && typeof state.karma === "number") ? state.karma : 0;
   var count = DEPOSITS_PER_MAP;
   if (karma >= 1) {
     var extra = DEPOSITS_FIRST_KARMA_BONUS + Math.floor((karma - 1) * DEPOSITS_PER_EXTRA_KARMA);
     count = Math.min(DEPOSITS_MAX, DEPOSITS_PER_MAP + extra);
   }
-  var landExtra = typeof regionAdd === "function" ? regionAdd("deposits", regionId) : 0; // some lands add deposits to every map
-  return Math.max(1, Math.min(DEPOSITS_MAX, count + landExtra));
+  var skillExtra = typeof skillAdd === "function" ? skillAdd("deposits") : 0; // the ore skills add deposits to every map
+  return Math.max(1, Math.min(DEPOSITS_MAX, count + skillExtra));
 }
 
-function generateMapTiles(mapIndex, regionId) {
+function generateMapTiles(mapIndex) {
   var rand = mulberry32(mapIndex * 7919 + 13);
   var capacity = depositCapacityForMap(mapIndex);
   var tiles = [];
@@ -314,7 +198,7 @@ function generateMapTiles(mapIndex, regionId) {
 
   var placed = 0;
   var attempts = 0;
-  var depositTarget = mapDepositCount(regionId);
+  var depositTarget = mapDepositCount();
   while (placed < depositTarget && attempts < 1000) {
     attempts++;
     var r = Math.floor(rand() * MAP_ROWS);
@@ -513,7 +397,7 @@ function defaultState() {
     tao: 0, // tao points -- earned by Yin/Yang laps or rare reincarnation awards
     karma: 0, // permanent across reincarnations -- carried over explicitly, never wiped by a reset
     nirvanaAchieved: false, // a true permanent achievement -- survives even suicide, unlike karma
-    region: "capital",      // the land you live in (see regions.js): everyone starts in the capital and may choose another at reincarnation
+    skills: [],             // ids of the skill-tree nodes learned (see skills.js); they survive reincarnation, ending a run wipes them
 
     // Production ticks every frame (fast, smooth climb). Selling and
     // breaker nail-consumption settle in chunks rather than
