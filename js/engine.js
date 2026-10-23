@@ -91,7 +91,7 @@ function tick(dt, skipRender) {
     if (soldPerSec > 0 && state.unsold > 0) {
       var sold = Math.min(state.unsold, soldPerSec * settleInterval);
       state.unsold -= sold;
-      var revenue = sold * state.price * skillMult("saleMult"); // the trade skills pay more per nail
+      var revenue = sold * state.price * cardMult("saleMult"); // cards can pay more per nail
       state.funds += revenue;
       state.totalEarned += revenue;
     }

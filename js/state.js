@@ -126,8 +126,8 @@ var YINYANG_PD_BONUS_PER_LEVEL = 0.1; // +10% public demand per held tao point
 var KARMA_TAO_THRESHOLD = 3; // tao points per 1 karma, checked at the moment of reincarnating
 // There is no limit on tao any more. Instead every tao you hold makes the next one dearer: the yin and yang bars
 // (and the community's merit ring) are YINYANG_MAX for your first tao, then x TAO_COST_GROWTH for each tao held
-// (100, 110, 121, ...), so tao gets exponentially harder to come by. The skill tree's enlightenment side eases
-// this (see skills.js: taoGrowth). Karma cannot grow past KARMA_CAP, and Nirvana is reached exactly when your
+// (100, 110, 121, ...), so tao gets exponentially harder to come by. White cards ease
+// this (see cards.js: taoGrowth). Karma cannot grow past KARMA_CAP, and Nirvana is reached exactly when your
 // karma gets to NIRVANA_KARMA (it is no longer a roll).
 var TAO_COST_GROWTH = 1.1;
 var KARMA_CAP = 100;
@@ -180,8 +180,8 @@ function mapDepositCount() {
     var extra = DEPOSITS_FIRST_KARMA_BONUS + Math.floor((karma - 1) * DEPOSITS_PER_EXTRA_KARMA);
     count = Math.min(DEPOSITS_MAX, DEPOSITS_PER_MAP + extra);
   }
-  var skillExtra = typeof skillAdd === "function" ? skillAdd("deposits") : 0; // the ore skills add deposits to every map
-  return Math.max(1, Math.min(DEPOSITS_MAX, count + skillExtra));
+  var cardExtra = typeof cardAdd === "function" ? cardAdd("deposits") : 0; // deposit cards add to every map
+  return Math.max(1, Math.min(DEPOSITS_MAX, count + cardExtra));
 }
 
 function generateMapTiles(mapIndex) {
@@ -397,7 +397,8 @@ function defaultState() {
     tao: 0, // tao points -- earned by Yin/Yang laps or rare reincarnation awards
     karma: 0, // permanent across reincarnations -- carried over explicitly, never wiped by a reset
     nirvanaAchieved: false, // a true permanent achievement -- survives even suicide, unlike karma
-    skills: [],             // ids of the skill-tree nodes learned (see skills.js); they survive reincarnation, ending a run wipes them
+    deck: [],               // the cards drafted at the last reincarnation (see cards.js); they last one life
+    draftSeed: typeof cardNewSeed === "function" ? cardNewSeed() : 1, // makes this life's card hands, so reloading can't reroll them (cards.js)
 
     // Production ticks every frame (fast, smooth climb). Selling and
     // breaker nail-consumption settle in chunks rather than

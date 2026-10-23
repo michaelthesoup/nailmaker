@@ -37,13 +37,13 @@ var COMMUNITY_HARMONY_FALL_PER_SEC = 0.05; // ...and falls faster toward a worse
 var COMMUNITY_NIRVANA_KARMA = NIRVANA_KARMA; // the dot reaches the center at this karma, which is where Nirvana happens
 
 function communityCapacity() {
-  return COMMUNITY_BASE_CAPACITY + COMMUNITY_CAPACITY_PER_KARMA * Math.max(0, Math.floor(state.karma)) + Math.max(0, Math.floor(skillAdd("communityRoom")));
+  return COMMUNITY_BASE_CAPACITY + COMMUNITY_CAPACITY_PER_KARMA * Math.max(0, Math.floor(state.karma)) + Math.max(0, Math.floor(cardAdd("communityRoom")));
 }
 
 // Merit for the next tao. Like the yin & yang bars it grows with every tao held (taoCostMult in formulas.js),
-// so the community can't make tao for free once the bars have got dear; the skill tree can cheapen it.
+// so the community can't make tao for free once the bars have got dear; cards can cheapen it.
 function communityMeritPerTao() {
-  return COMMUNITY_MERIT_PER_TAO * taoCostMult() * skillMult("meritCost");
+  return COMMUNITY_MERIT_PER_TAO * taoCostMult() * cardMult("meritCost");
 }
 
 function communityMemberCost() {
@@ -78,7 +78,7 @@ function communityHarmony() {
 // monastery.js) are members working in the monastery instead.
 function communityMeritRate() {
   var meditating = Math.max(0, state.members - state.monks - (state.foremen || 0));
-  return meditating * COMMUNITY_MERIT_PER_MEMBER_SEC * communityHarmony() * skillMult("communitySpeed");
+  return meditating * COMMUNITY_MERIT_PER_MEMBER_SEC * communityHarmony() * cardMult("communitySpeed");
 }
 
 // Called every game tick (engine.js).

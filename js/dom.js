@@ -77,7 +77,6 @@ var el = {
   btnPlayers: document.getElementById("btnPlayers"),
   btnMore: document.getElementById("btnMore"),
   reincarnateBar: document.getElementById("reincarnateBar"),
-  reincarnateBarBody: document.getElementById("reincarnateBarBody"),
   moreWrap: document.getElementById("moreWrap"),
   moreMenu: document.getElementById("moreMenu"),
   profileOverlay: document.getElementById("profileOverlay"),

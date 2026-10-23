@@ -119,7 +119,7 @@ function showEndScreen(opts) {
       : "Another life of Nirvana.";
   } else {
     title.textContent = "A LIFE ENDS";
-    subtitle = "Your karma and your skills carry forward. You begin again from the very beginning.";
+    subtitle = "Your karma carries forward. You begin again from the very beginning, with the cards you chose.";
   }
   body.appendChild(title);
   sheetAddText(body, subtitle, "sheet-sub");
@@ -145,6 +145,11 @@ function showEndScreen(opts) {
       ["gained this life", "+" + life.karmaGained],
       ["total karma", String(life.karmaTotal)]
     ]);
+    if (opts.deck && opts.deck.length > 0) {
+      sheetAddHeading(body, "your cards (" + opts.deck.length + ")");
+      var deckLines = cardTotalsLines(opts.deck);
+      if (deckLines.length) sheetAddRows(body, deckLines.map(function (line) { return ["", line]; }));
+    }
   } else if (opts.karmaLost > 0) {
     sheetAddHeading(body, "karma");
     sheetAddRows(body, [["karma lost", String(opts.karmaLost)]]);

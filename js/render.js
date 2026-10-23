@@ -48,7 +48,7 @@ function render() {
   // production can't actually make that many, sustained revenue can't
   // reach that either -- so revenue is capped at whichever is smaller.
   var sustainableSoldPerSec = Math.min(theoreticalSoldPerSec, theoreticalNailsPerSec);
-  el.avgRev.textContent = fmtMoney(sustainableSoldPerSec * state.price * skillMult("saleMult"));
+  el.avgRev.textContent = fmtMoney(sustainableSoldPerSec * state.price * cardMult("saleMult"));
   el.avgNails.textContent = fmtDecimal(theoreticalNailsPerSec);
   el.mapIndexLabel.textContent = state.mapIndex;
 
@@ -146,7 +146,7 @@ function render() {
     el.valKarma.textContent = fmtInt(state.karma + negativeKarma);
     el.btnPastLives.textContent = "past lives (" + (state.pastLives ? state.pastLives.length : 0) + ")";
     var karmaAvailable = Math.floor(state.tao / KARMA_TAO_THRESHOLD);
-    var karmaGain = reincarnationKarmaGainNow(); // karma stops at its cap; the skill tree can add to it
+    var karmaGain = reincarnationKarmaGainNow(); // karma stops at its cap; cards can add to it
     // No explanatory text: the button just says what you would gain once you can.
     if (state.tao < 0 || karmaAvailable < 1) {
       el.btnReincarnate.disabled = true;

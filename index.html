@@ -502,24 +502,21 @@
   .rc-block { opacity: 0; animation: rcFadeUp 0.7s ease forwards; }
   @keyframes rcFadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
 
-  /* the skill tree (skills.js, skillsui.js): the second half of the reincarnation screen */
-  .skill-tree { display: block; width: 100%; margin: 6px auto 0; user-select: none; }
-  .skill-tree line { stroke: var(--ink); stroke-width: 1.5; opacity: 0.25; }
-  .skill-tree line.on { stroke-width: 3; opacity: 1; }
-  .skill-tree .node { cursor: pointer; }
-  .skill-tree .node circle { fill: var(--paper); stroke: var(--ink); stroke-width: 2; }
-  .skill-tree .node.owned circle { fill: var(--ink); }
-  .skill-tree .node.open circle { stroke-width: 5; }
-  .skill-tree .node.locked { opacity: 0.35; }
-  .skill-tree .node circle.selring { fill: none; stroke-width: 2.5; stroke-dasharray: 7 5; }
-  .skill-tree text { fill: var(--ink); font-size: 15px; text-anchor: middle; font-family: inherit; pointer-events: none; }
-  .skill-tree text.in { font-size: 19px; }
-  .skill-tree .node.owned text.in { fill: var(--paper); }
-  .skill-tree text.halo { fill: var(--paper); stroke: var(--paper); stroke-width: 6px; stroke-linejoin: round; }
-  /* the bar fixed to the bottom of the reincarnation screen: points, the selected skill, and the buttons */
-  .rc-bar { position: sticky; bottom: 0; z-index: 5; background: var(--paper); border-top: 1px solid var(--ink); padding: 10px 8px 14px; margin-top: 10px; font-size: 14px; }
-  .rc-bar-actions { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 8px; }
-  #btnReincarnateConfirm { margin-top: 10px; }
+  /* the cards (cards.js, cardsui.js): the second half of the reincarnation screen */
+  .card-hand { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin: 14px 0 6px; animation: rcFadeUp 0.35s ease; }
+  .card { width: 150px; min-height: 200px; box-sizing: border-box; border: 2px solid var(--ink); border-radius: 10px; padding: 12px 10px; display: flex; flex-direction: column; justify-content: space-between; align-items: center; text-align: center; cursor: pointer; user-select: none; transition: transform 0.12s; }
+  .card:hover, .card:focus { transform: translateY(-5px); outline: none; }
+  .card.black { background: #000; color: #fff; }
+  .card.white { background: #fff; color: #000; }
+  .card.r1 { border-style: double; border-width: 5px; }
+  .card.r2 { box-shadow: 0 0 0 3px var(--paper), 0 0 0 5px var(--ink); border-width: 3px; }
+  .card-mark { font-size: 20px; }
+  .card-text { font-size: 16px; font-weight: bold; line-height: 1.35; }
+  .card-rarity { font-size: 10px; letter-spacing: 3px; text-transform: uppercase; opacity: 0.7; }
+  .card-note { letter-spacing: 3px; font-size: 13px; margin: 14px 0; }
+  .card-deck { margin: 18px auto 0; max-width: 460px; font-size: 13px; line-height: 1.5; }
+  /* the bar fixed to the bottom of the reincarnation screen, holding the begin button once the draft is done */
+  .rc-bar { position: sticky; bottom: 0; z-index: 5; background: var(--paper); border-top: 1px solid var(--ink); padding: 12px 8px 14px; margin-top: 14px; }
 
   /* leaderboard tabs, clickable names, and the profile screen */
   .lb-tab-active { font-weight: bold; text-decoration: underline; }
@@ -845,7 +842,7 @@
       <p>Nail Maker is an incremental game. You begin with $25, 100 grams of iron and nothing else, and you grow that into a self-running industrial economy by making nails and selling them. Everything in the game feeds back into the same loop: iron becomes nails, nails become money (or become ammunition for mining), money and mined metal become machines, and machines make more nails.</p>
       <p>On top of that basic economy sit two longer-term layers that give the game its shape:</p>
       <ul>
-        <li><strong>Balance (the Taoist and Buddhist layer).</strong> Your economy has two opposing forces: <em>making</em> (nail makers, which consume iron) and <em>breaking</em> (nail breakers, which produce iron). Keeping those forces in proportion, and deliberately crossing back and forth across true balance, fills the yin and yang bars and earns <strong>tao</strong>. Tao is turned into <strong>karma</strong> by <strong>reincarnation</strong>, which ends your current life and starts a new one from the very beginning, with karma that you can spend on skills. Enough karma eventually reaches <strong>Nirvana</strong>, which is as close to a finish line as the game has.</li>
+        <li><strong>Balance (the Taoist and Buddhist layer).</strong> Your economy has two opposing forces: <em>making</em> (nail makers, which consume iron) and <em>breaking</em> (nail breakers, which produce iron). Keeping those forces in proportion, and deliberately crossing back and forth across true balance, fills the yin and yang bars and earns <strong>tao</strong>. Tao is turned into <strong>karma</strong> by <strong>reincarnation</strong>, which ends your current life and starts a new one from the very beginning, with karma that buys you cards. Enough karma eventually reaches <strong>Nirvana</strong>, which is as close to a finish line as the game has.</li>
         <li><strong>Acceleration (the destructive layer).</strong> If you push your economy badly out of balance on purpose, the foundry swarm collapses into an <strong>unstable core</strong>. Unstable cores let you build and launch <strong>nailbombs</strong> at your own skyline. Nailbombs wreck part of your machinery, but they raise public demand permanently and enormously. The price is that every nailbomb drains your tao and can push it below zero. While tao is negative you cannot reincarnate, and your karma standing drops by 1 for every 3 tao you are down.</li>
       </ul>
       <p>Reincarnation also opens up the <strong>community</strong> and, later, the <strong>monastery</strong>: people who earn tao for you and steer your machines (sections 13 and 14).</p>
@@ -991,26 +988,26 @@
       <p>The word "held" matters. These bonuses depend on the tao you hold right now, so spending or losing tao removes the bonus immediately. Reincarnation (next section) converts tao into karma, which is permanent, but your new life only starts with the small tao award described there.</p>
       <h3>The cost of tao</h3>
       <p>There is no limit on how much tao you can hold, but every tao you hold makes the next one <strong>dearer</strong>. The bars have to reach <strong>100</strong> for your first tao, <strong>110</strong> for your second, <strong>121</strong> for your third, and so on: each tao held makes them 1.1&times; bigger than before, so the growth is exponential (about 259 at 10 tao, 673 at 20 and 1,745 at 30). The numbers beside the bars show the size they have to reach. The community's merit ring grows in exactly the same way, so it cannot hand you tao for free once the bars have got dear. Spending or losing tao (nailbombs do this) makes the bars smaller again, and negative tao counts as none.</p>
-      <p>The enlightenment side of the skill tree (section 12) is the answer to this: faster bars, a faster community, cheaper merit, and a gentler growth than 1.1&times; per tao.</p>
+      <p>The white cards (section 12) are the answer to this: faster bars, a faster community, cheaper merit, and a gentler growth than 1.1&times; per tao.</p>
 
       <h2 id="g-reincarnation">12. Reincarnation and karma</h2>
       <p>Reincarnation lets you end a life and carry something real into the next. It lives at the bottom of the yin &amp; yang panel, with a karma counter above it.</p>
       <h3>Converting tao into karma</h3>
-      <p>Every <strong>3 tao</strong> becomes <strong>1 karma</strong>, calculated at the moment you reincarnate (leftover tao that does not make a full 3 is simply lost with the life). The button stays disabled until you hold at least 3 tao. Karma is capped at <strong>100</strong>: once you are there further reincarnations add none (the button then just reads <em>reincarnate</em>). Karma never goes away: it is not spent, it is added to a permanent total that follows you through every future life, and every karma is also <strong>3 skill points</strong> for the skill tree (see <em>Skills</em> below).</p>
+      <p>Every <strong>3 tao</strong> becomes <strong>1 karma</strong>, calculated at the moment you reincarnate (leftover tao that does not make a full 3 is simply lost with the life). The button stays disabled until you hold at least 3 tao. Karma is capped at <strong>100</strong>: once you are there further reincarnations add none (the button then just reads <em>reincarnate</em>). Karma never goes away: it is not spent, it is added to a permanent total that follows you through every future life, and every karma is also one <strong>hand of cards</strong> to choose from when you reincarnate (see <em>Cards</em> below).</p>
       <h3>The ritual</h3>
-      <p>After you confirm, a wall of flickering characters fills the screen. It fills in, flickers for a while, and then settles into the <strong>skill tree</strong>. Spend your skill points there, then press <em>begin new life</em>. The tree can only be opened here, at the moment you reincarnate.</p>
-      <p>You are reborn at the <strong>very beginning</strong>, like a brand new player: no machines, no money, nothing already unlocked, a fresh map 1 and the usual first price. Nothing is handed to you. What you earned is what comes with you (see below).</p>
-      <h3>Skills</h3>
-      <p>Karma is your <strong>skill points</strong>: every karma you hold is <strong>3 skill points</strong>. Karma itself is never spent (it still gives community room, deposits and the road to Nirvana), only your points go down when you learn something.</p>
-      <p>The tree starts at <strong>the middle</strong>. Under it is one node, <em>greed</em>, and above it is one node, <em>enlightenment</em>. Learn either and it branches into four more, and each of those branches on again as you learn them. You only ever see what you have learned and the next step off it: everything deeper stays hidden until you get there. Click a node to read it, then press <em>learn</em> in the bar at the bottom of the screen. A filled node is learned, a heavy ring is one you can learn right now, and a faint one is out of reach; the number inside a node is its price.</p>
-      <p><strong>Down is greed</strong>: the machine, with cheaper machines and marketing, more demand, better prices, faster makers and breakers, and more ore. <strong>Up is enlightenment</strong>: tao, karma and the community, with stronger tao, faster yin &amp; yang, a faster community, a gentler cost of tao and more karma. A life can follow <strong>only one</strong> of them: while you hold a skill on one side the other side is closed.</p>
-      <p>Each time you reincarnate you can change your mind. <em>Take back all</em> returns every point and opens both sides again, and a skill with nothing learned beyond it can be taken back on its own. Unspent points stay yours for next time. Your skills come with you when you reincarnate; ending a run wipes them with everything else. Nothing is handed over when you learn a skill: costs, rates and prices are simply worked out with it applied, so it works from the first second of your new life. &ldquo;Machines&rdquo; means nail makers, nail breakers and factories.</p>
+      <p>After you confirm, a wall of flickering characters fills the screen. It fills in, flickers for a while, and then settles into your <strong>cards</strong>. Choose them, then press <em>begin new life</em>. The cards only appear here, at the moment you reincarnate.</p>
+      <p>You are reborn at the <strong>very beginning</strong>, like a brand new player: no machines, no money, nothing already unlocked, a fresh map 1 and the usual first price. Nothing is handed to you. What you earned is what comes with you (see below), and the cards are what make the new life different.</p>
+      <h3>Cards</h3>
+      <p>First you are shown <strong>two cards</strong>, one black and one white, and the words <em>choose your path wisely</em>. <strong>Black is the path of greed</strong>: the machine, with cheaper machines and marketing, more demand, better prices, faster makers and breakers, shorter waits between buying machines, and more ore. <strong>White is the path of enlightenment</strong>: tao, karma and the community, with faster yin &amp; yang, stronger tao, a faster community, a gentler cost of tao and more karma. Taking one is your first card and sets your path. Neither path has a drawback: they are just two ways to play, a simple spiritual life or a fast industrial one.</p>
+      <p>Then you are dealt <strong>one hand of four cards for every karma you hold</strong>, all of your path's colour, and you pick one from each. The more karma you have, the more cards you choose, and the better the cards tend to be (<em>common</em>, <em>uncommon</em> and <em>rare</em>). The cards are generated rather than written, so there is always something new to find, and they <strong>stack without limit</strong>: a deck full of cheap-machinery cards makes machines almost free, and a deck full of buy-cooldown cards lets you buy as fast as you can click. What your deck adds up to is listed under the cards as you build it.</p>
+      <p>Now and then a hand holds one card of the <strong>opposite colour</strong>: a good person with a little bad in them, or the other way round. You can take it for the other side's bonus, but you cannot balance good and evil. Each opposite card you hold makes the next one rarer to be offered and weaker when it is, so the mixture quickly becomes unstable.</p>
+      <p>Your deck lasts for one life. The next time you reincarnate you draft a new one, and ending a run wipes everything. Nothing is handed over when you pick a card: costs, rates and prices are simply worked out with it applied, so it works from the first second of your new life. &ldquo;Machines&rdquo; means nail makers, nail breakers and factories. The hands are fixed for each life, so reloading the page does not change them.</p>
       <h3>Nirvana</h3>
       <p><strong>Nirvana</strong> is not left to luck: it is the rebirth you get when your karma reaches <strong>100</strong>, and until then it cannot happen.</p>
       <p>Nirvana is a permanent achievement. Once reached, it survives everything, including ending a run and losing your karma. It is the game's closest thing to a victory, but it does not stop you: you can keep playing.</p>
       <h3>What carries over and what does not</h3>
       <ul>
-        <li><strong>Carried over:</strong> your total karma; Nirvana; your skill tree; your past lives log; and your auto-next-map setting.</li>
+        <li><strong>Carried over:</strong> your total karma; Nirvana; your past lives log; and your auto-next-map setting. The cards you drafted are your deck for the new life.</li>
         <li><strong>Reset:</strong> everything else: funds, iron, copper, all machines, marketing and price, the map (a fresh map 1), everything you had unlocked (the machinery, yin &amp; yang, the swarm and the skyline all appear again the usual way), your tao and the yin and yang bars, the community's members and merit, the monastery, the factory floor and its modules, unstable cores, and nailbomb progress (bombs, fever and the market scar).</li>
       </ul>
       <p>Reincarnating submits your final nail count to the leaderboard and deletes your old saves, so you cannot load your way back. You are asked to confirm first, because it cannot be undone.</p>
@@ -1019,7 +1016,7 @@
       <p>Your first reincarnation unlocks the <strong>community</strong> panel, beneath yin &amp; yang. It is drawn from a diagram in Buddhist teaching with three labels: the dot at the top is <em>&#3593;&#3633;&#3609;</em> ("I"), the spinning yin-yang in the center is <em>&#3648;&#3619;&#3634;</em> ("we"), and the big circle is <em>&#3607;&#3633;&#3657;&#3591;&#3627;&#3617;&#3604;</em> ("the whole"). It lasts as long as you hold any karma, so ending a run takes it away until you reincarnate again.</p>
       <ul>
         <li><strong>The dot is your karma.</strong> It drifts from the top of the panel toward the center as your karma grows, and reaches it at 100 karma, which is where Nirvana happens.</li>
-        <li><strong>The center is your members.</strong> Recruit members with unsold nails: 50 for the first, with each one costing 1.4&times; more than the last. The room for members is 1 plus 2 for every karma you hold, plus any the skill tree gives. Each member who is meditating makes 0.25 merit per second, and the more members, the larger and faster the center spins. Monks and foremen (section 14) are members too, but they come off the count shown, so 3 / 3 with one monk reads 2 / 3 and that monk makes no merit. The price of the next recruit follows everyone you have recruited, not the number shown. Members reset when you reincarnate or end a run.</li>
+        <li><strong>The center is your members.</strong> Recruit members with unsold nails: 50 for the first, with each one costing 1.4&times; more than the last. The room for members is 1 plus 2 for every karma you hold, plus any white cards give. Each member who is meditating makes 0.25 merit per second, and the more members, the larger and faster the center spins. Monks and foremen (section 14) are members too, but they come off the count shown, so 3 / 3 with one monk reads 2 / 3 and that monk makes no merit. The price of the next recruit follows everyone you have recruited, not the number shown. Members reset when you reincarnate or end a run.</li>
         <li><strong>The ring is merit.</strong> It fills around the big circle. The ring holds 100 merit for your first tao and grows with every tao you hold, like the yin &amp; yang bars (see <em>The cost of tao</em>); when it fills you gain <strong>1 tao</strong> and the ring resets. This is real tao: it gives the same +50% machine speed and +10% demand as tao you earn by hand, and it also raises negative tao back toward zero.</li>
         <li><strong>Harmony multiplies merit.</strong> Harmony is a meter from 0% to 100% that follows how balanced your economy is (section 10): 100% at perfect balance, 0% at the 3-to-1 collapse line. It <em>climbs slowly</em> (about 50 seconds from nothing to full) but <em>falls faster</em>, so a stretch of imbalance costs you, and fixing your build restores it gradually, not instantly. The arrow beside the percentage shows which way it is heading.</li>
       </ul>
@@ -1171,10 +1168,10 @@
         <tr><td>Community</td><td>Unlocks with any karma; member cost 50 nails &times; 1.4<sup>members</sup>; room 1 + 2 per karma; 0.25 merit/s per meditating member &times; harmony; 100 merit &times; 1.1<sup>tao held</sup> = 1 tao; harmony +2%/s up, &minus;5%/s down</td></tr>
         <tr><td>Monastery</td><td>Needs a reincarnation and 3 tao, earned each life; hall $10,000 + 100,000 nails, &times;2.5 each, 2 seats; a monk moves the lean 0.2% per second; heavy lean costs up to 75% of harmony; each foreman +10% factory output per copper</td></tr>
         <tr><td>Swarm unlocks</td><td>1 tao held + 1 factory</td></tr>
-        <tr><td>Cost of tao</td><td>No cap; the bars and the merit ring are 100 &times; 1.1<sup>tao held</sup> (100, 110, 121, ...); the enlightenment skills ease it</td></tr>
+        <tr><td>Cost of tao</td><td>No cap; the bars and the merit ring are 100 &times; 1.1<sup>tao held</sup> (100, 110, 121, ...); white cards ease it</td></tr>
         <tr><td>Karma cap</td><td>100; Nirvana is reached when karma gets to 100</td></tr>
         <tr><td>Tao at the start of a new life</td><td>1 (2 from 13 karma, 3 for Nirvana)</td></tr>
-        <tr><td>Skills</td><td>3 skill points per karma; spent only on the reincarnation screen; one path per life (greed down, enlightenment up); kept through reincarnation, wiped by ending a run</td></tr>
+        <tr><td>Cards</td><td>One hand of 4 per karma, plus a black-or-white fork first; black = greed, white = enlightenment; cards stack without limit; opposite-colour cards get rarer and weaker; the deck lasts one life</td></tr>
         <tr><td>Factory floor</td><td>Unlocks at 10 factories; 5&times;5, Mk2 6&times;6 ($500M + 10M nails), Mk3 7&times;7 ($20B + 1B nails + 100 t copper); modules 1.5&times; dearer each; sell for 75%; prices start at battery $800,000, copper press $2M, blueprint table $5M, maker or breaker die $10M, cooler $1.5M</td></tr>
         <tr><td>Swarm flip</td><td>Converts machines at 1 breaker = 10 makers, no loss; no copper; 0.25 s cooldown</td></tr>
         <tr><td>Collapse</td><td>Imbalance &ge; 0.5 (3-to-1) for 1.5 s; yields 1 unstable core; unlocks the skyline</td></tr>
@@ -1246,7 +1243,6 @@
     <div id="reincarnateStatus" class="hint" style="font-size:13px; margin-bottom:10px;"></div>
     <div id="reincarnateGrid"></div>
     <div id="reincarnateBar" class="rc-bar" style="display:none;">
-      <div id="reincarnateBarBody"></div>
       <button id="btnReincarnateConfirm">begin new life</button>
     </div>
   </div>
@@ -1540,7 +1536,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
 <script src="js/firebase-config.js"></script>
 
-<script src="js/skills.js"></script>
+<script src="js/cards.js"></script>
 <script src="js/state.js"></script>
 <script src="js/formulas.js"></script>
 <script src="js/dom.js"></script>
@@ -1560,7 +1556,7 @@
 <script src="js/lifetime.js"></script>
 <script src="js/achievements.js"></script>
 <script src="js/profiles.js"></script>
-<script src="js/skillsui.js"></script>
+<script src="js/cardsui.js"></script>
 <script src="js/moremenu.js"></script>
 <script src="js/medallions.js"></script>
 <script src="js/gifts.js"></script>

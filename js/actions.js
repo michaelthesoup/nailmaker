@@ -74,7 +74,7 @@ el.btnBuyNailMaker.addEventListener("click", function () {
   if (state.funds >= cost) {
     state.funds -= cost;
     state.nailMakers += 1;
-    state.nailMakerCooldownUntil = Date.now() + NAILMAKER_COOLDOWN_MS;
+    state.nailMakerCooldownUntil = Date.now() + NAILMAKER_COOLDOWN_MS * cardMult("buyCooldown");
     render();
   }
 });
@@ -109,7 +109,7 @@ el.btnBuyBreaker.addEventListener("click", function () {
   state.funds -= cost;
   state.breakers += 1;
   state.unlockedMap = true;
-  state.breakerCooldownUntil = Date.now() + BREAKER_COOLDOWN_MS;
+  state.breakerCooldownUntil = Date.now() + BREAKER_COOLDOWN_MS * cardMult("buyCooldown");
   render();
 });
 
@@ -267,7 +267,7 @@ function migrateLoadedState() {
   delete state.cityKarmaLocked;
 
   if (!Array.isArray(state.pastLives)) state.pastLives = [];
-  if (typeof skillNormalize === "function") skillNormalize(); // skill tree: drops anything unknown or unaffordable, and the old "region" from before the lands were removed
+  if (typeof cardsNormalize === "function") cardsNormalize(); // the deck of cards: drops anything that is not a real card, and the skill tree / lands of older versions
   if (typeof floorNormalize === "function") floorNormalize(); // factory floor modules
 }
 

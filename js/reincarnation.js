@@ -6,16 +6,16 @@
 //    zero. A true dead end -- you start over exactly like a brand new
 //    player, no benefit at all, just a score on the leaderboard.
 //  - Reincarnation (this file): your tao becomes karma, and the karma
-//    becomes skill points to spend on the skill tree (skills.js).
+//    becomes cards: one hand of four to choose from for every karma you hold.
 //
 // The screen is two halves. First the ritual: a wall of flickering characters
-// that fills in, flickers for a while, and settles. Then the skill tree
-// (skillsui.js), the only place in the game where it can be opened: spend your
-// points (or take them back and spend them differently), then press "begin new
-// life". You are reborn at the very beginning, like a brand new player: nothing
-// is handed to you, nothing is already unlocked. Only what you have earned
-// comes with you: your karma (which also makes the ground richer, 1 karma at
-// a time), your skills, your past lives log and Nirvana.
+// that fills in, flickers for a while, and settles. Then the card draft
+// (cardsui.js, cards.js): a black card and a white card to choose your path, then
+// the hands of four. Then "begin new life". You are reborn at the very beginning,
+// like a brand new player: nothing is handed to you, nothing is already unlocked.
+// The only things that come with you are your karma (which also makes the ground
+// richer), your past lives log and Nirvana; the cards you just chose are your deck
+// for the new life, and the next reincarnation drafts a new one.
 // ----------------------------------------------------------------
 
 var RC_GRID_ROWS = 16;
@@ -26,7 +26,7 @@ var RC_FLICKER_FRACTION = 0.15; // fraction of cells re-randomized per tick
 var RC_REVEAL_START_DELAY_MS = 120;
 var RC_REVEAL_SPEEDUP = 0.92;
 var RC_REVEAL_MIN_DELAY_MS = 4;
-var RC_SUSPENSE_MS = 2200; // how long the noise flickers before it settles into the tree
+var RC_SUSPENSE_MS = 2200; // how long the noise flickers before it settles into the cards
 
 var rc = null; // active ritual state while the overlay is open
 
@@ -43,23 +43,25 @@ function startReincarnation() {
   var newTotalKarma = state.karma + karmaGain;
   var confirmed = window.confirm(
     "Be reincarnated?\n\n" +
-    (karmaGain > 0 ? "You'll gain " + karmaGain + " karma (" + newTotalKarma + " total, forever), which is " + (karmaGain * SKILL_POINTS_PER_KARMA) + " more skill points to spend. " : "Your karma is already at its cap of " + KARMA_CAP + ", so this adds none. ") +
-    "This life ends and you begin again from the very beginning, on a fresh map (karma adds more deposits to it). Your karma and your skills come with you; nothing else does.\n\n" +
+    (karmaGain > 0 ? "You'll gain " + karmaGain + " karma (" + newTotalKarma + " total, forever). " : "Your karma is already at its cap of " + KARMA_CAP + ", so this adds none. ") +
+    "You'll choose " + cardPickCount(newTotalKarma) + " card" + (cardPickCount(newTotalKarma) === 1 ? "" : "s") + " (one for each karma) to carry into your next life. " +
+    "This life ends and you begin again from the very beginning, on a fresh map (karma adds more deposits to it). Only your karma and your cards come with you.\n\n" +
     "This can't be undone."
   );
   if (!confirmed) return;
 
   // The karma is NOT added yet: it lands when you press "begin new life", so a reload or an autosave
-  // halfway through the ritual can't bank it while you keep the old life. The tree counts it meanwhile.
+  // halfway through the ritual can't bank it while you keep the old life. The draft counts it meanwhile.
   reincarnationKarmaGain = karmaGain;
-  skillKarmaPending = karmaGain;
-  runReincarnationRitual(newTotalKarma >= NIRVANA_KARMA);
+  runReincarnationRitual(newTotalKarma, newTotalKarma >= NIRVANA_KARMA);
 }
 
-function runReincarnationRitual(isNirvana) {
+function runReincarnationRitual(karmaTotal, isNirvana) {
   rc = {
+    karmaTotal: karmaTotal,
     isNirvana: !!isNirvana,
-    ready: false,     // true once the tree is on screen and the new life can begin
+    ready: false,     // true once the draft is finished and the new life can begin
+    deck: null,
     cells: [],
     flickerTimer: null
   };
@@ -126,9 +128,9 @@ function startFlicker() {
   }, RC_FLICKER_INTERVAL_MS);
 }
 
-// ---------------- the tree ----------------
+// ---------------- the cards ----------------
 
-// The noise settles into the skill tree. (For a Nirvana life the word comes first.)
+// The noise settles into the cards. (For a Nirvana life the word comes first.)
 function resolveRitual() {
   clearInterval(rc.flickerTimer);
   var grid = el.reincarnateGrid;
@@ -140,23 +142,30 @@ function resolveRitual() {
     head.style.fontWeight = "bold";
     head.style.fontSize = "28px";
     head.style.letterSpacing = "1px";
+    head.style.marginBottom = "12px";
     head.textContent = "NIRVANA";
     grid.appendChild(head);
   }
 
-  var treeBox = document.createElement("div");
-  treeBox.className = "rc-block";
-  grid.appendChild(treeBox);
+  var draftBox = document.createElement("div");
+  draftBox.className = "rc-block";
+  grid.appendChild(draftBox);
 
-  rc.ready = true;
-  showSkillTree(treeBox);
+  var ritual = rc;
+  showCardDraft(draftBox, ritual.karmaTotal, function (deck) {
+    if (rc !== ritual) return;
+    ritual.deck = deck;
+    ritual.ready = true;
+    el.reincarnateBar.style.display = "";
+    el.reincarnateOverlay.scrollTop = el.reincarnateOverlay.scrollHeight;
+  });
 }
 
 el.btnReincarnate.addEventListener("click", startReincarnation);
 
 el.btnReincarnateConfirm.addEventListener("click", function () {
   var ritual = rc;
-  if (!ritual || !ritual.ready) return; // the tree has to have been shown
+  if (!ritual || !ritual.ready) return; // the draft has to have been finished
   rc = null;
   el.reincarnateOverlay.style.display = "none";
   el.reincarnateBar.style.display = "none";
@@ -167,13 +176,12 @@ el.btnReincarnateConfirm.addEventListener("click", function () {
   var karmaAtStart = state.karma;
   submitScore(name, Math.floor(state.totalNailsMade), { karma: karmaAtStart, timeSec: state.simTime });
   state.karma += reincarnationKarmaGain;
-  skillKarmaPending = 0;
 
   var karmaCarried = state.karma;
   var nirvanaCarried = state.nirvanaAchieved || ritual.isNirvana;
   var guideSeenCarried = state.guideSeen;
   var autoNextMapCarried = state.autoNextMap; // a preference toggle, unrelated to how far you have got
-  var skillsCarried = state.skills;           // as you just left them in the tree (ending a run is what wipes them)
+  var deckChosen = ritual.deck;               // the cards just drafted: the new life's deck
 
   var justReachedNirvana = ritual.isNirvana && !state.nirvanaAchieved;
 
@@ -190,15 +198,16 @@ el.btnReincarnateConfirm.addEventListener("click", function () {
 
   deleteAllSaves();
 
-  // The very beginning: a brand new game, with only what you have earned put back.
+  // The very beginning: a brand new game (with a new draft seed for the NEXT reincarnation), with only what
+  // you have earned put back.
   state = defaultState();
-  state.skills = skillsCarried;
+  state.deck = deckChosen;
   state.pastLives = pastLivesCarried;
   state.karma = karmaCarried;
   state.nirvanaAchieved = nirvanaCarried;
   state.guideSeen = guideSeenCarried;
   state.autoNextMap = autoNextMapCarried;
-  // Karma and the ore skills add deposits to the ground, so lay map 1 again now that they are in place.
+  // Karma and deposit cards add deposits to the ground, so lay map 1 again now that they are in place.
   state.mapIndex = 1;
   state.mapTiles = generateMapTiles(1);
   state.mapTotalWeight = mapRemainingWeight(state.mapTiles);
@@ -211,6 +220,7 @@ el.btnReincarnateConfirm.addEventListener("click", function () {
     kind: "reincarnated",
     life: endedLife,
     allLives: pastLivesCarried,
+    deck: deckChosen,
     nirvanaJustReached: justReachedNirvana
   });
 });

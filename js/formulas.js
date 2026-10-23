@@ -30,7 +30,7 @@ var PRICE_DEMAND_SENSITIVITY = 1;
 
 function publicDemandPD() {
   if (state.price <= 0) return 0;
-  return marketingMultiplier() * Math.pow(0.8 / state.price, PRICE_DEMAND_SENSITIVITY) * yinYangPDMultiplier() * cityFeverMult() * skillMult("demandMult");
+  return marketingMultiplier() * Math.pow(0.8 / state.price, PRICE_DEMAND_SENSITIVITY) * yinYangPDMultiplier() * cityFeverMult() * cardMult("demandMult");
 }
 
 function avgNailsSoldPerSec() {
@@ -55,7 +55,7 @@ function optimalPriceForCurrentProduction() {
   var targetDemand = targetSales <= salesAtDemand100
     ? Math.pow(targetSales / 0.07, 1 / (1 + DEMAND_CURVE_EXPONENT))
     : Math.pow(targetSales / 7, 1 / DEMAND_CURVE_EXPONENT);
-  var demandMultiplier = marketingMultiplier() * yinYangPDMultiplier() * cityFeverMult() * skillMult("demandMult");
+  var demandMultiplier = marketingMultiplier() * yinYangPDMultiplier() * cityFeverMult() * cardMult("demandMult");
   var price = 0.8 * Math.pow(demandMultiplier / targetDemand, 1 / PRICE_DEMAND_SENSITIVITY);
   if (!isFinite(price) || price >= Number.MAX_VALUE / 100) return Number.MAX_VALUE;
 
@@ -73,16 +73,16 @@ function optimalPriceForCurrentProduction() {
 }
 
 function priceForMarketing() {
-  return MARKETING_BASE_COST * Math.pow(MARKETING_GROWTH, state.marketingLevel) * skillMult("marketingCost");
+  return MARKETING_BASE_COST * Math.pow(MARKETING_GROWTH, state.marketingLevel) * cardMult("marketingCost");
 }
 
 function nailMakerCostEffective() {
-  return NAILMAKER_COST * skillMult("machineCost");
+  return NAILMAKER_COST * cardMult("machineCost");
 }
 
 function factoryBuildCostEffective() {
   var discount = typeof moduleFactoryDiscount === "function" ? moduleFactoryDiscount() : 0; // blueprint tables (floor.js)
-  return FACTORY_BUILD_COST_FUNDS * Math.pow(Math.max(1.05, FACTORY_COST_GROWTH + skillAdd("factoryGrowth")), state.factories) * (1 - discount) * skillMult("machineCost");
+  return FACTORY_BUILD_COST_FUNDS * Math.pow(Math.max(1.05, FACTORY_COST_GROWTH + cardAdd("factoryGrowth")), state.factories) * (1 - discount) * cardMult("machineCost");
 }
 
 function factorySquaredBuildCostEffective() {
@@ -108,7 +108,7 @@ function factoryCopperCostEffective() {
   var f = factoryMakerFraction();
   var base = FACTORY_COST_BREAKER_SIDE_COPPER * (1 - f) + FACTORY_COST_MAKER_SIDE_COPPER * f;
   var save = typeof moduleCopperSave === "function" ? moduleCopperSave() : 0; // copper presses (floor.js)
-  return base / (1 + foremanOutputBonus()) * (1 - save) * skillMult("copperCost");
+  return base / (1 + foremanOutputBonus()) * (1 - save) * cardMult("copperCost");
 }
 
 function factorySquaredCopperCostEffective() {
@@ -116,17 +116,17 @@ function factorySquaredCopperCostEffective() {
 }
 
 function breakerBuildCostEffective() {
-  return BREAKER_BUILD_COST_FUNDS * skillMult("machineCost");
+  return BREAKER_BUILD_COST_FUNDS * cardMult("machineCost");
 }
 
 function nailMakerRateEffective() {
   if (!state.nailMakersOn) return 0;
-  return NAILMAKER_RATE * (1 + makerRateBonus()) * skillMult("makerSpeed");
+  return NAILMAKER_RATE * (1 + makerRateBonus()) * cardMult("makerSpeed");
 }
 
 function breakerIntakeEffective() {
   if (!state.breakersOn) return 0;
-  return BREAKER_INTAKE_RATE * (1 + breakerRateBonus()) * skillMult("breakerSpeed");
+  return BREAKER_INTAKE_RATE * (1 + breakerRateBonus()) * cardMult("breakerSpeed");
 }
 
 // Theoretical rates, computed straight from current state -- always
@@ -327,7 +327,7 @@ function harmonyRatio() {
 // Held Tao directly controls this bonus. Spending Tao therefore removes
 // the corresponding rate bonus immediately.
 function taoRateBonus() {
-  return Math.max(0, state.tao) * TAO_RATE_BONUS_PER_POINT * skillMult("taoRate"); // negative tao just means 0%, never a penalty
+  return Math.max(0, state.tao) * TAO_RATE_BONUS_PER_POINT * cardMult("taoRate"); // negative tao just means 0%, never a penalty
 }
 
 function productionRateBonusMultiplier() {
@@ -348,12 +348,17 @@ function breakerRateBonus() {
   return taoRateBonus() * (1 - monkLean());
 }
 
+// Cards can stack the yin & yang speed without limit. The bars settle at most 20 times a second (like the breakers
+// and selling, see engine.js); past that each settle simply moves the bar further, so the speed is the same but the
+// game never has to loop thousands of times a tick.
+var YINYANG_INTERVAL_FLOOR_SEC = 0.05;
+
 function yinYangTickAmount() {
-  return YINYANG_TICK_AMOUNT;
+  return YINYANG_TICK_AMOUNT * Math.max(1, cardMult("yinYangSpeed") * YINYANG_INTERVAL_FLOOR_SEC);
 }
 
 function yinYangTickInterval() {
-  return 1 / skillMult("yinYangSpeed"); // once per real second, faster with the flow skills (skills.js)
+  return Math.max(YINYANG_INTERVAL_FLOOR_SEC, 1 / cardMult("yinYangSpeed")); // once per real second, faster with cards (cards.js)
 }
 
 function yinYangStatusLabel() {
@@ -364,7 +369,7 @@ function yinYangStatusLabel() {
 }
 
 function taoDemandBonus() {
-  return Math.max(0, state.tao) * YINYANG_PD_BONUS_PER_LEVEL * skillMult("taoDemand"); // negative tao just means 0%
+  return Math.max(0, state.tao) * YINYANG_PD_BONUS_PER_LEVEL * cardMult("taoDemand"); // negative tao just means 0%
 }
 
 // All permanent demand bonuses ADD together (tao + nailbomb market scar),
@@ -388,9 +393,9 @@ function yinYangPDMultiplier() {
 // imbalance since the sign keeps flipping. If both bars are sitting at
 // 100 together, that's a tao point.
 // There is no cap on tao, but each tao held makes the next one dearer, exponentially. How much dearer is
-// TAO_COST_GROWTH per tao (eased a little by the enlightenment skills); negative tao counts as none.
+// TAO_COST_GROWTH per tao (eased a little by white cards); negative tao counts as none.
 function taoCostGrowth() {
-  return Math.max(1.02, TAO_COST_GROWTH + skillAdd("taoGrowth"));
+  return Math.max(1.02, TAO_COST_GROWTH + cardAdd("taoGrowth"));
 }
 
 // How many times the base price the next tao costs: 1 for the first, 1.1 for the second, 1.21 for the third...
@@ -434,10 +439,10 @@ function cityFeverMult() {
 }
 
 // How much karma reincarnating right now would add: 1 per KARMA_TAO_THRESHOLD tao held, plus whatever the
-// skill tree gives on top (only once you have earned at least one), all held to the karma cap.
+// cards give on top (only once you have earned at least one), all held to the karma cap.
 function reincarnationKarmaGainNow() {
   var available = Math.floor(state.tao / KARMA_TAO_THRESHOLD);
   if (available < 1) return 0;
-  var total = available + Math.max(0, Math.floor(skillAdd("karmaGain")));
+  var total = available + Math.max(0, Math.floor(cardAdd("karmaGain")));
   return Math.max(0, Math.min(total, KARMA_CAP - state.karma));
 }

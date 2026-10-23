@@ -66,8 +66,8 @@ function monasteryHallNailCost() {
 //   A(1 + P(1+s)) = B(1 + P(1-s))  =>  s = (B - A)(1 + P) / (P (A + B))
 function monasteryTargetLean() {
   var P = taoRateBonus();
-  var A = state.nailMakers * NAILMAKER_RATE * skillMult("makerSpeed") * IRON_PER_NAIL;
-  var B = state.breakers * BREAKER_INTAKE_RATE * skillMult("breakerSpeed") * activeIronTileCount();
+  var A = state.nailMakers * NAILMAKER_RATE * cardMult("makerSpeed") * IRON_PER_NAIL;
+  var B = state.breakers * BREAKER_INTAKE_RATE * cardMult("breakerSpeed") * activeIronTileCount();
   if (P <= 0 || A <= 0 || B <= 0) return 0;
   var s = (B - A) * (1 + P) / (P * (A + B));
   return Math.max(-1, Math.min(1, s));
