@@ -169,7 +169,6 @@ var el = {
   communityHarmony: document.getElementById("valCommunityHarmony"),
   communityRate: document.getElementById("valCommunityRate"),
   communityMerit: document.getElementById("valCommunityMerit"),
-  btnRecruitMember: document.getElementById("btnRecruitMember"),
 
   swarmSection: document.getElementById("swarmSection"),
   swarmCanvas: document.getElementById("swarmCanvas"),

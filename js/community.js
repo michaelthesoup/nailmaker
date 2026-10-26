@@ -1,8 +1,8 @@
 "use strict";
 
 // ----------------------------------------------------------------
-// The Community. Unlocks with your first reincarnation (any banked
-// karma). A picture from the Buddhist notes made into a mechanic:
+// The Community. It exists only while you hold members, and members come only
+// from white cards (cards.js): no white-card members, no community. A picture from the Buddhist notes made into a mechanic:
 //   ฉัน  the dot            you. Its distance from the big circle is
 //                            your karma progress toward Nirvana.
 //   เรา  the spinning center your community. Members make merit; the
@@ -22,10 +22,6 @@
 // All tunables are below.
 // ----------------------------------------------------------------
 
-var COMMUNITY_BASE_CAPACITY = 1;          // members allowed with the first karma, before the per-karma room below
-var COMMUNITY_CAPACITY_PER_KARMA = 2;     // extra room per banked karma
-var COMMUNITY_MEMBER_COST_BASE = 50;      // unsold nails for the first member...
-var COMMUNITY_MEMBER_COST_GROWTH = 1.4;   // ...each further member costs this much more
 var COMMUNITY_MERIT_PER_MEMBER_SEC = 0.25;
 var COMMUNITY_MERIT_PER_TAO = 100;
 var COMMUNITY_HARMONY_FALLOFF = 2;        // target harmony = 1 - |imbalance| * this (so 0 at 0.5 = the 3-to-1 collapse line)
@@ -36,8 +32,10 @@ var COMMUNITY_HARMONY_RISE_PER_SEC = 0.02; // harmony climbs slowly toward a bet
 var COMMUNITY_HARMONY_FALL_PER_SEC = 0.05; // ...and falls faster toward a worse one
 var COMMUNITY_NIRVANA_KARMA = NIRVANA_KARMA; // the dot reaches the center at this karma, which is where Nirvana happens
 
-function communityCapacity() {
-  return COMMUNITY_BASE_CAPACITY + COMMUNITY_CAPACITY_PER_KARMA * Math.max(0, Math.floor(state.karma)) + Math.max(0, Math.floor(cardAdd("communityRoom")));
+// The community's members come from white cards (cards.js, communityMembers) and nowhere else: they are not
+// recruited, bought or earned with karma. No members, no community.
+function communityMemberTotal() {
+  return Math.max(0, Math.floor(cardAdd("communityMembers")));
 }
 
 // Merit for the next tao. Like the yin & yang bars it grows with every tao held (taoCostMult in formulas.js),
@@ -46,13 +44,9 @@ function communityMeritPerTao() {
   return COMMUNITY_MERIT_PER_TAO * taoCostMult() * cardMult("meritCost");
 }
 
-function communityMemberCost() {
-  return Math.round(COMMUNITY_MEMBER_COST_BASE * Math.pow(COMMUNITY_MEMBER_COST_GROWTH, state.members));
-}
-
-// The community appears with your first reincarnation (banked karma).
+// The community exists while you hold at least one member from a white card.
 function communityUnlocked() {
-  return state.karma >= 1;
+  return communityMemberTotal() > 0;
 }
 
 // What harmony is heading toward right now: 1 = perfectly balanced
@@ -83,6 +77,7 @@ function communityMeritRate() {
 
 // Called every game tick (engine.js).
 function communityTick(dt) {
+  state.members = communityMemberTotal(); // the monastery and the drawing read state.members; the cards decide it
   if (!communityUnlocked()) return;
 
   var target = communityHarmonyTarget();
@@ -101,26 +96,18 @@ function communityTick(dt) {
   }
 }
 
-el.btnRecruitMember.addEventListener("click", function () {
-  var cost = communityMemberCost();
-  if (state.members >= communityCapacity() || state.unsold < cost) return;
-  state.unsold -= cost;
-  state.members += 1;
-  render();
-});
-
 // Called from render().
 function renderCommunity() {
   el.communitySection.style.display = communityUnlocked() ? "" : "none";
   if (!communityUnlocked()) return;
 
-  var cap = communityCapacity();
+  var total = communityMemberTotal();
   var harmony = communityHarmony();
   var rate = communityMeritRate();
   var working = state.monks + (state.foremen || 0);
-  // Monks and foremen are members taken OUT of the community, so they come off this number
-  // (3 / 3 with one monk reads 2 / 3). The recruit price still follows the total ever recruited.
-  el.communityMembers.textContent = Math.max(0, state.members - working) + " / " + cap;
+  // Monks and foremen are members taken OUT of the community, so they come off the first number
+  // (3 members with one monk reads 2 / 3).
+  el.communityMembers.textContent = Math.max(0, total - working) + " / " + total;
   var harmonyTarget = communityHarmonyTarget();
   var trend = harmonyTarget > harmony + 0.005 ? " \u2191" : (harmonyTarget < harmony - 0.005 ? " \u2193" : "");
   el.communityHarmony.textContent = Math.round(harmony * 100) + "%" + trend;
@@ -128,16 +115,6 @@ function renderCommunity() {
     ? "+" + rate.toFixed(2) + "/s (1 tao per " + fmtDuration(communityMeritPerTao() / rate) + ")"
     : "none";
   el.communityMerit.textContent = fmtInt(state.merit) + " / " + fmtInt(communityMeritPerTao());
-
-  var cost = communityMemberCost();
-  if (state.members >= cap) {
-    el.btnRecruitMember.textContent = "full \u2014 karma makes room";
-    el.btnRecruitMember.disabled = true;
-  } else {
-    el.btnRecruitMember.textContent = "recruit (" + fmtInt(cost) + " nails)";
-    el.btnRecruitMember.disabled = state.unsold < cost;
-  }
-
 }
 
 // ---------------- drawing ----------------

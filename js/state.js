@@ -82,12 +82,7 @@ var TICK_MS = 100;
 
 var MAP_ROWS = 10;
 var MAP_COLS = 21;
-var DEPOSITS_PER_MAP = 15; // base: deposits on a map for a player with no karma
-// Karma enriches the ground. Any karma at all adds the first bonus, then each
-// further karma adds a little more (rounded down), up to a hard cap.
-//   0 karma: 15   1 karma: 20   3 karma: 21   11 karma: 25   ...   cap: 60
-var DEPOSITS_FIRST_KARMA_BONUS = 5;
-var DEPOSITS_PER_EXTRA_KARMA = 0.5;
+var DEPOSITS_PER_MAP = 15; // deposits on every map. Karma adds none: only the deposit cards (cards.js) add more, up to the max.
 var DEPOSITS_MAX = 60;
 
 // Progressive UI reveal. Map stays hidden until the first breaker
@@ -174,14 +169,9 @@ function depositCapacityForMap(mapIndex) {
 // state; before it exists (the very first defaultState() call) or for a
 // karma-less player it's just the base count.
 function mapDepositCount() {
-  var karma = (typeof state !== "undefined" && state && typeof state.karma === "number") ? state.karma : 0;
-  var count = DEPOSITS_PER_MAP;
-  if (karma >= 1) {
-    var extra = DEPOSITS_FIRST_KARMA_BONUS + Math.floor((karma - 1) * DEPOSITS_PER_EXTRA_KARMA);
-    count = Math.min(DEPOSITS_MAX, DEPOSITS_PER_MAP + extra);
-  }
-  var cardExtra = typeof cardAdd === "function" ? cardAdd("deposits") : 0; // deposit cards add to every map
-  return Math.max(1, Math.min(DEPOSITS_MAX, count + cardExtra));
+  // Every map has the same base number of deposits. Karma adds none: the only way to get more is the deposit cards.
+  var cardExtra = typeof cardAdd === "function" ? cardAdd("deposits") : 0;
+  return Math.max(1, Math.min(DEPOSITS_MAX, DEPOSITS_PER_MAP + cardExtra));
 }
 
 function generateMapTiles(mapIndex) {
@@ -415,7 +405,7 @@ function defaultState() {
 
     // Stats for the end-of-life screen and the past lives log.
     totalEarned: 0, // lifetime money earned from selling nails this life
-    members: 0, // the community's size (see community.js) -- demo feature
+    members: 0, // the community's size: set every tick from the white cards (see community.js), never saved by hand
     merit: 0,   // progress toward the next tao from the community
     harmony: 0, // how settled the community is (0..1); chases the economy's balance with inertia
     unlockedMonastery: false, // earned per life: reincarnated at least once + 3 tao (see monastery.js)

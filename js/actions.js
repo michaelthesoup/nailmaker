@@ -223,8 +223,10 @@ el.btnEndRun.addEventListener("click", function () {
   recordLifeEnd(endedLife, "ended", allLives, karmaLost); // lifetime stats survive the wipe below
 
   var nirvanaCarried = state.nirvanaAchieved; // a real achievement -- survives even this
+  var wipeAppliedCarried = state.wipeApplied; // which admin wipe this player has had (gifts.js), so it isn't applied again
   state = defaultState();
   state.nirvanaAchieved = nirvanaCarried;
+  if (wipeAppliedCarried) state.wipeApplied = wipeAppliedCarried;
 
   render();
   showEndScreen({ kind: "ended", life: endedLife, allLives: allLives, karmaLost: karmaLost });

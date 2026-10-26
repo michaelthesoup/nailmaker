@@ -7,13 +7,17 @@
 // ACCOUNT write medallions, gifts, bans and the news. The panel has four tabs:
 //
 //   me       give yourself resources, machines and progress with buttons
-//   players  find a player, send them gifts, kick them off the leaderboards
+//   players  find a player, send them gifts, kick them off the leaderboards, wipe everyone's tao and karma
 //   weekly   look at a week's board, remove entries, award medallions
 //   news     write the headlines in the scrolling ticker at the top of the page
 //
 // Kicking a player deletes their leaderboard entries (all-time and the last
 // few weeks) and adds them to the "banned" collection, which the rules use to
 // stop them posting again until you restore them.
+//
+// "wipe everyone's tao and karma" (players tab) writes one marker document, config/wipe. Every game
+// applies it once, when it next checks (gifts.js), so it reaches offline players when they log in.
+// It uses the same 'config' rules as the news: signed-in players read it, only the admin writes it.
 //
 // "sync scores from saves" (players tab) reads every player's cloud save and
 // raises their board entries to the life they are in right now. It needs the
@@ -254,6 +258,27 @@ function adminKickPlayer(uid, name, statusNode, done) {
   });
 }
 
+// Sets every player's tao and karma to 0. Nothing is changed in anyone's save from here: this only publishes
+// a marker (config/wipe), and each game wipes itself the next time it checks (gifts.js, checkWipe).
+function adminWipeEveryone(status) {
+  if (!adminAllowed()) return;
+  if (!window.confirm("Wipe EVERYONE's tao and karma?\n\nEvery player's tao and karma is set to 0 the next time their game checks: within a few minutes if they are online, or when they next log in. That includes you. Their cards, machines, scores and records are not touched.\n\nThis can't be undone.")) return;
+  if (!window.confirm("Are you sure? This affects every account.")) return;
+  var me = currentAuthUser();
+  db.collection("config").doc("wipe").set({
+    at: Date.now(),
+    by: me ? (me.displayName || "admin") : "admin",
+    what: "tao and karma",
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  }).then(function () {
+    status.textContent = "done. Everyone's tao and karma is wiped as their game checks in (you too, in a moment).";
+    if (typeof checkWipe === "function") checkWipe();
+  }).catch(function (err) {
+    console.error(err);
+    status.textContent = "couldn't publish the wipe -- check the Firestore rules for 'config'";
+  });
+}
+
 // Raises every player's leaderboard entries to the nail count of the life they are in right now, read
 // from their cloud save. It only ever RAISES a score (never lowers or removes one) and skips banned players.
 // The weekly board is only touched for players whose save was written this week.
@@ -453,6 +478,10 @@ function buildPlayersPanel(p) {
       adminRestorePlayer(adminTarget.uid, adminTarget.name, status);
     }]
   ]);
+
+  sheetAddHeading(p, "everyone");
+  var wipeStatus = adminStatus(p);
+  adminButtons(p, [["wipe everyone's tao and karma", function () { adminWipeEveryone(wipeStatus); }]]);
 
   adminPanels.players.targetLine = targetLine;
   adminPanels.players.search = search;

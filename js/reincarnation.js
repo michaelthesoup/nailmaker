@@ -13,8 +13,7 @@
 // (cardsui.js, cards.js): a black card and a white card to choose your path, then
 // the hands of four. Then "begin new life". You are reborn at the very beginning,
 // like a brand new player: nothing is handed to you, nothing is already unlocked.
-// The only things that come with you are your karma (which also makes the ground
-// richer), your past lives log and Nirvana; the cards you just chose are your deck
+// The only things that come with you are your karma, your past lives log and Nirvana; the cards you just chose are your deck
 // for the new life, and the next reincarnation drafts a new one.
 // ----------------------------------------------------------------
 
@@ -44,8 +43,8 @@ function startReincarnation() {
   var confirmed = window.confirm(
     "Be reincarnated?\n\n" +
     (karmaGain > 0 ? "You'll gain " + karmaGain + " karma (" + newTotalKarma + " total, forever). " : "Your karma is already at its cap of " + KARMA_CAP + ", so this adds none. ") +
-    "You'll choose " + cardPickCount(newTotalKarma) + " card" + (cardPickCount(newTotalKarma) === 1 ? "" : "s") + " (one for each karma) to carry into your next life. " +
-    "This life ends and you begin again from the very beginning, on a fresh map (karma adds more deposits to it). Only your karma and your cards come with you.\n\n" +
+    "You'll choose " + (cardPickCount(newTotalKarma) + 1) + " cards to carry into your next life. " +
+    "This life ends and you begin again from the very beginning, on a fresh map. Only your karma and your cards come with you.\n\n" +
     "This can't be undone."
   );
   if (!confirmed) return;
@@ -182,6 +181,7 @@ el.btnReincarnateConfirm.addEventListener("click", function () {
   var guideSeenCarried = state.guideSeen;
   var autoNextMapCarried = state.autoNextMap; // a preference toggle, unrelated to how far you have got
   var deckChosen = ritual.deck;               // the cards just drafted: the new life's deck
+  var wipeAppliedCarried = state.wipeApplied; // which admin wipe this player has already had (gifts.js), so a new life isn't wiped for an old one
 
   var justReachedNirvana = ritual.isNirvana && !state.nirvanaAchieved;
 
@@ -207,7 +207,8 @@ el.btnReincarnateConfirm.addEventListener("click", function () {
   state.nirvanaAchieved = nirvanaCarried;
   state.guideSeen = guideSeenCarried;
   state.autoNextMap = autoNextMapCarried;
-  // Karma and deposit cards add deposits to the ground, so lay map 1 again now that they are in place.
+  if (wipeAppliedCarried) state.wipeApplied = wipeAppliedCarried;
+  // Deposit cards add deposits to the ground, so lay map 1 again now that the deck is in place.
   state.mapIndex = 1;
   state.mapTiles = generateMapTiles(1);
   state.mapTotalWeight = mapRemainingWeight(state.mapTiles);

@@ -80,9 +80,15 @@ function nailMakerCostEffective() {
   return NAILMAKER_COST * cardMult("machineCost");
 }
 
+// How much dearer each factory you own makes the next: 1.4 normally, and the factory-growth cards take a share off the
+// 0.4 (never below 1.02, so a factory always costs a little more than the last).
+function factoryCostGrowth() {
+  return Math.max(1.02, 1 + (FACTORY_COST_GROWTH - 1) * cardMult("factoryGrowth"));
+}
+
 function factoryBuildCostEffective() {
   var discount = typeof moduleFactoryDiscount === "function" ? moduleFactoryDiscount() : 0; // blueprint tables (floor.js)
-  return FACTORY_BUILD_COST_FUNDS * Math.pow(Math.max(1.05, FACTORY_COST_GROWTH + cardAdd("factoryGrowth")), state.factories) * (1 - discount) * cardMult("machineCost");
+  return FACTORY_BUILD_COST_FUNDS * Math.pow(factoryCostGrowth(), state.factories) * (1 - discount) * cardMult("machineCost");
 }
 
 function factorySquaredBuildCostEffective() {
@@ -348,7 +354,7 @@ function breakerRateBonus() {
   return taoRateBonus() * (1 - monkLean());
 }
 
-// Cards can stack the yin & yang speed without limit. The bars settle at most 20 times a second (like the breakers
+// Cards can stack the yin & yang speed very high. The bars settle at most 20 times a second (like the breakers
 // and selling, see engine.js); past that each settle simply moves the bar further, so the speed is the same but the
 // game never has to loop thousands of times a tick.
 var YINYANG_INTERVAL_FLOOR_SEC = 0.05;
@@ -395,7 +401,7 @@ function yinYangPDMultiplier() {
 // There is no cap on tao, but each tao held makes the next one dearer, exponentially. How much dearer is
 // TAO_COST_GROWTH per tao (eased a little by white cards); negative tao counts as none.
 function taoCostGrowth() {
-  return Math.max(1.02, TAO_COST_GROWTH + cardAdd("taoGrowth"));
+  return Math.max(1.02, 1 + (TAO_COST_GROWTH - 1) * cardMult("taoGrowth")); // the tao-growth cards take a share off the usual 0.1
 }
 
 // How many times the base price the next tao costs: 1 for the first, 1.1 for the second, 1.21 for the third...

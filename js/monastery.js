@@ -9,7 +9,7 @@
 // that finds the center between them -- turned by the Wheel of the
 // Dharma (ธรรมจักร), which spins faster the more monks there are.
 //
-//   - Unlocks once you have reincarnated at least once AND hold 3 tao
+//   - Unlocks once you have a community (members from white cards, see cards.js) AND hold 3 tao
 //     (earned again each life, like the swarm).
 //   - Halls cost funds AND a lot of unsold nails, and seat monks (a
 //     mid-to-late-game sink).
@@ -41,7 +41,7 @@ var monkStepAccum = 0; // fractional monk steps carried between ticks (not saved
 
 function monasteryCheckUnlock() {
   if (state.unlockedMonastery) return;
-  if (state.karma >= 1 && state.tao >= MONASTERY_UNLOCK_TAO) state.unlockedMonastery = true;
+  if (typeof communityUnlocked === "function" && communityUnlocked() && state.tao >= MONASTERY_UNLOCK_TAO) state.unlockedMonastery = true;
 }
 
 function monasteryUnlocked() {
