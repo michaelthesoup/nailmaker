@@ -1,27 +1,38 @@
 "use strict";
 
 // ----------------------------------------------------------------
-// The card draft screen. It is not a screen of its own: it is the second half of
+// The packs and loadout screen. It is not a screen of its own: it is the second half of
 // reincarnation. The ritual's wall of flickering characters (reincarnation.js) settles
-// into a black card and a white card, you choose your path, then pick one card from a hand
-// of four for every karma you hold, and "begin new life" ends it. The cards themselves
-// (what they do, how they are made, how they stack) live in cards.js; this file only
-// draws them and handles the clicks.
+// into a black card and a white card, you choose your path (that card goes straight into a
+// slot), then you open the packs your karma earned, one at a time. Click a card to take it: it goes to
+// your deck, or to your collection if the deck is full; whatever you leave is gone when the next pack
+// opens. The deck and the collection (12 places) are both kept from life to life. Clicking a card in the
+// deck moves it to the collection and the other way round, and every card has a discard button. "Open all"
+// opens every pack in a quick run and chooses for you. "Begin new life" ends it. The cards themselves (what they do,
+// how they are made, how they stack) live in cards.js; this file only draws them and handles
+// the clicks.
+//
+// Nothing here touches the saved game until "begin new life" (reincarnation.js calls cardsCommit),
+// so closing the page halfway loses nothing.
 // ----------------------------------------------------------------
 
-var cardDraft = null; // { box, seed, karma, picks, path, deck, index, onDone }
+var loadout = null; // { box, seed, karma, slots, path, packsTotal, packsOpened, opened, current, kept, equipped, message, busy, reel, onReady, shown, choose }
 
 // One card as a clickable element. Black cards are black, white cards are white, in both light and dark mode.
-function cardElement(card, onPick) {
+// opts: { mini, equipped }
+function cardElement(card, onPick, opts) {
+  opts = opts || {};
   var div = document.createElement("div");
   div.className = "card " + card.side + " r" + card.rarity;
   if (card.rarity === 3) div.className += " legendary";
+  if (opts.mini) div.className += " mini";
+  if (opts.equipped) div.className += " equipped";
   div.setAttribute("role", "button");
   div.tabIndex = 0;
 
   var mark = document.createElement("div");
   mark.className = "card-mark";
-  mark.textContent = card.rarity === 3 ? "\u2726" : (card.side === "black" ? "\u25cf" : "\u25cb"); // a star for a legendary card
+  mark.textContent = card.rarity === 3 ? "✦" : (card.side === "black" ? "●" : "○"); // a star for a legendary card
   div.appendChild(mark);
 
   var text = document.createElement("div");
@@ -38,120 +49,327 @@ function cardElement(card, onPick) {
   rarity.textContent = CARD_RARITY_NAMES[card.rarity];
   div.appendChild(rarity);
 
-  div.addEventListener("click", onPick);
-  div.addEventListener("keydown", function (e) {
-    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onPick(); }
-  });
+  if (onPick) {
+    div.addEventListener("click", onPick);
+    div.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onPick(); }
+    });
+  } else {
+    div.style.cursor = "default";
+  }
   return div;
 }
 
-// fade: the first hands fade in; later ones appear at once, so picking many cards stays quick.
-function cardHandElement(cards, onPick, fade) {
-  var hand = document.createElement("div");
-  hand.className = "card-hand" + (fade ? " fade" : "");
-  cards.forEach(function (card) { hand.appendChild(cardElement(card, function () { onPick(card); })); });
-  return hand;
+function loadoutText(className, text) {
+  var d = document.createElement("div");
+  d.className = className;
+  d.textContent = text;
+  return d;
 }
 
-// How good a card looks to the "pick the rest for me" button: rarer is better, your own colour beats the other,
-// and an effect your deck doesn't have yet beats a repeat (cards add up within a stat, so variety is worth more).
-function cardAutoScore(card, deck, path) {
-  var score = card.rarity * 10 + (card.side === path ? 5 : 0);
-  for (var key in card.effects) {
-    var have = deck.some(function (c) { return c.effects[key] !== undefined; });
-    if (!have) score += 3;
-  }
-  return score;
+function loadoutButton(label, onClick, disabled) {
+  var b = document.createElement("button");
+  b.textContent = label;
+  b.style.marginRight = "8px";
+  if (disabled) b.disabled = true;
+  b.addEventListener("click", onClick);
+  return b;
 }
 
-// What the deck adds up to so far, as plain lines.
+// What the loadout adds up to so far, as plain lines.
 function cardDeckElement(deck) {
   var box = document.createElement("div");
   box.className = "card-deck";
   var lines = cardTotalsLines(deck);
   if (lines.length === 0) return box;
-  var head = document.createElement("div");
-  head.className = "sheet-heading";
-  head.textContent = "your deck (" + deck.length + " card" + (deck.length === 1 ? "" : "s") + ")";
-  box.appendChild(head);
-  lines.forEach(function (line) {
-    var d = document.createElement("div");
-    d.textContent = line;
-    box.appendChild(d);
-  });
+  box.appendChild(loadoutText("sheet-heading", "your deck adds up to"));
+  lines.forEach(function (line) { box.appendChild(loadoutText("", line)); });
   return box;
 }
 
-function renderCardDraft() {
-  var d = cardDraft;
-  var box = d.box;
-  box.innerHTML = "";
+function loadoutReady() {
+  var d = loadout;
+  return !!d && !d.busy && d.path !== null && d.packsOpened >= d.packsTotal && d.equipped.length > 0;
+}
 
+function loadoutChanged() {
+  var d = loadout;
+  d.onReady(loadoutReady());
+  renderLoadout();
+}
+
+function loadoutRemoveFromPack(card) {
+  var i = loadout.current.indexOf(card);
+  if (i >= 0) loadout.current.splice(i, 1);
+}
+
+function loadoutChoosePath(card) {
+  var d = loadout;
+  d.path = card.side;
+  // The deck is saved from life to life, so it comes in with you. Any card that the new path has no room for
+  // (the other colour is limited) goes to the collection, or is lost if that is full.
+  var carried = d.equipped;
+  d.equipped = [];
+  var moved = 0, lost = 0;
+  carried.forEach(function (c) {
+    if (!cardLoadoutBlock(d.equipped, c, d.slots, d.path)) d.equipped.push(c);
+    else if (d.kept.length < CARD_COLLECTION_MAX) { d.kept.push(c); moved++; }
+    else lost++;
+  });
+  var note = moved || lost ? (moved + lost) + " card" + (moved + lost === 1 ? "" : "s") + " from your last deck did not fit this path: " + moved + " moved to your collection" + (lost ? ", " + lost + " discarded" : "") + "." : "";
+  loadoutTake(card, "fork"); // the fork card is a free pick
+  var placed = d.equipped.indexOf(card) >= 0 || d.kept.indexOf(card) >= 0;
+  d.message = note + (placed ? "" : " Your deck and collection are full, so the card you chose was discarded.");
+  loadoutChanged();
+}
+
+function loadoutOpenPack() {
+  var d = loadout;
+  if (d.busy || d.packsOpened >= d.packsTotal) return;
+  d.packsOpened += 1;
+  d.current = cardPack(d.seed, d.packsOpened, d.path, d.karma);
+  d.opened += d.current.length;
+  d.message = "";
+  loadoutChanged();
+}
+
+// A card from the pack: it goes to the deck, or to the collection if the deck is full. With both full it stays in the
+// pack until you discard something.
+function loadoutTake(card, from) {
+  var d = loadout;
+  d.message = "";
+  if (!cardLoadoutBlock(d.equipped, card, d.slots, d.path)) {
+    d.equipped.push(card);
+  } else if (d.kept.length < CARD_COLLECTION_MAX) {
+    d.kept.push(card);
+  } else {
+    if (from !== "fork") { d.message = "your deck and your collection are full: discard a card to make room."; renderLoadout(); }
+    return;
+  }
+  loadoutRemoveFromPack(card);
+  loadoutChanged();
+}
+
+// A card in the deck goes to the collection. With the collection full, you have to discard something first.
+function loadoutToCollection(card) {
+  var d = loadout;
+  if (d.busy) return;
+  if (d.kept.length >= CARD_COLLECTION_MAX) { d.message = "your collection is full: discard a card to make room."; renderLoadout(); return; }
+  var i = d.equipped.indexOf(card);
+  if (i >= 0) d.equipped.splice(i, 1);
+  d.kept.push(card);
+  d.message = "";
+  loadoutChanged();
+}
+
+// A card in the collection goes to the deck, if the deck has room for it.
+function loadoutToDeck(card) {
+  var d = loadout;
+  if (d.busy) return;
+  var why = cardLoadoutBlock(d.equipped, card, d.slots, d.path);
+  if (why) { d.message = "can't put it in your deck: " + why + "."; renderLoadout(); return; }
+  d.kept.splice(d.kept.indexOf(card), 1);
+  d.equipped.push(card);
+  d.message = "";
+  loadoutChanged();
+}
+
+// Gets rid of a card for good, from the deck or the collection.
+function loadoutDiscard(card) {
+  var d = loadout;
+  if (d.busy) return;
+  var i = d.equipped.indexOf(card);
+  if (i >= 0) d.equipped.splice(i, 1);
+  i = d.kept.indexOf(card);
+  if (i >= 0) d.kept.splice(i, 1);
+  i = d.current.indexOf(card);
+  if (i >= 0) d.current.splice(i, 1);
+  d.message = "";
+  loadoutChanged();
+}
+
+function loadoutOpenAll() {
+  var d = loadout;
+  if (d.busy || d.packsOpened >= d.packsTotal) return;
+  var total = d.packsTotal - d.packsOpened;
+  var delay = Math.max(30, Math.min(170, Math.round(3200 / total)));
+  var tally = { packs: 0, legendary: 0, banked: 0, deck: 0, swapped: 0 };
+  var run = loadout;
+  d.busy = true;
+  d.message = "";
+  d.current = [];
+  d.onReady(false);
+
+  function step() {
+    if (loadout !== run) return; // the ritual was abandoned
+    if (d.packsOpened >= d.packsTotal) { finish(); return; }
+    d.packsOpened += 1;
+    var pack = cardPack(d.seed, d.packsOpened, d.path, d.karma);
+    d.opened += pack.length;
+    var st = { deck: d.equipped, kept: d.kept, slots: d.slots, path: d.path };
+    var stats = cardAutoPack(pack, st);
+    tally.packs += 1;
+    tally.banked += stats.banked;
+    tally.deck += stats.deck;
+    tally.swapped += stats.swapped;
+    tally.legendary += pack.filter(function (c) { return c.rarity === 3; }).length;
+    d.reel = { pack: pack, tally: tally };
+    renderLoadout();
+    setTimeout(step, delay);
+  }
+
+  function finish() {
+    var st = { deck: d.equipped, kept: d.kept, slots: d.slots, path: d.path };
+    cardAutoFinish(st);
+    d.equipped = st.deck;
+    d.kept = st.kept;
+    d.busy = false;
+    d.reel = null;
+    d.current = [];
+    d.message = "opened " + tally.packs + " pack" + (tally.packs === 1 ? "" : "s") + ": " + tally.legendary + " legendary" +
+      (tally.legendary ? " (" + tally.banked + " to your collection" + (tally.deck ? ", " + tally.deck + " to your slots" : "") + ")" : "") +
+      ", and the best of the rest are in your slots.";
+    loadoutChanged();
+  }
+
+  renderLoadout();
+  setTimeout(step, 250);
+}
+
+function renderReel(box) {
+  var d = loadout;
+  var r = d.reel;
+  box.appendChild(loadoutText("sheet-heading", "opening packs... " + d.packsOpened + " of " + d.packsTotal));
+  if (!r) return;
+  var legendary = r.pack.some(function (c) { return c.rarity === 3; });
+  var row = document.createElement("div");
+  row.className = "card-hand reel" + (legendary ? " reel-legend" : "");
+  r.pack.forEach(function (c) { row.appendChild(cardElement(c, null, { mini: true })); });
+  box.appendChild(row);
+  box.appendChild(loadoutText("hint", legendary ? "✦ legendary ✦" : " "));
+  box.appendChild(loadoutText("hint", r.tally.legendary + " legendary so far, " + r.tally.banked + " in your collection"));
+}
+
+function renderLoadout() {
+  var d = loadout;
+  var box = d.box;
+  var overlay = el.reincarnateOverlay;
+  var scroll = overlay ? overlay.scrollTop : 0;
+  box.innerHTML = "";
   d.shown = null;
   d.choose = null;
 
   if (d.path === null) { // the fork
     var fork = cardFork(d.seed, d.karma);
-    d.choose = function (card) {
-      d.path = card.side;
-      d.deck.push(card);
-      d.index = 1;
-      renderCardDraft();
-    };
+    d.choose = loadoutChoosePath;
     d.shown = fork;
-    box.appendChild(cardHandElement(fork, d.choose, true));
-    var note = document.createElement("div");
-    note.className = "card-note";
-    note.textContent = "choose your path wisely";
-    box.appendChild(note);
+    var forkRow = document.createElement("div");
+    forkRow.className = "card-hand fade";
+    fork.forEach(function (card) { forkRow.appendChild(cardElement(card, function () { loadoutChoosePath(card); })); });
+    box.appendChild(forkRow);
+    box.appendChild(loadoutText("card-note", "choose your path wisely"));
     return;
   }
 
-  if (d.index <= d.picks) {
-    var count = document.createElement("div");
-    count.className = "hint";
-    count.textContent = "card " + d.index + " of " + d.picks;
-    box.appendChild(count);
+  if (d.busy) {
+    renderReel(box);
+    if (overlay) overlay.scrollTop = scroll;
+    return;
+  }
 
-    var hand = cardHand(d.seed, d.index, d.path, d.karma, d.deck);
-    d.choose = function (card) {
-      d.deck.push(card);
-      d.index += 1;
-      renderCardDraft();
-    };
-    d.shown = hand;
-    box.appendChild(cardHandElement(hand, d.choose, d.index === 1));
-    box.appendChild(cardDeckElement(d.deck));
+  // ---- packs ----
+  var left = d.packsTotal - d.packsOpened;
+  box.appendChild(loadoutText("sheet-heading", "packs (" + d.packsOpened + " of " + d.packsTotal + " opened)"));
+  if (left > 0) {
+    box.appendChild(loadoutText("hint", "each karma you hold is a pack of five. Whatever you don't take is gone when the next pack opens."));
+    box.appendChild(loadoutButton("open a pack", loadoutOpenPack));
+    if (left > 1) box.appendChild(loadoutButton("open all " + left, loadoutOpenAll));
+  } else {
+    box.appendChild(loadoutText("hint", "all packs opened."));
+  }
+  if (d.current.length > 0) {
+    box.appendChild(loadoutText("hint", "click a card to take it. It goes to your deck, or to your collection if the deck is full."));
+    var row = document.createElement("div");
+    row.className = "card-hand";
+    d.current.forEach(function (c) {
+      var tile = document.createElement("div");
+      tile.className = "card-tile";
+      tile.appendChild(cardElement(c, function () { loadoutTake(c, "pack"); }, { mini: true }));
+      row.appendChild(tile);
+    });
+    box.appendChild(row);
+  }
 
-    if (d.index < d.picks) { // with only one hand left there is nothing to skip
-      var rest = document.createElement("button");
-      rest.textContent = "pick the rest for me";
-      rest.style.marginTop = "14px";
-      rest.addEventListener("click", function () {
-        while (d.index <= d.picks) {
-          var h = cardHand(d.seed, d.index, d.path, d.karma, d.deck);
-          var best = h[0];
-          for (var i = 1; i < h.length; i++) if (cardAutoScore(h[i], d.deck, d.path) > cardAutoScore(best, d.deck, d.path)) best = h[i];
-          d.deck.push(best);
-          d.index += 1;
-        }
-        renderCardDraft();
-      });
-      box.appendChild(rest);
+  // ---- deck ----
+  var oppAllowed = cardOppositeAllowed(d.slots);
+  box.appendChild(loadoutText("sheet-heading", "your deck (" + d.equipped.length + " of " + d.slots + ")"));
+  var slotsRow = document.createElement("div");
+  slotsRow.className = "card-slots";
+  for (var i = 0; i < d.slots; i++) {
+    var card = d.equipped[i];
+    if (card) {
+      var tile = document.createElement("div");
+      tile.className = "card-tile";
+      tile.appendChild(cardElement(card, (function (c) { return function () { loadoutToCollection(c); }; })(card), { mini: true }));
+      tile.appendChild(loadoutButton("discard", (function (c) { return function () { loadoutDiscard(c); }; })(card), false)).className = "card-keep";
+      slotsRow.appendChild(tile);
+    } else {
+      var slot = document.createElement("div");
+      slot.className = "card-slot-empty";
+      slot.textContent = "empty";
+      slotsRow.appendChild(slot);
     }
-    return;
+  }
+  box.appendChild(slotsRow);
+  box.appendChild(loadoutText("hint", "click a card in your deck to move it to your collection. " + (oppAllowed > 0
+    ? "Up to " + oppAllowed + " slot" + (oppAllowed === 1 ? "" : "s") + " may hold the other colour (" + cardOppositeCount(d.equipped, d.path) + " used)."
+    : "More karma opens a slot for a card of the other colour.")));
+  box.appendChild(loadoutButton("equip best", function () {
+    var all = d.equipped.concat(d.kept);
+    var best = cardAutoLoadout(all, d.slots, d.path);
+    d.kept = cardSorted(all.filter(function (c) { return best.indexOf(c) < 0; })).slice(0, CARD_COLLECTION_MAX);
+    d.equipped = best;
+    d.message = "";
+    loadoutChanged();
+  }));
+  box.appendChild(loadoutText("hint", "equip best picks the strongest deck from your deck and your collection."));
+
+  if (d.message) box.appendChild(loadoutText("card-warn", d.message));
+  var lean = cardBalance(d.equipped);
+  var over = lean.ratio >= 1 ? lean.ratio : 1 / lean.ratio;
+  if (over > CARD_BALANCE_SOFT) {
+    box.appendChild(loadoutText("card-warn", "your makers and breakers are out of step: " + (lean.ratio > 1 ? "breakers" : "makers") +
+      " come out about " + over.toFixed(1) + " times stronger. Add " + (lean.ratio > 1 ? "maker-speed" : "breaker-speed or deposit") + " cards to even it out."));
+  }
+  box.appendChild(cardDeckElement(d.equipped));
+  if (left > 0) box.appendChild(loadoutText("hint", "open all your packs, then begin."));
+  else if (d.equipped.length === 0) box.appendChild(loadoutText("hint", "put at least one card in a slot, then begin."));
+
+  // ---- collection ----
+  box.appendChild(loadoutText("sheet-heading", "your collection (" + d.kept.length + " of " + CARD_COLLECTION_MAX + ")"));
+  box.appendChild(loadoutText("hint", d.kept.length === 0
+    ? "cards you put here are saved from life to life."
+    : "click a card to put it in your deck."));
+  if (d.kept.length > 0) {
+    var grid = document.createElement("div");
+    grid.className = "card-hand";
+    d.kept.forEach(function (c) {
+      var tile = document.createElement("div");
+      tile.className = "card-tile";
+      tile.appendChild(cardElement(c, function () { loadoutToDeck(c); }, { mini: true }));
+      tile.appendChild(loadoutButton("discard", function () { loadoutDiscard(c); }, false)).className = "card-keep";
+      grid.appendChild(tile);
+    });
+    box.appendChild(grid);
   }
 
-  // every pick made: the deck is done
-  d.finished = true;
-  box.appendChild(cardDeckElement(d.deck));
-  d.onDone(d.deck);
+  if (overlay) overlay.scrollTop = scroll;
 }
 
-// Keys 1-4 pick the card in that position (1-2 at the fork), so a long draft doesn't need the mouse.
+// Keys 1 and 2 pick the card at the fork.
 document.addEventListener("keydown", function (e) {
-  var d = cardDraft;
-  if (!d || d.finished || !d.shown || !d.choose) return;
+  var d = loadout;
+  if (!d || !d.shown || !d.choose || d.path !== null) return;
   if (el.reincarnateOverlay.style.display !== "flex") return;
   var n = parseInt(e.key, 10);
   if (!(n >= 1 && n <= d.shown.length)) return;
@@ -160,20 +378,35 @@ document.addEventListener("keydown", function (e) {
 });
 
 // Called by the ritual when the noise has settled. box is where the cards are drawn; karma is the total this
-// reincarnation will leave you with (one hand of four for each); onDone(deck) is called when the last card is picked.
-function showCardDraft(box, karma, onDone) {
-  cardDraft = {
+// reincarnation will leave you with; packs is how many packs to open (your total karma);
+// onReady(true/false) is called whenever the loadout becomes ready (or stops being) to begin.
+function showLoadout(box, karma, packs, onReady) {
+  loadout = {
     box: box,
     seed: state.draftSeed,
     karma: karma,
-    picks: cardPickCount(karma),
+    slots: cardSlots(karma),
     path: null,
-    deck: [],
-    index: 0,
+    packsTotal: cardPackCount(packs),
+    packsOpened: 0,
+    opened: 0,
+    current: [],
+    kept: Array.isArray(state.collection) ? state.collection.slice() : [],  // the collection and the deck are both kept from life to life
+    equipped: Array.isArray(state.deck) ? state.deck.slice() : [],
+    message: "",
+    busy: false,
+    reel: null,
+    onReady: onReady,
     shown: null,
-    choose: null,
-    finished: false,
-    onDone: onDone
+    choose: null
   };
-  renderCardDraft();
+  onReady(false);
+  renderLoadout();
+}
+
+// What the player chose, for reincarnation.js to commit: { equipped, kept, opened, packs, path }
+function loadoutResult() {
+  var d = loadout;
+  if (!d) return null;
+  return { equipped: d.equipped.slice(), kept: d.kept.slice(), opened: d.opened + (d.path ? 1 : 0), packs: d.packsOpened, path: d.path };
 }

@@ -145,8 +145,16 @@ function showEndScreen(opts) {
       ["gained this life", "+" + life.karmaGained],
       ["total karma", String(life.karmaTotal)]
     ]);
+    if (opts.collectionSize !== undefined) {
+      sheetAddHeading(body, "cards");
+      sheetAddRows(body, [
+        ["packs opened", String(opts.packs || 0)],
+        ["cards opened", String(opts.newCards || 0)],
+        ["cards in your collection", String(opts.collectionSize) + " of " + CARD_COLLECTION_MAX]
+      ]);
+    }
     if (opts.deck && opts.deck.length > 0) {
-      sheetAddHeading(body, "your cards (" + opts.deck.length + ")");
+      sheetAddHeading(body, "your deck (" + opts.deck.length + ")");
       var deckLines = cardTotalsLines(opts.deck);
       if (deckLines.length) sheetAddRows(body, deckLines.map(function (line) { return ["", line]; }));
     }

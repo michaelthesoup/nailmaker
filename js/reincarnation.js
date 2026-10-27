@@ -6,15 +6,15 @@
 //    zero. A true dead end -- you start over exactly like a brand new
 //    player, no benefit at all, just a score on the leaderboard.
 //  - Reincarnation (this file): your tao becomes karma, and the karma
-//    becomes cards: one hand of four to choose from for every karma you hold.
+//    becomes cards: a pack of five for every karma you hold, and a deck to carry them in.
 //
 // The screen is two halves. First the ritual: a wall of flickering characters
-// that fills in, flickers for a while, and settles. Then the card draft
-// (cardsui.js, cards.js): a black card and a white card to choose your path, then
-// the hands of four. Then "begin new life". You are reborn at the very beginning,
+// that fills in, flickers for a while, and settles. Then the collection and
+// loadout (cardsui.js, cards.js): a black card and a white card to choose your path, the packs
+// your karma earned, and the slots to fill. Then "begin new life". You are reborn at the very beginning,
 // like a brand new player: nothing is handed to you, nothing is already unlocked.
-// The only things that come with you are your karma, your past lives log and Nirvana; the cards you just chose are your deck
-// for the new life, and the next reincarnation drafts a new one.
+// The only things that come with you are your karma, your past lives log, Nirvana, your card deck and your collection;
+// the next reincarnation lets you add to them, move them about and discard them.
 // ----------------------------------------------------------------
 
 var RC_GRID_ROWS = 16;
@@ -43,8 +43,8 @@ function startReincarnation() {
   var confirmed = window.confirm(
     "Be reincarnated?\n\n" +
     (karmaGain > 0 ? "You'll gain " + karmaGain + " karma (" + newTotalKarma + " total, forever). " : "Your karma is already at its cap of " + KARMA_CAP + ", so this adds none. ") +
-    "You'll choose " + (cardPickCount(newTotalKarma) + 1) + " cards to carry into your next life. " +
-    "This life ends and you begin again from the very beginning, on a fresh map. Only your karma and your cards come with you.\n\n" +
+    "You'll open " + cardPackCount(newTotalKarma) + " pack" + (cardPackCount(newTotalKarma) === 1 ? "" : "s") + " of cards and fill " + cardSlots(newTotalKarma) + " slots in your deck. " +
+    "This life ends and you begin again from the very beginning, on a fresh map. Only your karma and your cards (deck and collection) come with you.\n\n" +
     "This can't be undone."
   );
   if (!confirmed) return;
@@ -59,8 +59,9 @@ function runReincarnationRitual(karmaTotal, isNirvana) {
   rc = {
     karmaTotal: karmaTotal,
     isNirvana: !!isNirvana,
-    ready: false,     // true once the draft is finished and the new life can begin
-    deck: null,
+    ready: false,     // true once every pack is open and the loadout has a card in it
+    gain: karmaTotal,  // packs = your total karma
+    result: null,
     cells: [],
     flickerTimer: null
   };
@@ -151,12 +152,10 @@ function resolveRitual() {
   grid.appendChild(draftBox);
 
   var ritual = rc;
-  showCardDraft(draftBox, ritual.karmaTotal, function (deck) {
+  showLoadout(draftBox, ritual.karmaTotal, ritual.gain, function (ready) {
     if (rc !== ritual) return;
-    ritual.deck = deck;
-    ritual.ready = true;
-    el.reincarnateBar.style.display = "";
-    el.reincarnateOverlay.scrollTop = el.reincarnateOverlay.scrollHeight;
+    ritual.ready = !!ready;
+    el.reincarnateBar.style.display = ready ? "" : "none";
   });
 }
 
@@ -164,7 +163,7 @@ el.btnReincarnate.addEventListener("click", startReincarnation);
 
 el.btnReincarnateConfirm.addEventListener("click", function () {
   var ritual = rc;
-  if (!ritual || !ritual.ready) return; // the draft has to have been finished
+  if (!ritual || !ritual.ready) return; // the packs have to be open and the loadout filled
   rc = null;
   el.reincarnateOverlay.style.display = "none";
   el.reincarnateBar.style.display = "none";
@@ -180,7 +179,9 @@ el.btnReincarnateConfirm.addEventListener("click", function () {
   var nirvanaCarried = state.nirvanaAchieved || ritual.isNirvana;
   var guideSeenCarried = state.guideSeen;
   var autoNextMapCarried = state.autoNextMap; // a preference toggle, unrelated to how far you have got
-  var deckChosen = ritual.deck;               // the cards just drafted: the new life's deck
+  var chosen = loadoutResult();                 // the packs opened and the cards put in the slots
+  var collectionCarried = state.collection || []; // the cards you have put aside: they outlast the life (ending the run is what wipes them)
+  var cardSerialCarried = state.cardSerial || 1;
   var wipeAppliedCarried = state.wipeApplied; // which admin wipe this player has already had (gifts.js), so a new life isn't wiped for an old one
 
   var justReachedNirvana = ritual.isNirvana && !state.nirvanaAchieved;
@@ -201,7 +202,9 @@ el.btnReincarnateConfirm.addEventListener("click", function () {
   // The very beginning: a brand new game (with a new draft seed for the NEXT reincarnation), with only what
   // you have earned put back.
   state = defaultState();
-  state.deck = deckChosen;
+  state.collection = collectionCarried;
+  state.cardSerial = cardSerialCarried;
+  state.deck = cardsCommit(chosen.equipped, chosen.kept); // the collection and the deck are both kept
   state.pastLives = pastLivesCarried;
   state.karma = karmaCarried;
   state.nirvanaAchieved = nirvanaCarried;
@@ -221,7 +224,10 @@ el.btnReincarnateConfirm.addEventListener("click", function () {
     kind: "reincarnated",
     life: endedLife,
     allLives: pastLivesCarried,
-    deck: deckChosen,
+    deck: state.deck,
+    packs: chosen.packs,
+    newCards: chosen.opened,
+    collectionSize: state.collection.length,
     nirvanaJustReached: justReachedNirvana
   });
 });

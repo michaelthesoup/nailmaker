@@ -1,30 +1,34 @@
 "use strict";
 
 // ----------------------------------------------------------------
-// Cards (they replace the skill tree). Reincarnation ends with a draft: you build the
-// DECK for your next life, and the deck is what makes that life different. The cards are
-// generated, not written, so the draft never runs out and you can play forever.
+// Cards (they replace the skill tree). You COLLECT cards and carry a DECK of them into each life; the deck is
+// what makes that life different. The cards are generated, not written, so there is always something new and you
+// can play forever. Both the deck and the collection are saved from life to life.
 //
-// The draft (cardsui.js shows it):
+// Reincarnation (cardsui.js shows it):
 //   1. A fork: one BLACK card and one WHITE card, and the words "choose your path wisely".
 //      Black is the path of greed (the machine). White is the path of enlightenment (tao,
 //      karma, the community). Taking one is your first card and sets your path.
-//   2. Then one hand of four cards, all of your path's colour, for EVERY karma you hold.
-//      Pick one from each hand. More karma, more cards.
-//   3. Now and then a hand holds one card of the OTHER colour: a good person with a little
-//      bad in them, or the reverse. You can take it for the other side's bonus. Neither path
-//      has any debuff; they are just two ways to play, a simple spiritual life or a fast
-//      industrial one.
+//   2. PACKS. Every karma you hold (your total) is a pack of five cards, all of your path's colour except now and
+//      then one of the OTHER colour (a good person with a little bad in them, or the reverse). You open them one at
+//      a time and click the cards you want: a card goes to your deck, or to your collection if the deck is full
+//      (with both full you must discard something). Every card you leave is gone when the next pack opens. Clicking
+//      a card in the deck moves it to the collection and back, and any card can be discarded. Or press "open all"
+//      to have the packs opened for you, one after another: legendaries go to the collection, then the deck, and
+//      the best of the rest fill and improve the deck.
+//   3. SLOTS. Your karma gives you a number of slots for the deck (cardSlots) and the collection has 12 places.
+//      Opposite-colour cards are limited to a quarter of the slots. Neither path has any debuff; they are just two
+//      ways to play, a simple spiritual life or a fast industrial one.
 //
 // Cards come in four rarities: common, uncommon, rare and legendary. A legendary card is rare
 // (about 1 in 100 at no karma, up to 1 in 20) and carries two effects, the first stronger than any
 // rare card.
 //
-// Karma gives nothing but the cards. In particular it no longer adds deposits to the map (pick the
-// deposit cards) and it no longer makes room in the community: members come only from white cards,
-// so a life with none has no community, and no monastery.
+// Karma gives nothing but the cards (packs and slots). In particular it does not add deposits to the map (use the
+// deposit cards) and it does not make room in the community: members come only from white cards, so a life with
+// none has no community, and no monastery.
 //
-// Nothing is granted when you pick a card: the game just asks cardMult() and cardAdd()
+// Nothing is granted when you equip a card: the game just asks cardMult() and cardAdd()
 // whenever it works something out (the trick the lands and the skill tree used), so a
 // card can never leave the game in a half-built state.
 //
@@ -32,21 +36,19 @@
 // away: three +30% sale cards are +90% (not x2.2), and a cost card of 20% off is worth a quarter more
 // buying power, added to the others (see cardTotalsOf). Past +300% each further point counts half. The
 // "compound less" cards (factory and tao growth) are rarer and floored, because those two curves are the
-// game's main brakes. The number of hands you draft grows with the square root of karma, not with karma.
-// Finally a maker/breaker check (cardBalance): breakers get their iron from every deposit, so breaker speed
-// and deposit cards add together while maker speed stands alone. If your deck leans too far one way, the
-// hands stop offering more of that side and lean toward the other, so the two stay within reach of each
-// other (the factories' slider can only split machines 1% at a time).
+// game's main brakes. The slots grow with the square root of karma, not with karma. Finally a maker/breaker check
+// (cardBalance): breakers get their iron from every deposit, so breaker speed and deposit cards add together while
+// maker speed stands alone. The loadout screen warns when a deck leans too far one way, and "equip best" will not
+// push it past the limit (the factories' slider can only split machines 1% at a time).
 //
-// The deck lives in state.deck and lasts for one life; the next reincarnation drafts a new
-// one, and ending a run wipes everything. A hand is worked out from state.draftSeed (set when
-// the life begins) and the pick number, so reloading the page can't reroll it: the same
-// life always offers the same cards.
+// The collection (state.collection: at most 12 cards) and the deck (state.deck) are both saved, and a card is in
+// one or the other, never both. Packs are worked out from state.draftSeed (set when the life begins) and the
+// pack number, so reloading the page can't reroll them: the same life always offers the same cards.
 //
-// A card is { side: "black" | "white", rarity: 0 | 1 | 2 | 3, effects: { key: number } }.
+// A card is { id, side: "black" | "white", rarity: 0 | 1 | 2 | 3, effects: { key: number } }.
 //
 // An effect is one of two kinds:
-//   mult  a multiplier, 1 = no change; several cards multiply together
+//   mult  a multiplier, 1 = no change; several cards combine (see BALANCE)
 //   add   a number added to something; several cards add together
 //
 //   machineCost    price of makers, breakers and factories
@@ -69,23 +71,19 @@
 //   taoGrowth      how much each tao you hold adds to the size of the bars: a share of the usual +10, so 0.5 makes it +5
 // ----------------------------------------------------------------
 
-var CARD_HAND_SIZE = 4;
-var CARD_OPPOSITE_CHANCE = 0.2;  // chance a hand holds one card of the other colour
+var CARD_PACK_SIZE = 5;            // cards in a pack
+var CARD_OPPOSITE_CHANCE = 0.15;  // chance each card in a pack is of the other colour
+var CARD_SLOTS_MAX = 10;          // the loadout never holds more than this
+var CARD_COLLECTION_MAX = 12;     // the collection holds at most this many cards (any rarity)
 
 // Bonuses on one stat count in full up to +300%, and half beyond that.
 var CARD_SOFTCAP_START = 3;
 var CARD_SOFTCAP_RATE = 0.5;
 
-// Hands drafted = this x the square root of your karma (see cardPickCount).
-var CARD_PICK_FACTOR = 3;
-
-// The maker/breaker check. 1 = the two sides are exactly in step. Within CARD_BALANCE_SOFT either way,
-// hands are untouched; beyond it the stronger side's cards fade out of the hands, reaching none at
-// CARD_BALANCE_HARD, while the weaker side's cards become up to 3x likelier.
+// The maker/breaker check. 1 = the two sides are exactly in step. Within CARD_BALANCE_SOFT either way the loadout
+// screen says nothing; beyond it, it warns; and "equip best" will not push a deck beyond CARD_BALANCE_HARD.
 var CARD_BALANCE_SOFT = 1.5;
 var CARD_BALANCE_HARD = 2.5;
-var CARD_BREAKER_KEYS = { breakerSpeed: true, deposits: true };
-var CARD_MAKER_KEYS = { makerSpeed: true };
 
 // Stacking has no ceiling, but a price or cost that reaches zero would break the game, so these stop short of it.
 // factoryGrowth and taoGrowth are shares of the usual growth: at 0.5 a factory still costs 1.2x the last (1.4 is
@@ -241,31 +239,15 @@ function cardBalance(deck) {
   return { maker: maker, breaker: breaker, ratio: breaker / maker };
 }
 
-// How likely an effect is to be offered, given the deck's breaker/maker ratio: 1 normally, and leaning back toward
-// the weaker side once the deck is out of step by more than CARD_BALANCE_SOFT.
-function cardEffectWeight(key, ratio) {
-  var over = ratio >= 1 ? ratio : 1 / ratio;
-  if (!(over > CARD_BALANCE_SOFT)) return 1;
-  var breakersAhead = ratio > 1;
-  var leading = breakersAhead ? CARD_BREAKER_KEYS : CARD_MAKER_KEYS;
-  var lagging = breakersAhead ? CARD_MAKER_KEYS : CARD_BREAKER_KEYS;
-  var span = CARD_BALANCE_HARD - CARD_BALANCE_SOFT;
-  var progress = Math.min(1, (over - CARD_BALANCE_SOFT) / span);
-  if (leading[key]) return 1 - progress; // fades to none
-  if (lagging[key]) return 1 + 2 * progress; // up to 3x likelier
-  return 1;
-}
-
-// One card of a colour. opts: { karma, maxRarity, avoid, ratio } where avoid is a { key: true } map of effects
-// already in the hand, so a hand doesn't repeat itself, and ratio is cardBalance(deck).ratio (1 if omitted).
-// A legendary card has two effects: a legendary one, and a second at rare strength.
+// One card of a colour. opts: { karma, maxRarity, avoid } where avoid is a { key: true } map of effects already
+// made, so a run of cards doesn't repeat itself. A legendary card has two effects: a legendary one, and a second at
+// rare strength.
 function cardMake(rng, side, opts) {
   opts = opts || {};
-  var ratio = opts.ratio || 1;
   var rarity = cardPickRarity(rng, opts.karma, opts.maxRarity);
   var pool = cardPool(side, rarity, opts.avoid, false);
-  if (pool.length === 0) pool = cardPool(side, rarity, null, false); // every effect already in the hand: allow a repeat rather than fail
-  var chosen = cardPickWeighted(rng, pool, ratio);
+  if (pool.length === 0) pool = cardPool(side, rarity, null, false); // every effect already used: allow a repeat rather than fail
+  var chosen = pool[Math.floor(rng() * pool.length)];
   var effects = {};
   effects[chosen] = cardRollValue(rng, chosen, rarity);
   if (opts.avoid) opts.avoid[chosen] = true;
@@ -274,30 +256,16 @@ function cardMake(rng, side, opts) {
     var taken = {};
     taken[chosen] = true;
     var companions = cardPool(side, 2, taken, true);
-    var second = cardPickWeighted(rng, companions, ratio);
+    var second = companions[Math.floor(rng() * companions.length)];
     effects[second] = cardRollValue(rng, second, 2);
     if (opts.avoid) opts.avoid[second] = true;
   }
   return { side: side, rarity: rarity, effects: effects };
 }
 
-// Picks one of the keys by weight with a single random draw (so a hand's other draws never shift).
-function cardPickWeighted(rng, keys, ratio) {
-  var weights = keys.map(function (k) { return cardEffectWeight(k, ratio); });
-  var total = weights.reduce(function (a, b) { return a + b; }, 0);
-  var roll = rng();
-  if (!(total > 0)) return keys[Math.floor(roll * keys.length)]; // nothing allowed (can't happen with these tables): plain pick
-  roll *= total;
-  for (var i = 0; i < keys.length; i++) {
-    roll -= weights[i];
-    if (roll < 0) return keys[i];
-  }
-  return keys[keys.length - 1];
-}
-
 function cardOtherSide(side) { return side === "black" ? "white" : "black"; }
 
-// The fork at the start of the draft: [black card, white card]. Plain cards only, like "20% cheaper machines".
+// The fork at the start of a rebirth: [black card, white card]. Plain cards only, like "20% cheaper machines".
 function cardFork(seed, karma) {
   var rng = cardRng(seed, 0, 1);
   return [
@@ -306,16 +274,159 @@ function cardFork(seed, karma) {
   ];
 }
 
-// The hand for pick number `index` (1, 2, 3...) on a path, for a deck of the cards picked so far. The same seed, pick,
-// path and deck always give the same hand. Now and then one card is swapped for one of the other colour.
-function cardHand(seed, index, path, karma, deck) {
-  var rng = cardRng(seed, index, path === "black" ? 2 : 3);
-  var ratio = cardBalance(deck).ratio;
-  var avoid = {}, hand = [];
-  for (var i = 0; i < CARD_HAND_SIZE; i++) hand.push(cardMake(rng, path, { karma: karma, avoid: avoid, ratio: ratio }));
-  var roll = rng(), slot = Math.floor(rng() * CARD_HAND_SIZE);
-  if (roll < CARD_OPPOSITE_CHANCE) hand[slot] = cardMake(cardRng(seed, index, 4), cardOtherSide(path), { karma: karma, ratio: ratio });
-  return hand;
+// Pack number `index` (1, 2, 3...) on a path: CARD_PACK_SIZE cards of the path's colour, each with a small chance of
+// being of the other colour. The same seed, pack and path always give the same pack. Within a pack the effects
+// don't repeat (while there are enough to go round), so five cards are five different things.
+function cardPack(seed, index, path, karma) {
+  var rng = cardRng(seed, 100 + index, path === "black" ? 2 : 3);
+  var avoid = { black: {}, white: {} };
+  var pack = [];
+  for (var i = 0; i < CARD_PACK_SIZE; i++) {
+    var side = rng() < CARD_OPPOSITE_CHANCE ? cardOtherSide(path) : path;
+    pack.push(cardMake(rng, side, { karma: karma, avoid: avoid[side] }));
+  }
+  return pack;
+}
+
+// ---------------- the loadout ----------------
+
+// How many cards you can carry: 2 + 1.5 x the square root of your karma, rounded down, at most CARD_SLOTS_MAX.
+// (1 karma: 3, 2: 4, 4: 5, 9: 6, 16: 8, 25: 9, 36: 10.)
+function cardSlots(karma) {
+  return Math.min(CARD_SLOTS_MAX, 2 + Math.floor(1.5 * Math.sqrt(Math.max(0, karma || 0))));
+}
+
+// How many of the slots may hold a card of the other colour: a quarter of them.
+function cardOppositeAllowed(slots) {
+  return Math.floor(slots / 4);
+}
+
+function cardOppositeCount(deck, path) {
+  var n = 0;
+  deck.forEach(function (c) { if (c.side !== path) n++; });
+  return n;
+}
+
+// Why `card` can't be added to `deck` right now, or null if it can. (Reference equality: the same copy can't go in twice.)
+function cardLoadoutBlock(deck, card, slots, path) {
+  if (deck.indexOf(card) >= 0) return "already equipped";
+  if (deck.length >= slots) return "no free slot";
+  if (card.side !== path && cardOppositeCount(deck, path) >= cardOppositeAllowed(slots)) return "no room for another " + card.side + " card";
+  return null;
+}
+
+// Strongest first, then black before white, then by what it does, so equal cards sit together.
+function cardSorted(cards) {
+  return cards.slice().sort(function (a, b) {
+    if (b.rarity !== a.rarity) return b.rarity - a.rarity;
+    if (a.side !== b.side) return a.side === "black" ? -1 : 1;
+    var ka = Object.keys(a.effects).sort().join(","), kb = Object.keys(b.effects).sort().join(",");
+    if (ka !== kb) return ka < kb ? -1 : 1;
+    return JSON.stringify(a.effects) < JSON.stringify(b.effects) ? -1 : (JSON.stringify(a.effects) > JSON.stringify(b.effects) ? 1 : 0);
+  });
+}
+
+// How far out of step a deck's makers and breakers are, as a number of 1 or more (1 = exactly in step).
+function cardLean(deck) {
+  var r = cardBalance(deck).ratio;
+  return r >= 1 ? r : 1 / r;
+}
+
+// "Equip best": fills the slots from `cards`. Rarer is better, your own colour beats the other, and an effect the
+// deck doesn't have yet beats a repeat (cards add up within a stat, so variety is worth more). A first pass refuses
+// any card that would push the makers and breakers past CARD_BALANCE_HARD; a second pass fills what is left.
+function cardAutoLoadout(cards, slots, path) {
+  var deck = [];
+  for (var pass = 0; pass < 2 && deck.length < slots; pass++) {
+    var strict = pass === 0;
+    while (deck.length < slots) {
+      var best = null, bestScore = -1;
+      for (var i = 0; i < cards.length; i++) {
+        var c = cards[i];
+        if (cardLoadoutBlock(deck, c, slots, path)) continue;
+        if (strict && !cardLeanOk(deck, c)) continue;
+        var score = cardScoreIn(c, deck, path);
+        if (score > bestScore) { best = c; bestScore = score; }
+      }
+      if (!best) break;
+      deck.push(best);
+    }
+  }
+  return deck;
+}
+
+// How many of the card's effects the deck doesn't have yet.
+function cardNewEffects(card, deck) {
+  var n = 0;
+  for (var key in card.effects) {
+    if (!deck.some(function (c) { return c.effects[key] !== undefined; })) n++;
+  }
+  return n;
+}
+
+// How good a card looks for a deck: rarer is better, your own colour beats the other, a new effect beats a repeat.
+function cardScoreIn(card, deck, path) {
+  return card.rarity * 10 + (card.side === path ? 5 : 0) + 3 * cardNewEffects(card, deck);
+}
+
+// Whether adding `card` keeps the makers and breakers in step (or at least no further out of step than they are).
+function cardLeanOk(deck, card) {
+  var after = cardLean(deck.concat([card]));
+  return after <= CARD_BALANCE_HARD || after <= cardLean(deck);
+}
+
+// What "open all" does with one pack. st = { deck, kept, slots, path } (changed in place). Legendary cards go to the
+// collection while it has room, then to the deck, and are lost if both are full. The others are taken while the
+// slots have room, and after that only to replace a card that is clearly worse (which goes to the collection if there
+// is room). Returns { banked, deck, swapped }.
+function cardAutoPack(pack, st) {
+  var stats = { banked: 0, deck: 0, swapped: 0 };
+  var rest = [];
+  pack.forEach(function (c) {
+    if (c.rarity !== 3) { rest.push(c); return; }
+    if (st.kept.length < CARD_COLLECTION_MAX) { st.kept.push(c); stats.banked++; }
+    else if (!cardLoadoutBlock(st.deck, c, st.slots, st.path)) { st.deck.push(c); stats.deck++; }
+  });
+  for (;;) {
+    var best = null, bestAt = -1, bestGain = 0, i;
+    if (st.deck.length < st.slots) {
+      for (i = 0; i < rest.length; i++) {
+        if (cardLoadoutBlock(st.deck, rest[i], st.slots, st.path) || !cardLeanOk(st.deck, rest[i])) continue;
+        var s = cardScoreIn(rest[i], st.deck, st.path);
+        if (best === null || s > bestGain) { best = rest[i]; bestGain = s; bestAt = -1; }
+      }
+    } else if (st.deck.length > 0) {
+      var worst = 0, worstScore = Infinity;
+      st.deck.forEach(function (d, k) {
+        var others = st.deck.filter(function (x, j) { return j !== k; });
+        var sc = cardScoreIn(d, others, st.path);
+        if (sc < worstScore) { worstScore = sc; worst = k; }
+      });
+      var without = st.deck.filter(function (x, j) { return j !== worst; });
+      for (i = 0; i < rest.length; i++) {
+        if (cardLoadoutBlock(without, rest[i], st.slots, st.path) || !cardLeanOk(without, rest[i])) continue;
+        var gain = cardScoreIn(rest[i], without, st.path) - worstScore;
+        if (gain > 0 && (best === null || gain > bestGain)) { best = rest[i]; bestGain = gain; bestAt = worst; }
+      }
+    }
+    if (!best) break;
+    rest.splice(rest.indexOf(best), 1);
+    if (bestAt >= 0) {
+      var out = st.deck[bestAt];
+      st.deck[bestAt] = best;
+      if (st.kept.length < CARD_COLLECTION_MAX) st.kept.push(out);
+      stats.swapped++;
+    } else { st.deck.push(best); stats.deck++; }
+  }
+  return stats;
+}
+
+// When "open all" has finished: the best deck from what is in the deck and the collection. What isn't chosen stays
+// in the collection (the strongest first, if there are more than it holds).
+function cardAutoFinish(st) {
+  var all = st.deck.concat(st.kept);
+  st.deck = cardAutoLoadout(all, st.slots, st.path);
+  st.kept = cardSorted(all.filter(function (c) { return st.deck.indexOf(c) < 0; })).slice(0, CARD_COLLECTION_MAX);
 }
 
 // ---------------- the deck ----------------
@@ -392,10 +503,9 @@ function cardTotalsLines(deck) {
   return lines;
 }
 
-// How many hands of four a reincarnation offers: three times the square root of your karma, so karma still means
-// more cards, but 50 karma is 21 picks, not 50. (1 karma: 3, 4: 6, 9: 9, 25: 15, 50: 21, 100: 30.)
-function cardPickCount(karmaTotal) {
-  return Math.round(CARD_PICK_FACTOR * Math.sqrt(Math.max(0, karmaTotal)));
+// How many packs a rebirth opens: one for every karma you hold in total (at least one).
+function cardPackCount(karmaTotal) {
+  return Math.max(1, Math.floor(karmaTotal || 0));
 }
 
 // A new life's seed. Kept in the save, so the same life always offers the same cards.
@@ -403,22 +513,68 @@ function cardNewSeed() {
   return Math.floor(Math.random() * 4294967296) >>> 0;
 }
 
-// Keeps a loaded save honest: a deck made of anything but real cards is cleaned or dropped, the seed is made
-// if missing, and the old skill tree and lands (which no longer exist) are removed.
+// A card made of anything but real effects is dropped; otherwise a clean copy (keeping its id, if it has one).
+function cardClean(card) {
+  if (!card || (card.side !== "black" && card.side !== "white") || !card.effects || typeof card.effects !== "object") return null;
+  var effects = {}, any = false;
+  for (var key in card.effects) {
+    var v = card.effects[key];
+    var def = CARD_EFFECTS[key];
+    if (def && typeof v === "number" && isFinite(v) && Math.abs(v) < 1000 && (def.kind !== "mult" || v > 0)) { effects[key] = v; any = true; } // (a multiplier is always above zero; this also drops the old additive growth cards)
+  }
+  if (!any) return null;
+  var out = { side: card.side, rarity: Math.max(0, Math.min(3, Math.floor(card.rarity) || 0)), effects: effects };
+  if (typeof card.id === "number" && isFinite(card.id) && card.id >= 1) out.id = Math.floor(card.id);
+  return out;
+}
+
+// Locks in a rebirth: gives an id to every card in the deck or the collection that doesn't have one yet, makes `kept`
+// the new state.collection (at most CARD_COLLECTION_MAX), and returns the deck (copies of the equipped cards, each
+// with its id) for state.deck. Everything else is simply gone.
+function cardsCommit(equipped, kept) {
+  if (typeof state.cardSerial !== "number" || !(state.cardSerial >= 1)) state.cardSerial = 1;
+  equipped.concat(kept).forEach(function (c) { if (c.id === undefined) c.id = state.cardSerial++; });
+  state.collection = kept.slice(0, CARD_COLLECTION_MAX).map(function (c) { return { id: c.id, side: c.side, rarity: c.rarity, effects: c.effects }; });
+  return equipped.map(function (c) { return { id: c.id, side: c.side, rarity: c.rarity, effects: c.effects }; });
+}
+
+// Keeps a loaded save honest: cards made of anything but real effects are cleaned or dropped, every card gets a
+// unique id, a card is in the deck or the collection but not both (the deck wins), the deck fits CARD_SLOTS_MAX and
+// the collection CARD_COLLECTION_MAX, the seed is made if missing, and the old skill tree and lands (which no longer
+// exist) are removed.
 function cardsNormalize() {
   delete state.skills;
   delete state.region;
-  var kept = [];
-  (Array.isArray(state.deck) ? state.deck : []).forEach(function (card) {
-    if (!card || (card.side !== "black" && card.side !== "white") || !card.effects || typeof card.effects !== "object") return;
-    var effects = {}, any = false;
-    for (var key in card.effects) {
-      var v = card.effects[key];
-      var def = CARD_EFFECTS[key];
-      if (def && typeof v === "number" && isFinite(v) && Math.abs(v) < 1000 && (def.kind !== "mult" || v > 0)) { effects[key] = v; any = true; } // (a multiplier is always above zero; this also drops the old additive growth cards)
-    }
-    if (any) kept.push({ side: card.side, rarity: Math.max(0, Math.min(3, Math.floor(card.rarity) || 0)), effects: effects });
+
+  var deck = [], collection = [], seen = {}, serial = 1;
+  function take(list, out) {
+    (Array.isArray(list) ? list : []).forEach(function (raw) {
+      var c = cardClean(raw);
+      if (c) out.push(c);
+    });
+  }
+  take(state.deck, deck);
+  take(state.collection, collection);
+  deck.concat(collection).forEach(function (c) { if (c.id !== undefined && c.id >= serial) serial = c.id + 1; });
+  if (typeof state.cardSerial === "number" && state.cardSerial > serial) serial = Math.floor(state.cardSerial);
+
+  var keptDeck = [];
+  deck.forEach(function (c) {
+    if (c.id !== undefined && seen[c.id]) return;   // the same card twice
+    if (c.id === undefined) c.id = serial++;
+    seen[c.id] = true;
+    keptDeck.push(c);
   });
-  state.deck = kept.slice(0, 1000);
+  var keptCollection = [];
+  collection.forEach(function (c) {
+    if (c.id !== undefined && seen[c.id]) return;   // already in the deck (older saves kept a copy in both)
+    if (c.id === undefined) c.id = serial++;
+    seen[c.id] = true;
+    keptCollection.push(c);
+  });
+
+  state.deck = keptDeck.slice(0, CARD_SLOTS_MAX);
+  state.collection = keptCollection.slice(0, CARD_COLLECTION_MAX);
+  state.cardSerial = serial;
   if (typeof state.draftSeed !== "number" || !isFinite(state.draftSeed)) state.draftSeed = cardNewSeed();
 }

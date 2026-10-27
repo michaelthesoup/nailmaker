@@ -386,7 +386,9 @@ function defaultState() {
     tao: 0, // tao points -- earned by Yin/Yang laps or rare reincarnation awards
     karma: 0, // permanent across reincarnations -- carried over explicitly, never wiped by a reset
     nirvanaAchieved: false, // a true permanent achievement -- survives even suicide, unlike karma
-    deck: [],               // the cards drafted at the last reincarnation (see cards.js); they last one life
+    deck: [],               // the cards in your deck (see cards.js); kept across lives, wiped only by ending the run
+    collection: [],         // the cards you have put aside (12 at most); kept across lives too
+    cardSerial: 1,          // the next card id
     draftSeed: typeof cardNewSeed === "function" ? cardNewSeed() : 1, // makes this life's card hands, so reloading can't reroll them (cards.js)
 
     // Production ticks every frame (fast, smooth climb). Selling and
