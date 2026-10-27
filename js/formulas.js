@@ -398,21 +398,25 @@ function yinYangPDMultiplier() {
 // whichever side is barely ahead, which naturally slows down near zero
 // imbalance since the sign keeps flipping. If both bars are sitting at
 // 100 together, that's a tao point.
-// There is no cap on tao, but each tao held makes the next one dearer, exponentially. How much dearer is
-// TAO_COST_GROWTH per tao (eased a little by white cards); negative tao counts as none.
-function taoCostGrowth() {
-  return Math.max(1.02, 1 + (TAO_COST_GROWTH - 1) * cardMult("taoGrowth")); // the tao-growth cards take a share off the usual 0.1
+// There is no cap on tao, but each tao held makes the next one a little dearer: the bars have to reach YINYANG_MAX for
+// your first tao and TAO_COST_STEP more for each tao held (100, 110, 120, ...), so with 8 tao they need 180. White cards
+// can shrink the step. Negative tao counts as none, and extra tao from a cycle (taoPerCycle cards) counts like any other,
+// because it is tao held.
+function taoCostStep() {
+  return TAO_COST_STEP * cardMult("taoGrowth");
 }
 
-// How many times the base price the next tao costs: 1 for the first, 1.1 for the second, 1.21 for the third...
-function taoCostMult() {
-  var m = Math.pow(taoCostGrowth(), Math.max(0, state.tao));
-  return isFinite(m) ? Math.min(m, 1e12) : 1e12;
-}
-
-// How full each yin and yang bar has to get for the next tao: 100, 110, 121, ...
+// How full each yin and yang bar has to get for the next tao: 100, 110, 120, ...
 function yinYangMax() {
-  return Math.max(1, Math.round(YINYANG_MAX * taoCostMult()));
+  var size = YINYANG_MAX + taoCostStep() * Math.max(0, state.tao);
+  if (!isFinite(size)) size = 1e15;
+  return Math.max(1, Math.round(Math.min(size, 1e15)));
+}
+
+// How many times the first tao's price the next one costs: 1 for the first, 1.1 for the second, 1.2 for the third...
+// (the community's merit ring is scaled the same way).
+function taoCostMult() {
+  return yinYangMax() / YINYANG_MAX;
 }
 
 function settleYinYang() {
@@ -429,7 +433,7 @@ function settleYinYang() {
     }
 
     if (state.yin >= max && state.yang >= max) {
-      state.tao += 1;
+      state.tao += 1 + Math.max(0, Math.floor(cardAdd("taoPerCycle"))); // the cycle's tao, plus any extra the white cards give
       state.yin = 0;
       state.yang = 0;
     }
@@ -444,11 +448,9 @@ function cityFeverMult() {
   return feverMult * panicMult;
 }
 
-// How much karma reincarnating right now would add: 1 per KARMA_TAO_THRESHOLD tao held, plus whatever the
-// cards give on top (only once you have earned at least one), all held to the karma cap.
+// How much karma reincarnating right now would add: 1 per KARMA_TAO_THRESHOLD tao held, held to the karma cap.
 function reincarnationKarmaGainNow() {
   var available = Math.floor(state.tao / KARMA_TAO_THRESHOLD);
   if (available < 1) return 0;
-  var total = available + Math.max(0, Math.floor(cardAdd("karmaGain")));
-  return Math.max(0, Math.min(total, KARMA_CAP - state.karma));
+  return Math.max(0, Math.min(available, KARMA_CAP - state.karma));
 }

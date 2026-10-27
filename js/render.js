@@ -9,9 +9,9 @@ function render() {
   el.funds.textContent = fmtMoney(state.funds);
   el.unsold.textContent = fmtInt(state.unsold);
   el.price.textContent = fmtMoney(state.price);
-  var hasDroppedNailbomb = state.cityBombs > 0;
-  el.price.style.display = hasDroppedNailbomb ? "none" : "";
-  el.manualPriceWrap.style.display = hasDroppedNailbomb ? "flex" : "none";
+  // The price can always be typed straight in (the + and - buttons still step it).
+  el.price.style.display = "none";
+  el.manualPriceWrap.style.display = "flex";
   if (document.activeElement !== el.manualPrice) el.manualPrice.value = state.price.toFixed(2);
   el.demand.textContent = Math.round(publicDemandPD()) + "%";
   // Total permanent demand bonus (tao + nailbomb scar), as one number.
@@ -146,7 +146,7 @@ function render() {
     el.valKarma.textContent = fmtInt(state.karma + negativeKarma);
     el.btnPastLives.textContent = "past lives (" + (state.pastLives ? state.pastLives.length : 0) + ")";
     var karmaAvailable = Math.floor(state.tao / KARMA_TAO_THRESHOLD);
-    var karmaGain = reincarnationKarmaGainNow(); // karma stops at its cap; cards can add to it
+    var karmaGain = reincarnationKarmaGainNow(); // karma stops at its cap
     // No explanatory text: the button just says what you would gain once you can.
     if (state.tao < 0 || karmaAvailable < 1) {
       el.btnReincarnate.disabled = true;

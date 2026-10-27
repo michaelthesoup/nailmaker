@@ -593,7 +593,7 @@ function renderCity() {
   el.cityBuffs.textContent = cityBuffText();
   el.cityBombCount.textContent = state.cityBombs + " made";
   el.cityBombNumber.textContent = state.cityBombs + 1;
-  el.btnOptimalPrice.style.display = state.cityBombs > 0 ? "" : "none";
+  // "set optimal price" is in the skyline from the moment the skyline appears: no nailbomb needed.
   el.btnOptimalPrice.disabled = currentNailProductionRate() <= 0;
 
   var nailsCost = cityBombCost();

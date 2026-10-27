@@ -65,8 +65,8 @@
 //   communitySpeed how fast members make merit
 //   meritCost      merit needed per tao (the community's price of tao)
 //   communityMembers (add) members of the community. This is the ONLY way to get any: no members, no community
-//   karmaGain      (add) extra karma every reincarnation gives
-//   taoGrowth      how much each tao you hold adds to the price of the next: a share of the usual 10%, so 0.5 halves it
+//   taoPerCycle    (add) extra tao every time the yin & yang bars complete a cycle (on top of the 1 you always get)
+//   taoGrowth      how much each tao you hold adds to the size of the bars: a share of the usual +10, so 0.5 makes it +5
 // ----------------------------------------------------------------
 
 var CARD_HAND_SIZE = 4;
@@ -88,9 +88,9 @@ var CARD_BREAKER_KEYS = { breakerSpeed: true, deposits: true };
 var CARD_MAKER_KEYS = { makerSpeed: true };
 
 // Stacking has no ceiling, but a price or cost that reaches zero would break the game, so these stop short of it.
-// factoryGrowth and taoGrowth are shares of the usual compounding: at 0.5 a factory still costs 1.2x the last (1.4 is
-// normal), at 0.6 each tao costs 1.06x the last (1.1 is normal). They are the game's main brakes, so they stop well short of flat.
-var CARD_MULT_FLOOR = { machineCost: 0.01, marketingCost: 0.01, copperCost: 0.02, meritCost: 0.01, buyCooldown: 0, factoryGrowth: 0.5, taoGrowth: 0.6 };
+// factoryGrowth and taoGrowth are shares of the usual growth: at 0.5 a factory still costs 1.2x the last (1.4 is
+// normal), and each tao still adds at least +5 to the bars (+10 is normal). They are the game's main brakes, so they stop well short of flat.
+var CARD_MULT_FLOOR = { machineCost: 0.01, marketingCost: 0.01, copperCost: 0.02, meritCost: 0.01, buyCooldown: 0, factoryGrowth: 0.5, taoGrowth: 0.5 };
 
 var CARD_RARITY_NAMES = ["common", "uncommon", "rare", "legendary"];
 
@@ -117,9 +117,9 @@ var CARD_EFFECTS = {
   taoDemand:     { side: "white", kind: "mult", dir: "high", pct: [[10, 15], [20, 30], [35, 50], [60, 80]] },
   communitySpeed: { side: "white", kind: "mult", dir: "high", pct: [[10, 20], [25, 40], [50, 80], [100, 150]] },
   meritCost:     { side: "white", kind: "mult", dir: "low",  pct: [[5, 10], [12, 18], [20, 30], [35, 50]] },
-  taoGrowth:     { side: "white", kind: "mult", dir: "low",  pct: [[3, 6], [6, 10], [10, 15], [20, 30]], minRarity: 2 },
+  taoGrowth:     { side: "white", kind: "mult", dir: "low",  pct: [[5, 10], [10, 15], [15, 25], [30, 40]], minRarity: 2 },
   communityMembers: { side: "white", kind: "add", sign: 1, step: 1, amount: [[1, 1], [2, 2], [3, 4], [5, 6]], int: true },
-  karmaGain:     { side: "white", kind: "add", sign: 1, step: 1, amount: [[1, 1], [1, 1], [1, 1], [2, 2]], int: true, minRarity: 2, noCompanion: true }
+  taoPerCycle:   { side: "white", kind: "add", sign: 1, step: 1, amount: [[1, 1], [1, 1], [1, 1], [2, 2]], int: true, minRarity: 2, noCompanion: true }
 };
 
 // Text for each effect. mult: the words for up and down; add: a function of the number.
@@ -140,10 +140,10 @@ var CARD_EFFECT_TEXT = {
   taoDemand:     { up: "each tao's demand bonus {p}% stronger", down: "each tao's demand bonus {p}% weaker" },
   communitySpeed: { up: "community makes merit {p}% faster", down: "community makes merit {p}% slower" },
   meritCost:     { up: "merit per tao {p}% higher",       down: "merit per tao {p}% lower" },
-  taoGrowth:     { up: "tao costs compound {p}% more",    down: "tao costs compound {p}% less" },
+  taoGrowth:     { up: "the tao requirement grows {p}% faster", down: "the tao requirement grows {p}% slower" },
   deposits:      { add: function (n) { return "+" + n + " deposits on every map"; } },
   communityMembers: { add: function (n) { return "+" + n + " community member" + (n === 1 ? "" : "s"); } },
-  karmaGain:     { add: function (n) { return "+" + n + " karma every reincarnation"; } }
+  taoPerCycle:   { add: function (n) { return "+" + n + " extra tao every yin & yang cycle"; } }
 };
 
 // One effect as a line of text, e.g. ("machineCost", 0.8) -> "machines 20% cheaper".

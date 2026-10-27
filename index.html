@@ -898,7 +898,7 @@
       <h2 id="g-selling">4. Selling: price, demand and marketing</h2>
       <p>You do not choose when to sell. The public buys nails continuously at a rate that depends on your price and your marketing, and your unsold inventory shrinks as they do. What you control is how attractive your product is.</p>
       <h3>Price</h3>
-      <p>The price control sits in the business panel with a <strong>&minus;</strong> and a <strong>+</strong> button. Each press moves the price by $0.01, and the price cannot go below $0.01. You start at $0.08. If you hold a button down it repeats faster over time; after ten seconds, the number of cents changed per repeat doubles every two seconds. After your first nailbomb, you can also type a price directly into the field.</p>
+      <p>The price control sits in the business panel with a <strong>&minus;</strong> and a <strong>+</strong> button. Each press moves the price by $0.01, and the price cannot go below $0.01. You start at $0.08. If you hold a button down it repeats faster over time; after ten seconds, the number of cents changed per repeat doubles every two seconds. You can also type a price directly into the field at any time.</p>
       <h3>Public demand</h3>
       <p>The number labelled <em>public demand (%)</em> is calculated like this:</p>
       <p><code>demand = 1.4<sup>marketing level</sup> &times; (0.8 &divide; price) &times; (1 + 0.1 &times; tao + nailbomb scar) &times; fever &times; panic</code></p>
@@ -990,7 +990,7 @@
       </ul>
       <p>The slider in the panel shows the gap between the two bars as a position between yin and yang, and a status label reads <em>BALANCED</em>, <em>YANG-LEANING</em> or <em>YIN-LEANING</em>. It reads balanced when the smaller bar is at least 90% of the larger. Whichever side is ahead right now, the one whose bar is the one ticking, has its name and number shown in <strong>bold</strong>.</p>
       <h3>Earning tao</h3>
-      <p>When <strong>both bars are full</strong> (100 for your first tao), you earn <strong>1 tao</strong> and both bars reset to zero. Because only one bar can tick at a time, this cannot be achieved by sitting still: you have to spend time on the yang side and time on the yin side. The only way to fill both is to genuinely cross back and forth over true balance as your build changes, which is exactly the point.</p>
+      <p>When <strong>both bars are full</strong> (100 for your first tao), you earn <strong>1 tao</strong> (white cards can add extra tao to every cycle) and both bars reset to zero. Because only one bar can tick at a time, this cannot be achieved by sitting still: you have to spend time on the yang side and time on the yin side. The only way to fill both is to genuinely cross back and forth over true balance as your build changes, which is exactly the point.</p>
       <h3>What held tao does</h3>
       <ul>
         <li><strong>+50% rate</strong> for every nail maker and nail breaker, per tao point held. The total is shown as a small percentage next to the nail makers and nail breakers counts.</li>
@@ -999,8 +999,8 @@
       </ul>
       <p>The word "held" matters. These bonuses depend on the tao you hold right now, so spending or losing tao removes the bonus immediately. Reincarnation (next section) converts tao into karma, which is permanent, but your new life only starts with the small tao award described there.</p>
       <h3>The cost of tao</h3>
-      <p>There is no limit on how much tao you can hold, but every tao you hold makes the next one <strong>dearer</strong>. The bars have to reach <strong>100</strong> for your first tao, <strong>110</strong> for your second, <strong>121</strong> for your third, and so on: each tao held makes them 1.1&times; bigger than before, so the growth is exponential (about 259 at 10 tao, 673 at 20 and 1,745 at 30). The numbers beside the bars show the size they have to reach. The community's merit ring grows in exactly the same way, so it cannot hand you tao for free once the bars have got dear. Spending or losing tao (nailbombs do this) makes the bars smaller again, and negative tao counts as none.</p>
-      <p>The white cards (section 12) are the answer to this: faster bars, a faster community, cheaper merit, and cards that make tao costs compound less than 1.1&times; per tao.</p>
+      <p>There is no limit on how much tao you can hold, but every tao you hold makes the next one a little <strong>dearer</strong>. The bars have to reach <strong>100</strong> for your first tao and <strong>10 more for each tao you hold</strong>: 110 for your second, 120 for your third, and so on, so with 8 tao they need 180 (and 400 at 30). Extra tao counts like any other: if a cycle gives you 2, the bars grow by 20. The numbers beside the bars show the size they have to reach. The community's merit ring grows in the same proportion (100 merit for the first tao, 110 for the second...), so it cannot hand you tao for free once the bars have got dear. Spending or losing tao (nailbombs do this) makes the bars smaller again, and negative tao counts as none.</p>
+      <p>The white cards (section 12) ease this: faster bars, a faster community, cheaper merit, cards that make the requirement grow more slowly, and cards that give extra tao every cycle.</p>
 
       <h2 id="g-reincarnation">12. Reincarnation and karma</h2>
       <p>Reincarnation lets you end a life and carry something real into the next. It lives at the bottom of the yin &amp; yang panel, with a karma counter above it.</p>
@@ -1010,9 +1010,9 @@
       <p>After you confirm, a wall of flickering characters fills the screen. It fills in, flickers for a while, and then settles into your <strong>cards</strong>. Choose them, then press <em>begin new life</em>. The cards only appear here, at the moment you reincarnate.</p>
       <p>You are reborn at the <strong>very beginning</strong>, like a brand new player: no machines, no money, nothing already unlocked, a fresh map 1 and the usual first price. Nothing is handed to you. What you earned is what comes with you (see below), and the cards are what make the new life different.</p>
       <h3>Cards</h3>
-      <p>First you are shown <strong>two cards</strong>, one black and one white, and the words <em>choose your path wisely</em>. <strong>Black is the path of greed</strong>: the machine, with cheaper machines and marketing, cheaper and slower-compounding factories, more demand, better prices, faster makers and breakers, a shorter wait between buying machines, and more ore. <strong>White is the path of enlightenment</strong>: tao, karma and the community, with faster yin &amp; yang, stronger tao, community members (the only way to get a community), a faster community, tao costs that compound less, and more karma. Taking one is your first card and sets your path. Neither path has a drawback: they are just two ways to play, a simple spiritual life or a fast industrial one.</p>
+      <p>First you are shown <strong>two cards</strong>, one black and one white, and the words <em>choose your path wisely</em>. <strong>Black is the path of greed</strong>: the machine, with cheaper machines and marketing, cheaper and slower-compounding factories, more demand, better prices, faster makers and breakers, a shorter wait between buying machines, and more ore. <strong>White is the path of enlightenment</strong>: tao, karma and the community, with faster yin &amp; yang, stronger tao, community members (the only way to get a community), a faster community, a tao requirement that grows more slowly, and extra tao every cycle. Taking one is your first card and sets your path. Neither path has a drawback: they are just two ways to play, a simple spiritual life or a fast industrial one.</p>
       <p>Then you are dealt <strong>hands of four cards</strong>, all of your path's colour, and you pick one from each. The more karma you have, the more hands you get: three times the square root of your karma (3 at 1 karma, 9 at 9, 15 at 25, 21 at 50, 30 at 100), and the better the cards tend to be. Press <em>1</em> to <em>4</em> to pick the card in that position, or <em>pick the rest for me</em> to let the game take the best card from each remaining hand. Cards are <em>common</em>, <em>uncommon</em>, <em>rare</em> or, very occasionally, <em>legendary</em>: a legendary card has a heavy outline, a glow, and two effects, the first stronger than any rare card. The cards are generated rather than written, so there is always something new to find, and they <strong>add up</strong>. Cards on the same stat add together (three +30% cards are +90%), and different stats multiply each other, so a spread-out deck is strong and a one-note deck is stronger but never runs away: past +300% on one stat each further point counts half. A cost card is worth the extra buying power it gives, added together too. Even so a dedicated deck gets very strong: a deck of cheap-machinery cards makes machines a fraction of the price, and a deck of buy-cooldown cards lets you buy as fast as you can click. What your deck adds up to is listed under the cards as you build it.</p>
-      <p>Two things are kept in check. The cards that make factory prices and tao costs <strong>compound less</strong> are rarer, and can never make either flat: factories always cost at least 1.2&times; the last, and each tao at least 1.06&times; the last. And the game keeps your <strong>makers and breakers in step</strong>: a breaker takes iron from every deposit, so breaker-speed and deposit cards both make breakers stronger, while maker-speed cards stand alone. If your deck leans too far to one side, the hands stop offering more of it and offer more of the other instead.</p>
+      <p>Two things are kept in check. The cards that make factory prices <strong>compound less</strong>, and the tao requirement <strong>grow more slowly</strong>, are rarer, and can never remove the cost: factories always cost at least 1.2&times; the last, and each tao always adds at least +5 to the bars (the usual +10 at best halved). The cards that give <strong>extra tao every cycle</strong> are rare or legendary only. And the game keeps your <strong>makers and breakers in step</strong>: a breaker takes iron from every deposit, so breaker-speed and deposit cards both make breakers stronger, while maker-speed cards stand alone. If your deck leans too far to one side, the hands stop offering more of it and offer more of the other instead.</p>
       <p>Now and then a hand holds one card of the <strong>opposite colour</strong>: a good person with a little bad in them, or the other way round. You can take it for the other side's bonus; it works exactly like any other card.</p>
       <p>Your deck lasts for one life. The next time you reincarnate you draft a new one, and ending a run wipes everything. Nothing is handed over when you pick a card: costs, rates and prices are simply worked out with it applied, so it works from the first second of your new life. &ldquo;Machines&rdquo; means nail makers, nail breakers and factories. The hands are fixed for each life, so reloading the page does not change them.</p>
       <h3>Nirvana</h3>
@@ -1083,7 +1083,7 @@
         <li><strong>Unsold nails</strong>: 50,000 for the first, and each bomb multiplies the price of the next by 2.3. The bombs cost <code>50,000 &times; 2.3<sup>bombs already dropped</sup></code> nails.</li>
       </ul>
       <p>When both bars are full, the <strong>launch nailbomb</strong> button works. Its hint line says what is going to happen.</p>
-      <p>After your first bomb lands, you can type a price directly in the business panel. The Skyline's <strong>set optimal price</strong> button estimates a price that sells about 90% of your current nail production, leaving a small surplus in inventory. It is disabled when you have no active nail production.</p>
+      <p>You can type a price directly into the price box in the business panel at any time (the <strong>+</strong> and <strong>&minus;</strong> buttons still step it). The Skyline's <strong>set optimal price</strong> button (it appears with the Skyline panel, no bomb needed) estimates a price that sells about 90% of your current nail production, leaving a small surplus in inventory. It is disabled when you have no active nail production.</p>
       <h3>What a nailbomb does</h3>
       <p>The bomb falls in from above the entire page onto the middle of the skyline, and the whole page shakes. Then:</p>
       <ul>
@@ -1175,13 +1175,13 @@
         <tr><td>Copper sells for</td><td>$0.05 per gram</td></tr>
         <tr><td>Factory</td><td>$1,000 &times; 1.4<sup>owned</sup>; 1 s cycle; 100 g copper per maker, 1,000 g per breaker</td></tr>
         <tr><td>Factory&sup2;</td><td>Unlocks at 100,000 makers and 100,000 breakers; $1,000,000,000 &times; 1.1<sup>owned</sup>; 10,000,000 g copper per factory built</td></tr>
-        <tr><td>Yin &amp; yang</td><td>Unlocks with 1 maker + 1 breaker; one bar +1 per second; both full = 1 tao; the bars are 100 for the first tao and &times;1.1 for every tao held</td></tr>
+        <tr><td>Yin &amp; yang</td><td>Unlocks with 1 maker + 1 breaker; one bar +1 per second; both full = 1 tao (+ any extra from white cards); the bars are 100 for the first tao and +10 for every tao held (8 tao: 180)</td></tr>
         <tr><td>Each held tao</td><td>+50% maker and breaker rate, +10% public demand</td></tr>
         <tr><td>Karma</td><td>1 per 3 tao at reincarnation; every 3 tao below zero is &minus;1 on the counter</td></tr>
-        <tr><td>Community</td><td>Only exists with members from white cards (no recruiting, no karma room); 0.25 merit/s per meditating member &times; harmony; 100 merit &times; 1.1<sup>tao held</sup> = 1 tao; harmony +2%/s up, &minus;5%/s down</td></tr>
+        <tr><td>Community</td><td>Only exists with members from white cards (no recruiting, no karma room); 0.25 merit/s per meditating member &times; harmony; 100 merit + 10 per tao held = 1 tao; harmony +2%/s up, &minus;5%/s down</td></tr>
         <tr><td>Monastery</td><td>Needs a community (white-card members) and 3 tao, earned each life; hall $10,000 + 100,000 nails, &times;2.5 each, 2 seats; a monk moves the lean 0.2% per second; heavy lean costs up to 75% of harmony; each foreman +10% factory output per copper</td></tr>
         <tr><td>Swarm unlocks</td><td>1 tao held + 1 factory</td></tr>
-        <tr><td>Cost of tao</td><td>No cap; the bars and the merit ring are 100 &times; 1.1<sup>tao held</sup> (100, 110, 121, ...); white cards ease it</td></tr>
+        <tr><td>Cost of tao</td><td>No cap; the bars and the merit ring are 100 + 10 per tao held (100, 110, 120, ... 8 tao: 180); white cards ease it</td></tr>
         <tr><td>Karma cap</td><td>100; Nirvana is reached when karma gets to 100</td></tr>
         <tr><td>Tao at the start of a new life</td><td>1 (2 from 13 karma, 3 for Nirvana)</td></tr>
         <tr><td>Cards</td><td>3 &times; &radic;karma hands of 4, plus a black-or-white fork first; black = greed, white = enlightenment; cards are common, uncommon, rare or legendary and add up (diminishing returns past +300% on one stat); an opposite-colour card turns up now and then; the deck lasts one life</td></tr>
@@ -1271,8 +1271,8 @@
         <div class="stepper">
           <span class="label" style="margin-right:auto;">price ($):</span>
           <button id="btnPriceMinus">-</button>
-          <span class="value" id="valPrice">$0.00</span>
-          <span class="manual-price" id="manualPriceWrap" style="display:none;"><span>$</span><input id="inputPrice" type="number" min="0.01" step="0.01" inputmode="decimal" aria-label="Price"></span>
+          <span class="value" id="valPrice" style="display:none;">$0.00</span>
+          <span class="manual-price" id="manualPriceWrap"><span>$</span><input id="inputPrice" type="number" min="0.01" step="0.01" inputmode="decimal" aria-label="Price"></span>
           <button id="btnPricePlus">+</button>
         </div>
 
@@ -1465,7 +1465,7 @@
             <div class="row" style="margin-top:4px;"><span class="label" style="font-size:11px;">unstable cores</span><span class="value" id="valCoreIsotopes" style="font-size:11px;">0 / 1</span></div>
             <div class="map-health-track"><div class="map-health-fill" id="coreIsotopesFill" style="background:var(--ink);"></div></div>
 
-            <button id="btnOptimalPrice" style="width:100%; margin-top:6px; display:none;">set optimal price</button>
+            <button id="btnOptimalPrice" style="width:100%; margin-top:6px;">set optimal price</button>
             <button id="btnCityBomb" style="width:100%; margin-top:6px;">launch nailbomb</button>
           </div>
       </div>

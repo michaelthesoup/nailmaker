@@ -119,12 +119,11 @@ var YINYANG_PD_BONUS_PER_LEVEL = 0.1; // +10% public demand per held tao point
 // it's not spent, it just permanently raises how many stats you get
 // to rewrite each time you're reborn.
 var KARMA_TAO_THRESHOLD = 3; // tao points per 1 karma, checked at the moment of reincarnating
-// There is no limit on tao any more. Instead every tao you hold makes the next one dearer: the yin and yang bars
-// (and the community's merit ring) are YINYANG_MAX for your first tao, then x TAO_COST_GROWTH for each tao held
-// (100, 110, 121, ...), so tao gets exponentially harder to come by. White cards ease
-// this (see cards.js: taoGrowth). Karma cannot grow past KARMA_CAP, and Nirvana is reached exactly when your
-// karma gets to NIRVANA_KARMA (it is no longer a roll).
-var TAO_COST_GROWTH = 1.1;
+// There is no limit on tao. Instead every tao you hold makes the next one a little dearer: the yin and yang bars
+// (and the community's merit ring) are YINYANG_MAX for your first tao, then TAO_COST_STEP bigger for each tao held
+// (100, 110, 120, ...; 8 tao means 180). White cards can shrink the step (see cards.js: taoGrowth). Karma cannot grow
+// past KARMA_CAP, and Nirvana is reached exactly when your karma gets to NIRVANA_KARMA (it is no longer a roll).
+var TAO_COST_STEP = 10;
 var KARMA_CAP = 100;
 var NIRVANA_KARMA = 100;
 
@@ -145,7 +144,7 @@ function randInt(min, max) {
 // Usernames allowed to use the cheat box. Checked against the logged-in
 // account's username (case-insensitive) -- guests and anyone not on
 // this list can type in the box all they want, nothing will happen.
-var CHEAT_ALLOWED_USERNAMES = ["nailmaker", "mining"];
+var CHEAT_ALLOWED_USERNAMES = ["nailmaker", "potato"];
 var TAO_RATE_BONUS_PER_POINT = 0.5; // +50% nail-maker/breaker rate per held tao point
 
 // ----------------------------------------------------------------
