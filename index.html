@@ -41,7 +41,7 @@
   /* One grid for the whole page body: three equal columns. The left stack
      (business, make nail, machinery) sits in column 1 beside the first two
      rows; the map, yin & yang and community stack in column 2; the skyline
-     and swarm in column 3. The monastery and factory-squared sit in column 1
+     and swarm in column 3. The monastery sits in column 1
      under the left stack, level with the community. #mapSection and
      .map-layout are only wrappers (JS shows/hides #mapSection), so
      "contents" lets their panels be grid items of .columns directly. */
@@ -75,7 +75,7 @@
   #citySection      { grid-column: 3; grid-row: 1; }
   #yinYangSection   { grid-column: 2; grid-row: 2; }
   #swarmSection     { grid-column: 3; grid-row: 2; }
-  #communitySection { grid-column: 2; grid-row: 3; align-self: start; }
+  #communitySection, #companySection { grid-column: 2; grid-row: 3; align-self: start; }
   #leftLower {
     grid-column: 1;
     grid-row: 3 / span 2;
@@ -853,19 +853,18 @@
       <a href="#g-breakers" data-goto="g-breakers">6. Nail breakers and the map</a>
       <a href="#g-copper" data-goto="g-copper">7. Copper</a>
       <a href="#g-factories" data-goto="g-factories">8. Factories</a>
-      <a href="#g-factory2" data-goto="g-factory2">9. Factory&sup2;</a>
-      <a href="#g-balance" data-goto="g-balance">10. Iron balance</a>
-      <a href="#g-yinyang" data-goto="g-yinyang">11. Yin, yang and tao</a>
-      <a href="#g-reincarnation" data-goto="g-reincarnation">12. Reincarnation and karma</a>
-      <a href="#g-community" data-goto="g-community">13. The community</a>
-      <a href="#g-monastery" data-goto="g-monastery">14. The monastery</a>
-      <a href="#g-swarm" data-goto="g-swarm">15. The foundry swarm</a>
-      <a href="#g-collapse" data-goto="g-collapse">16. Collapse and unstable cores</a>
-      <a href="#g-skyline" data-goto="g-skyline">17. The skyline and nailbombs</a>
-      <a href="#g-paths" data-goto="g-paths">18. Ending a life: all the ways</a>
-      <a href="#g-saving" data-goto="g-saving">19. Saving, accounts and online play</a>
-      <a href="#g-tips" data-goto="g-tips">20. Strategy notes</a>
-      <a href="#g-numbers" data-goto="g-numbers">21. Reference numbers</a>
+      <a href="#g-balance" data-goto="g-balance">9. Iron balance</a>
+      <a href="#g-yinyang" data-goto="g-yinyang">10. Yin, yang and tao</a>
+      <a href="#g-reincarnation" data-goto="g-reincarnation">11. Reincarnation and karma</a>
+      <a href="#g-community" data-goto="g-community">12. The community and the company</a>
+      <a href="#g-monastery" data-goto="g-monastery">13. The monastery</a>
+      <a href="#g-swarm" data-goto="g-swarm">14. The foundry swarm</a>
+      <a href="#g-collapse" data-goto="g-collapse">15. Collapse and unstable cores</a>
+      <a href="#g-skyline" data-goto="g-skyline">16. The skyline and nailbombs</a>
+      <a href="#g-paths" data-goto="g-paths">17. Ending a life: all the ways</a>
+      <a href="#g-saving" data-goto="g-saving">18. Saving, accounts and online play</a>
+      <a href="#g-tips" data-goto="g-tips">19. Strategy notes</a>
+      <a href="#g-numbers" data-goto="g-numbers">20. Reference numbers</a>
     </nav>
 
     <div class="guide-content">
@@ -877,16 +876,16 @@
         <li><strong>Balance (the Taoist and Buddhist layer).</strong> Your economy has two opposing forces: <em>making</em> (nail makers, which consume iron) and <em>breaking</em> (nail breakers, which produce iron). Keeping those forces in proportion, and deliberately crossing back and forth across true balance, fills the yin and yang bars and earns <strong>tao</strong>. Tao is turned into <strong>karma</strong> by <strong>reincarnation</strong>, which ends your current life and starts a new one from the very beginning, with karma that buys you cards. Enough karma eventually reaches <strong>Nirvana</strong>, which is as close to a finish line as the game has.</li>
         <li><strong>Acceleration (the destructive layer).</strong> If you push your economy badly out of balance on purpose, the foundry swarm collapses into an <strong>unstable core</strong>. Unstable cores let you build and launch <strong>nailbombs</strong> at your own skyline. Nailbombs wreck part of your machinery, but they raise public demand permanently and enormously. The price is that every nailbomb drains your tao and can push it below zero. While tao is negative you cannot reincarnate, and your karma standing drops by 1 for every 3 tao you are down.</li>
       </ul>
-      <p>White cards (section 12) can give you a <strong>community</strong> and, with it, later the <strong>monastery</strong>: people who earn tao for you and steer your machines (sections 13 and 14).</p>
+      <p>White cards (section 11) can give you a <strong>community</strong> and, with it, later the <strong>monastery</strong>: people who earn tao for you and steer your machines (sections 11 and 13).</p>
       <p>There is no single fixed ending. Your score for a life is the total number of nails you made in it. That score goes on the leaderboard when you end a life. You can pursue a high score, pursue Nirvana, or explore the nailbomb path, and the game lets you choose.</p>
       <p>Panels appear as you demonstrate that you understand what they are about. You never need to hunt for hidden requirements: each section below tells you exactly what unlocks it.</p>
 
       <h2 id="g-layout">2. The screen</h2>
       <h3>Top of the page</h3>
-      <p>The large counter at the top-left shows <em>nails</em>, the total number of nails you have made in this life. It is also shown in the browser tab title. Under it are four buttons: <strong>save</strong> and <strong>load</strong> (local browser saving), <strong>end run</strong> (end this life for good, see section 18) and <strong>more</strong>, which opens a small menu with the <strong>guide</strong> (this page), <strong>achievements</strong> (it appears once you have earned your first one) and <strong>players</strong> (it appears once you are logged in).</p>
+      <p>The large counter at the top-left shows <em>nails</em>, the total number of nails you have made in this life. It is also shown in the browser tab title. Under it are four buttons: <strong>save</strong> and <strong>load</strong> (local browser saving), <strong>end run</strong> (end this life for good, see section 17) and <strong>more</strong>, which opens a small menu with the <strong>guide</strong> (this page), <strong>achievements</strong> (it appears once you have earned your first one) and <strong>players</strong> (it appears once you are logged in).</p>
       <h3>The three columns</h3>
       <ul>
-        <li><strong>Left column:</strong> the business panel (funds, price, demand, marketing, iron), the <em>make nail</em> button and the machinery panel (nail makers, nail breakers, copper, factories). Below them, once you have them, sit the monastery and the factory&sup2; panel.</li>
+        <li><strong>Left column:</strong> the business panel (funds, price, demand, marketing, iron), the <em>make nail</em> button and the machinery panel (nail makers, nail breakers, copper, factories). Below them, once you have them, sits the monastery.</li>
         <li><strong>Middle column:</strong> the extraction map, with the yin &amp; yang panel (karma, reincarnate, past lives) beneath it and the community beneath that.</li>
         <li><strong>Right column:</strong> the skyline at the top and the foundry swarm under it.</li>
       </ul>
@@ -894,7 +893,7 @@
       <h3>Corners of the page</h3>
       <ul>
         <li><strong>Top-right:</strong> the leaderboard, which can be hidden and shown with its own button.</li>
-        <li><strong>Very top:</strong> a small grey version number in the middle and, once you are logged in and have the skyline, the news strip (section 19).</li>
+        <li><strong>Very top:</strong> a small grey version number in the middle and, once you are logged in and have the skyline, the news strip (section 18).</li>
         <li><strong>Bottom-right:</strong> log in / sign up (or log out, once signed in).</li>
         <li><strong>Bottom-left:</strong> a dark mode / light mode toggle. Your choice is remembered in your browser.</li>
       </ul>
@@ -922,7 +921,7 @@
       <h3>Public demand</h3>
       <p>The number labelled <em>public demand (%)</em> is calculated like this:</p>
       <p><code>demand = 1.4<sup>marketing level</sup> &times; (0.8 &divide; price) &times; (1 + 0.1 &times; tao + nailbomb scar) &times; fever &times; panic</code></p>
-      <p>Reading it from left to right: each marketing level multiplies demand by 1.4; a lower price raises demand in exact inverse proportion (halve the price and demand doubles); every tao point you currently hold adds 10%; the permanent nailbomb scar adds another +50% per bomb (section 17) and <em>adds</em> to the tao bonus rather than multiplying it, so the small percentage next to the demand figure is simply the total of both; and fever and panic are temporary nailbomb spikes that multiply on top. Because the price term is <code>0.8 &divide; price</code>, a price of $0.80 gives a demand of exactly 1% with no marketing, and $0.08 gives 10%.</p>
+      <p>Reading it from left to right: each marketing level multiplies demand by 1.4; a lower price raises demand in exact inverse proportion (halve the price and demand doubles); every tao point you currently hold adds 10%; the permanent nailbomb scar adds another +50% per bomb (section 16) and <em>adds</em> to the tao bonus rather than multiplying it, so the small percentage next to the demand figure is simply the total of both; and fever and panic are temporary nailbomb spikes that multiply on top. Because the price term is <code>0.8 &divide; price</code>, a price of $0.80 gives a demand of exactly 1% with no marketing, and $0.08 gives 10%.</p>
       <h3>From demand to sales</h3>
       <p>Demand is not a count of nails; it is turned into nails sold per second by this curve (borrowed from Universal Paperclips):</p>
       <p><code>nails sold per second = min(1, demand &divide; 100) &times; 7 &times; demand<sup>1.6</sup></code></p>
@@ -937,7 +936,7 @@
       <h2 id="g-makers">5. Nail makers</h2>
       <p>A <strong>nail maker</strong> is a machine that turns iron into nails with no clicking. It costs a flat <strong>$5</strong>, forever (the price never rises), with a one-second pause between purchases. Each one produces <strong>1 nail per second</strong> and consumes <strong>1 g of iron per second</strong> while doing so.</p>
       <p>If your iron runs out, your makers stall: they can only make as many nails as your iron stock allows. This is the central tension of the early game, because iron has to come from somewhere. You can buy it for money, or you can mine it, which brings in nail breakers.</p>
-      <p>The machinery panel shows, under the nail maker line, how much iron per second your makers consume and how many nails per second they produce at full speed. These are the numbers the swarm and yin &amp; yang compare against what your breakers bring in, so they update instantly when you buy a machine and never lag. They stay at full speed even when your iron has run dry; the <em>avg nails/s</em> in the business panel is where you see what is really being made. Both figures include the tao bonus (section 11).</p>
+      <p>The machinery panel shows, under the nail maker line, how much iron per second your makers consume and how many nails per second they produce at full speed. These are the numbers the swarm and yin &amp; yang compare against what your breakers bring in, so they update instantly when you buy a machine and never lag. They stay at full speed even when your iron has run dry; the <em>avg nails/s</em> in the business panel is where you see what is really being made. Both figures include the tao bonus (section 10).</p>
 
       <h2 id="g-breakers">6. Nail breakers and the extraction map</h2>
       <p>A <strong>nail breaker</strong> is the opposite of a nail maker. It costs <strong>$75</strong> with a one-second pause between purchases. Each breaker fires <strong>1 nail per second</strong> from your unsold inventory into the ground, and what comes back is iron and copper. Buying your first breaker reveals the <strong>extraction map</strong> and the copper and factory controls.</p>
@@ -971,8 +970,8 @@
       <h3>The balance slider</h3>
       <p>Once you own a factory, a slider appears. It controls what factories build, from 0 (all nail breakers, black) to 100 (all nail makers, white), in steps of 5. Your first factory starts at 90% nail makers and 10% nail breakers. The two percentages above the bar show the current split: the breaker share on the black side, the maker share on the white side. The split is exact over time, not just on average: a factory set to 90% makers produces nine makers for every breaker.</p>
       <h3>What it costs in copper</h3>
-      <p>A breaker is heavy mining equipment and a maker is a light machine, so they cost different amounts of copper. Per cycle, a factory spends <code>1,000 g &times; (breaker share) + 100 g &times; (maker share)</code>. All breakers costs 1,000 g per machine, all makers costs 100 g per machine, and the midpoint of 50/50 costs 550 g per cycle on average. Copper is the only material factories use. They never need iron or funds beyond the purchase price. Copper presses on the factory floor and foremen from the monastery (section 14) both lower what a cycle costs.</p>
-      <p>Choosing the slider is therefore both a balance decision (section 10) and a speed decision: building makers is ten times cheaper in copper, but a pile of makers with no iron supply simply stalls.</p>
+      <p>A breaker is heavy mining equipment and a maker is a light machine, so they cost different amounts of copper. Per cycle, a factory spends <code>1,000 g &times; (breaker share) + 100 g &times; (maker share)</code>. All breakers costs 1,000 g per machine, all makers costs 100 g per machine, and the midpoint of 50/50 costs 550 g per cycle on average. Copper is the only material factories use. They never need iron or funds beyond the purchase price. Copper presses on the factory floor and foremen from the monastery (section 13) both lower what a cycle costs.</p>
+      <p>Choosing the slider is therefore both a balance decision (section 9) and a speed decision: building makers is ten times cheaper in copper, but a pile of makers with no iron supply simply stalls.</p>
 
       <h3>The factory floor</h3>
       <p>Once you own 10 factories a <strong>factory floor</strong> button appears under the balance slider. The floor is a small grid (5 &times; 5 to begin with) and you fill it with <strong>modules</strong>, each taking up a rectangle of cells. Buy a module, hold it from your stock, tap a cell to place it (its top-left corner lands there), and use <em>rotate</em> to turn it. Tap a placed module to select it: you can <em>move</em> it (free), <em>pick it up</em> back into stock, or <em>sell</em> it for 75% of what you paid.</p>
@@ -980,26 +979,17 @@
       <p>Bonuses of the same kind add together, and each kind has a ceiling (speed +300%, copper &minus;60%, factory price &minus;50%, yields +500%). Space is the real limit, so what you fit and where the coolers go is the build. Every module you own makes the next one of its type 1.5&times; dearer. Which module helps depends on what is holding you back: speed does nothing if you are short of copper, and a discount does nothing if you can already afford factories.</p>
       <p>You can <strong>expand the floor</strong>: Mk2 (6 &times; 6) costs $500 million and 10 million unsold nails; Mk3 (7 &times; 7) costs $20 billion, 1 billion unsold nails and 100 tonnes of copper. Modules are lost when a life ends, but the button stays, so you can start rebuilding your floor straight away.</p>
 
-      <h2 id="g-factory2">9. Factory&sup2;</h2>
-      <p>Factory&sup2; ("factory squared") is the next step of automation: a factory that builds factories. It unlocks only when you own at least <strong>100,000 nail makers and 100,000 nail breakers</strong>, and its panel appears below the machinery panel.</p>
-      <ul>
-        <li><strong>Cost:</strong> $1,000,000,000 for the first, with each one you own making the next 10% more expensive.</li>
-        <li><strong>Output:</strong> each factory&sup2; produces one regular factory per second.</li>
-        <li><strong>Copper cost:</strong> 10,000,000 g (ten tonnes) of copper per production cycle, each. Foremen (section 14) lower it.</li>
-      </ul>
-      <p>Like regular factories, factory&sup2; units work as one continuous stream and simply pause when there is not enough copper. Once you own one, the ordinary buy factory button disappears, because factory&sup2; has taken over that job.</p>
-
-      <h2 id="g-balance">10. Iron balance</h2>
+      <h2 id="g-balance">9. Iron balance</h2>
       <p>Balance is the idea the whole late game is built on, so it is worth defining exactly. Your economy has two sides, and they are measured in iron per second:</p>
       <ul>
         <li><strong>Iron demand</strong> is how much iron your nail makers <em>could</em> consume: <code>makers &times; maker rate &times; 1 g</code>.</li>
         <li><strong>Iron supply</strong> is how much iron your breakers <em>could</em> extract: <code>breakers &times; breaker rate &times; number of active iron deposits</code>.</li>
       </ul>
       <p>The balance reading is <code>(demand &minus; supply) &divide; (demand + supply)</code>, a number from &minus;1 to +1. Zero means perfect balance: what your makers can consume equals what your breakers can supply. Positive means making outruns breaking (yang). Negative means breaking outruns making (yin).</p>
-      <p>This is a <em>structural</em> measurement. It looks at the capacity your current build represents, not at the moment-to-moment flow, which would throttle itself the instant your iron stock ran dry. It therefore changes only when you change your build or when the map changes (a new map can have a different number of iron deposits, which changes your supply). The tao bonus raises makers and breakers by the same percentage, so it does not disturb balance, unless monks lean it between the two sides (section 14), which is exactly how they steer.</p>
+      <p>This is a <em>structural</em> measurement. It looks at the capacity your current build represents, not at the moment-to-moment flow, which would throttle itself the instant your iron stock ran dry. It therefore changes only when you change your build or when the map changes (a new map can have a different number of iron deposits, which changes your supply). The tao bonus raises makers and breakers by the same percentage, so it does not disturb balance, unless monks lean it between the two sides (section 13), which is exactly how they steer.</p>
       <p>A player who has built nothing yet is not "balanced" and not "unbalanced" either: with no makers and no breakers there is simply nothing to measure, and the game treats that state as not started.</p>
 
-      <h2 id="g-yinyang">11. Yin, yang and tao</h2>
+      <h2 id="g-yinyang">10. Yin, yang and tao</h2>
       <h3>Unlocking</h3>
       <p>The yin &amp; yang panel appears when you own <strong>at least one nail maker and at least one nail breaker</strong>. It is not about stockpiles: it is about the relationship between making and breaking existing at all.</p>
       <h3>How the bars fill</h3>
@@ -1020,9 +1010,9 @@
       <p>The word "held" matters. These bonuses depend on the tao you hold right now, so spending or losing tao removes the bonus immediately. Reincarnation (next section) converts tao into karma, which is permanent, but your new life only starts with the small tao award described there.</p>
       <h3>The cost of tao</h3>
       <p>There is no limit on how much tao you can hold, but every tao you hold makes the next one a little <strong>dearer</strong>. The bars have to reach <strong>100</strong> for your first tao and <strong>10 more for each tao you hold</strong>: 110 for your second, 120 for your third, and so on, so with 8 tao they need 180 (and 400 at 30). Extra tao counts like any other: if a cycle gives you 2, the bars grow by 20. The numbers beside the bars show the size they have to reach. The community's merit ring grows in the same proportion (100 merit for the first tao, 110 for the second...), so it cannot hand you tao for free once the bars have got dear. Spending or losing tao (nailbombs do this) makes the bars smaller again, and negative tao counts as none.</p>
-      <p>The white cards (section 12) ease this: faster bars, a faster community, cheaper merit, cards that make the requirement grow more slowly, and cards that give extra tao every cycle.</p>
+      <p>The white cards (section 11) ease this: faster bars, a faster community, cheaper merit, cards that make the requirement grow more slowly, and cards that give extra tao every cycle.</p>
 
-      <h2 id="g-reincarnation">12. Reincarnation and karma</h2>
+      <h2 id="g-reincarnation">11. Reincarnation and karma</h2>
       <p>Reincarnation lets you end a life and carry something real into the next. It lives at the bottom of the yin &amp; yang panel, with a karma counter above it.</p>
       <h3>Converting tao into karma</h3>
       <p>Every <strong>3 tao</strong> becomes <strong>1 karma</strong>, calculated at the moment you reincarnate (leftover tao that does not make a full 3 is simply lost with the life). The button stays disabled until you hold at least 3 tao. Karma is capped at <strong>100</strong>: once you are there further reincarnations add none (the button then just reads <em>reincarnate</em>). Karma never goes away: it is not spent, it is added to a permanent total that follows you through every future life, and every karma is also one <strong>hand of cards</strong> to choose from when you reincarnate (see <em>Cards</em> below).</p>
@@ -1036,7 +1026,7 @@
       <p>With a lot of karma, press <em>open all</em>: the packs open one after another in a quick run and the game chooses for you. Legendary cards go to your collection, then to your deck if the collection is full, and are lost if both are full. The best of the rest fill your deck and replace weaker cards (the old card goes to the collection if there is room), and a final <em>equip best</em> picks the strongest deck from your deck and collection.</p>
       <p>Your deck has <strong>2 + 1.5 &times; &radic;karma</strong> slots, at most 10 (3 at 1 karma, 5 at 4, 6 at 9, 8 at 16, 10 at 36). The black-or-white card you choose first is a free pick. <em>Equip best</em> picks the strongest deck from your deck and collection: it prefers rarer cards, your own colour, and effects your deck does not have yet. The deck lists what it adds up to as you build it. Cards <strong>add up</strong>. Cards on the same stat add together (three +30% cards are +90%), and different stats multiply each other, so a spread-out deck is strong and a one-note deck is stronger but never runs away: past +300% on one stat each further point counts half. A cost card is worth the extra buying power it gives, added together too. &ldquo;Machines&rdquo; means nail makers, nail breakers and factories.</p>
       <p>Two things are kept in check. The cards that make factory prices <strong>compound less</strong>, and the tao requirement <strong>grow more slowly</strong>, are rarer, and can never remove the cost: factories always cost at least 1.2&times; the last, and each tao always adds at least +5 to the bars (the usual +10 at best halved). The cards that give <strong>extra tao every cycle</strong> are rare or legendary only. And the game watches your <strong>makers and breakers</strong>: a breaker takes iron from every deposit, so breaker-speed and deposit cards both make breakers stronger, while maker-speed cards stand alone. If your deck leans too far to one side, a warning says so, and <em>equip best</em> will not push it further out of step.</p>
-      <p>Now and then a pack holds one card of the <strong>opposite colour</strong>: a good person with a little bad in them, or the other way round. It works exactly like any other card, but only a quarter of your slots (rounded down: none until 4 slots, then 1, and 2 at 8) can hold the other colour. If you change path, deck cards that no longer fit move to the collection.</p>
+      <p>Now and then a pack holds one card of the <strong>opposite colour</strong>: a good person with a little bad in them, or the other way round. Your <strong>deck holds one colour only</strong>, the colour of your path, so that card cannot go in the deck, but your collection can hold either colour. A black deck is a company and a white deck is a community: you cannot have both. If you change path, your deck cards move to the collection (12 places; any that do not fit are discarded).</p>
       <p>Your deck and collection stay with you from life to life. Nothing is handed over when a card is in your deck: costs, rates and prices are simply worked out with it applied, so it works from the first second of your new life. The packs are fixed for each life, so reloading the page does not change them.</p>
       <h3>Nirvana</h3>
       <p><strong>Nirvana</strong> is not left to luck: it is the rebirth you get when your karma reaches <strong>100</strong>, and until then it cannot happen.</p>
@@ -1048,29 +1038,40 @@
       </ul>
       <p>Reincarnating submits your final nail count to the leaderboard and deletes your old saves, so you cannot load your way back. You are asked to confirm first, because it cannot be undone.</p>
 
-      <h2 id="g-community">13. The community</h2>
-      <p>The <strong>community</strong> panel, beneath yin &amp; yang, appears only if your deck holds <strong>members</strong>. They come from white cards and nowhere else: a life with no white-card members has no community, and no monastery either. It is drawn from a diagram in Buddhist teaching with three labels: the dot at the top is <em>&#3593;&#3633;&#3609;</em> ("I"), the spinning yin-yang in the center is <em>&#3648;&#3619;&#3634;</em> ("we"), and the big circle is <em>&#3607;&#3633;&#3657;&#3591;&#3627;&#3617;&#3604;</em> ("the whole"). It lasts as long as you hold any karma, so ending a run takes it away until you reincarnate again.</p>
+      <h2 id="g-community">12. The community and the company</h2>
+      <p>The <strong>community</strong> panel, beneath yin &amp; yang, appears once you have reincarnated and chosen a white path. A white deck always has <strong>1 member</strong> for free, and white cards add more; a black deck has no community (it has the company instead). It is drawn from a diagram in Buddhist teaching with three labels: the dot at the top is <em>&#3593;&#3633;&#3609;</em> ("I"), the spinning yin-yang in the center is <em>&#3648;&#3619;&#3634;</em> ("we"), and the big circle is <em>&#3607;&#3633;&#3657;&#3591;&#3627;&#3617;&#3604;</em> ("the whole"). It lasts as long as you hold any karma, so ending a run takes it away until you reincarnate again.</p>
       <ul>
         <li><strong>The dot is your karma.</strong> It drifts from the top of the panel toward the center as your karma grows, and reaches it at 100 karma, which is where Nirvana happens.</li>
-        <li><strong>The center is your members.</strong> Members come only from white cards (each such card says how many): you cannot recruit or buy them, and karma does not make room for them. Each member who is meditating makes 0.25 merit per second, and the more members, the larger and faster the center spins. Monks and foremen (section 14) are members too, but they come off the count shown, so 3 / 3 with one monk reads 2 / 3 and that monk makes no merit. The price of the next recruit follows everyone you have recruited, not the number shown. Members reset when you reincarnate or end a run.</li>
+        <li><strong>The center is your members.</strong> You always have 1 free member on a white deck, and white cards add more (each such card says how many): you cannot recruit or buy them, and karma does not make room for them. Each member who is meditating makes 0.25 merit per second, and the more members, the larger and faster the center spins. Monks and foremen (section 13) are members too, but they come off the count shown, so 3 / 3 with one monk reads 2 / 3 and that monk makes no merit. The price of the next recruit follows everyone you have recruited, not the number shown. Members reset when you reincarnate or end a run.</li>
         <li><strong>The ring is merit.</strong> It fills around the big circle. The ring holds 100 merit for your first tao and grows with every tao you hold, like the yin &amp; yang bars (see <em>The cost of tao</em>); when it fills you gain <strong>1 tao</strong> and the ring resets. This is real tao: it gives the same +50% machine speed and +10% demand as tao you earn by hand, and it also raises negative tao back toward zero.</li>
-        <li><strong>Harmony multiplies merit.</strong> Harmony is a meter from 0% to 100% that follows how balanced your economy is (section 10): 100% at perfect balance, 0% at the 3-to-1 collapse line. It <em>climbs slowly</em> (about 50 seconds from nothing to full) but <em>falls faster</em>, so a stretch of imbalance costs you, and fixing your build restores it gradually, not instantly. The arrow beside the percentage shows which way it is heading.</li>
+        <li><strong>Harmony multiplies merit.</strong> Harmony is a meter from 0% to 100% that follows how balanced your economy is (section 9): 100% at perfect balance, 0% at the 3-to-1 collapse line. It <em>climbs slowly</em> (about 50 seconds from nothing to full) but <em>falls faster</em>, so a stretch of imbalance costs you, and fixing your build restores it gradually, not instantly. The arrow beside the percentage shows which way it is heading.</li>
       </ul>
       <p>The community does not replace balancing by hand. It earns tao quietly while you keep a balanced economy, and the yin and yang bars still give you tao the active way. Doing both together is the fastest.</p>
 
-      <h2 id="g-monastery">14. The monastery</h2>
-      <p>The <strong>monastery</strong> sits in the machinery column under the machinery panel, level with the community. It unlocks once you have a community (members from white cards) <em>and</em> hold 3 tao, and, unlike the other panels, it must be earned again in each life. Tao gives nail makers and nail breakers the same speed bonus. The monastery lets monks lean that bonus <em>between</em> the two sides without changing the total, until your makers' iron consumption matches your breakers' iron supply. It is drawn as the Wheel of the Dharma above a line called the Middle Way (<em>&#3607;&#3634;&#3591;&#3626;&#3634;&#3618;&#3585;&#3621;&#3634;&#3591;</em>): breaking on one end, making on the other, and a marker that walks toward the center.</p>
+      <h3>The company</h3>
+      <p>A deck holds <strong>one colour</strong>, so a black deck has a <strong>company</strong> and a white deck has a <strong>community</strong>: never both. The company is the community's black twin: the same panel in the same place, with a cog in the centre instead of the yin &amp; yang symbol. You need to have reincarnated on a black path (which gives you <strong>1 free worker</strong>; black cards add more) and hold <strong>1 tao</strong>; like the monastery, it has to be earned again in each life.</p>
+      <ul>
+        <li><strong>Workers:</strong> a black deck always has 1 free worker, and black cards add more (each says how many). You cannot hire or buy them. The more you have, the bigger and faster the cog.</li>
+        <li><strong>Manpower</strong> is the force that keeps the workers together, and it works exactly like the community's harmony: it follows how balanced your economy is (section 9), 100% at perfect balance and 0% at the 3-to-1 collapse line, climbing slowly and falling faster. Workers only make output in proportion to their manpower.</li>
+        <li><strong>The ring is output.</strong> Each worker makes 0.25 output a second. When the ring fills (100) the company builds <strong>one factory</strong> and the ring resets, instead of giving tao. Each factory uses 3 tonnes of copper; if you have not got it, the ring waits full until you do. Black cards can speed the company up.</li>
+        <li>The factories are added as if you had bought them, so they feed more makers and breakers, but they do <strong>not</strong> make the next factory you buy by hand any dearer.</li>
+      </ul>
+
+      <h2 id="g-monastery">13. The monastery</h2>
+      <p>The <strong>monastery</strong> (on a black deck, <strong>the barracks</strong>, see below) sits in the machinery column under the machinery panel, level with the community. It unlocks once you have a community (members from white cards) <em>and</em> hold 3 tao, and, unlike the other panels, it must be earned again in each life. Tao gives nail makers and nail breakers the same speed bonus. The monastery lets monks lean that bonus <em>between</em> the two sides without changing the total, until your makers' iron consumption matches your breakers' iron supply. It is drawn as the Wheel of the Dharma above a line called the Middle Way (<em>&#3607;&#3634;&#3591;&#3626;&#3634;&#3618;&#3585;&#3621;&#3634;&#3591;</em>): breaking on one end, making on the other, and a marker that walks toward the center.</p>
       <ul>
         <li><strong>Halls</strong> cost funds <em>and</em> a great many unsold nails: $10,000 and 100,000 nails for the first, with each next hall costing 2.5&times; more of both. Each hall seats 2 monks.</li>
         <li><strong>Monks and foremen</strong> are community members you move out of meditation with the <em>+ monk</em> and <em>&minus; monk</em> buttons. A monk no longer makes merit, so every monk is tao the community is not producing.</li>
         <li><strong>Speed:</strong> monks work in steps of exactly 0.2% of the bonus. One monk takes a step every second; two monks take a step every half second; four every quarter second, and so on. Swinging from one extreme to the other takes 1,000 monk-seconds (500 from neutral), so ten monks need about 100 seconds. With no monks, the lean drifts back to neutral at two steps a second.</li>
         <li><strong>Harmony drain:</strong> a heavy lean also drains the <em>community</em>. Harmony is multiplied by 1 minus 75% of the lean squared, which slows your automatic tao: a lean of 0.4 costs about 12%, a lean of 0.7 about 37%, and a full lean about 75%. This is not a yin-and-yang drain; it only reduces how much merit the community makes. The panel shows the current drain, and the wheel shakes harder the more it is leaning.</li>
-        <li><strong>Foremen:</strong> a second job for community members. Each foreman raises the output of your factories and factory&sup2; per gram of copper by 10%, so ten foremen double it. The bonus is shown beside the factories and factory&sup2; counts in the machinery panel. Foremen share the halls' seats with the monks, and each is a member who is not meditating. Every member can therefore meditate for tao, balance machines as a monk, or speed up factories as a foreman.</li>
+        <li><strong>Foremen:</strong> a second job for community members. Each foreman raises the output of your factories per gram of copper by 10%, so ten foremen double it. The bonus is shown beside the factories count in the machinery panel. Foremen share the halls' seats with the monks, and each is a member who is not meditating. Every member can therefore meditate for tao, balance machines as a monk, or speed up factories as a foreman.</li>
         <li><strong>Visible effect:</strong> the small percentages beside nail makers and nail breakers can now differ. For example, 4 tao normally gives +200% to each; leaned fully toward makers it would be +400% and +0%. The total never changes. With no tao there is nothing to steer.</li>
       </ul>
       <p>Because monks keep your iron balanced, they also keep the community's harmony up, but only to the point where their own lean starts costing you more than it gains.</p>
+      <h3>The barracks (the monastery's black twin)</h3>
+      <p>On a black deck the same panel is called <strong>the barracks</strong> and draws on your <strong>company workers</strong> instead of community members. Everything works the same: it unlocks with a company and 3 tao (earned again each life), halls cost the same and seat 2 each, and the same lean moves the tao bonus between makers and breakers. Monks are called <strong>overseers</strong>, and the picture is a flywheel above a line called the balance. Overseers and foremen come out of your workers, so they stop building factories, and a heavy lean drains your <strong>manpower</strong> exactly as it drains the community's harmony.</p>
 
-      <h2 id="g-swarm">15. The foundry swarm</h2>
+      <h2 id="g-swarm">14. The foundry swarm</h2>
       <h3>Unlocking</h3>
       <p>The swarm panel appears when you hold <strong>at least 1 tao and own at least one factory</strong>. Getting to 1 tao already proves you can balance; the factory proves you have an automated economy for the swarm to correct.</p>
       <h3>What the dots are</h3>
@@ -1083,12 +1084,12 @@
       <p>The exchange rate is the factory's own: a breaker costs a factory 1,000 g of copper and a maker 100 g, so <strong>1 breaker is worth 10 makers</strong>, and nothing is lost in the conversion: 10 breakers become 100 makers, and 10 makers become 1 breaker. Flipping costs no copper. If the conversion isn't possible (for instance you would have to convert your last machine of a type), the ball is flung away from your click and the message line says why. A click that would make the split more lopsided than the swarm can show is ignored. Clicks have a quarter-second cooldown.</p>
       <p>This makes the swarm a balancing tool, not a growth engine: it turns the machines you have into the machines you need, which is useful for earning tao. New machines only come from factories.</p>
 
-      <h2 id="g-collapse">16. Collapse and unstable cores</h2>
+      <h2 id="g-collapse">15. Collapse and unstable cores</h2>
       <p>If you push your economy far enough out of balance and leave it there, the swarm collapses.</p>
       <h3>The trigger</h3>
       <ul>
         <li>Both sides must exist: your iron demand and your iron supply must both be above zero. Not having built the other side yet is not instability.</li>
-        <li>The imbalance reading (section 10) must reach <strong>0.5 or more</strong> in either direction. That is a three-to-one split between the two sides (for example, 22 white dots against 8 black).</li>
+        <li>The imbalance reading (section 9) must reach <strong>0.5 or more</strong> in either direction. That is a three-to-one split between the two sides (for example, 22 white dots against 8 black).</li>
         <li>It must stay there for <strong>1.5 seconds</strong>. While it does, the swarm greys out as a warning.</li>
       </ul>
       <p>If the imbalance dips back under the line, the timer does not reset to zero; it drains at twice the speed it filled. A single momentary dip does not erase your progress, but a sustained correction does.</p>
@@ -1096,7 +1097,7 @@
       <p>The swarm collapses. The game <strong>destroys enough of the over-represented machine type to bring your real iron rates back to true balance</strong> (as close as whole machines allow), banks <strong>one unstable core</strong>, and unlocks the skyline panel the first time it happens (after a reincarnation the skyline is already open). The destruction is real: those machines are gone.</p>
       <p>Unstable cores have exactly one use: they are the key ingredient for nailbombs.</p>
 
-      <h2 id="g-skyline">17. The skyline and nailbombs</h2>
+      <h2 id="g-skyline">16. The skyline and nailbombs</h2>
       <h3>The skyline</h3>
       <p>The skyline panel appears the first time the swarm collapses. It is a slowly scrolling city that is a direct picture of your economy: buildings for nail makers, nail breakers and factories are generated in proportion to your real counts, so too many breakers (or makers, or factories) shows up as a skyline dominated by that kind of building. Pedestrians walk the ground and run when something terrible happens.</p>
       <h3>The foundry core and nailbomb cost</h3>
@@ -1120,7 +1121,7 @@
       <p>The skyline's status line tells you what is currently active: the street panicking, the temporary demand bonus, and the permanent scar.</p>
       <p>Nailbombing is the opposite bargain from balance. You dig yourself a tao hole, and with it a stretch of life where you cannot reincarnate, in return for huge demand that only ever grows. The hole is not permanent: yin and yang laps still earn +1 tao each, so you can work your way back up to 3 tao and reincarnate again, but every further bomb digs it deeper.</p>
 
-      <h2 id="g-paths">18. Ending a life: all the ways</h2>
+      <h2 id="g-paths">17. Ending a life: all the ways</h2>
       <table>
         <tr><th>Path</th><th>How</th><th>What you keep</th><th>What you lose</th></tr>
         <tr>
@@ -1147,7 +1148,7 @@
       <p>Whenever a life ends, by reincarnation or by ending the run, an end screen summarizes it: your final nail count, time lived, money earned, the machines you ended with, marketing level, map reached, swarm collapses, nailbombs dropped and tao, plus totals across all your lives. A reincarnation also shows the karma you gained. The NIRVANA message appears here too.</p>
       <p>Each reincarnation adds that life to your <strong>past lives</strong> log, opened with the <em>past lives</em> button at the bottom of the yin &amp; yang panel. The log is saved with your game and follows you from life to life. <strong>Ending a run erases it</strong>, along with your karma.</p>
 
-      <h2 id="g-saving">19. Saving, accounts and online play</h2>
+      <h2 id="g-saving">18. Saving, accounts and online play</h2>
       <h3>Local saving</h3>
       <p>The <strong>save</strong> button stores your game in your browser. The <strong>load</strong> button restores it. Old saves are upgraded automatically when loaded. Clearing your browser's data, or playing in a different browser, means the local save is not there.</p>
       <h3>Accounts and cloud saves</h3>
@@ -1172,19 +1173,19 @@
       <h3>Profiles</h3>
       <p>Every logged-in player has a public profile: when they joined, their records (most nails in one life, total nails, best run, karma, time played and more) and the achievements they have earned. The <strong>players</strong> button opens a search by name, and clicking a name on either leaderboard opens that player's profile. <strong>My profile</strong> shows your own. Profile stats update when a life ends, so the life in progress is not counted until it finishes.</p>
 
-      <h2 id="g-tips">20. Strategy notes</h2>
+      <h2 id="g-tips">19. Strategy notes</h2>
       <ul>
         <li><strong>Early game.</strong> Make your first 100 nails by hand, buy iron, and buy nail makers as soon as you can: they are only $5 each. Hit 250 nails to open the machinery panel, then get a breaker as soon as you can afford $75 so that iron starts coming from the ground rather than from your wallet.</li>
         <li><strong>Watch your inventory.</strong> Piling-up unsold nails mean your price is too high or your marketing too low. An inventory at zero with iron to spare means you can raise the price.</li>
         <li><strong>Feed the factories.</strong> Copper is worth far more as machines than as cash. Buy a factory early and keep it supplied. The slider decides what you get, and cheaper makers get you more machines per gram of copper.</li>
         <li><strong>Learn to cross balance.</strong> Tao is the point of the middle game. Fill yin and yang by deliberately leaning your factories one way and then the other. The percentages above the slider tell you what you are building. The swarm's flips help when you overshoot.</li>
-        <li><strong>Put your people to work.</strong> If your deck gave you members, put them to work: meditators earn tao while your economy is balanced. Use monks when imbalance is costing you, and foremen when copper is your bottleneck.</li>
+        <li><strong>Put your people to work.</strong> If your deck gave you members or workers, put them to work: meditators earn tao (and workers build factories) while your economy is balanced. Use monks or overseers when imbalance is costing you, and foremen when copper is your bottleneck.</li>
         <li><strong>Mind the map.</strong> Your breakers' output depends on how many iron deposits the current map has, so a new map can shift your balance on its own.</li>
         <li><strong>Choose your path deliberately.</strong> Reincarnation compounds across lives and leads toward Nirvana. Nailbombing gives immense demand now at the cost of a tao hole you have to climb out of before you can reincarnate again. Everything you do to the swarm on the way to a collapse costs you real machines.</li>
         <li><strong>Save before you experiment.</strong> Collapses and nailbombs destroy things and cannot be undone. The save button is a cheap safety net, and nothing here is automatic except cloud saving when you are logged in.</li>
       </ul>
 
-      <h2 id="g-numbers">21. Reference numbers</h2>
+      <h2 id="g-numbers">20. Reference numbers</h2>
       <table>
         <tr><th>Thing</th><th>Value</th></tr>
         <tr><td>Starting funds / iron / price</td><td>$25.00 / 100 g / $0.08</td></tr>
@@ -1197,17 +1198,16 @@
         <tr><td>Map</td><td>10 &times; 21; 15 deposits (more only from deposit cards, max 60); map 1 deposits are 2,000 g; &times;1.2 per map</td></tr>
         <tr><td>Copper sells for</td><td>$0.05 per gram</td></tr>
         <tr><td>Factory</td><td>$1,000 &times; 1.4<sup>owned</sup>; 1 s cycle; 100 g copper per maker, 1,000 g per breaker</td></tr>
-        <tr><td>Factory&sup2;</td><td>Unlocks at 100,000 makers and 100,000 breakers; $1,000,000,000 &times; 1.1<sup>owned</sup>; 10,000,000 g copper per factory built</td></tr>
         <tr><td>Yin &amp; yang</td><td>Unlocks with 1 maker + 1 breaker; one bar +1 per second; both full = 1 tao (+ any extra from white cards); the bars are 100 for the first tao and +10 for every tao held (8 tao: 180)</td></tr>
         <tr><td>Each held tao</td><td>+50% maker and breaker rate, +10% public demand</td></tr>
         <tr><td>Karma</td><td>1 per 3 tao at reincarnation; every 3 tao below zero is &minus;1 on the counter</td></tr>
         <tr><td>Community</td><td>Only exists with members from white cards (no recruiting, no karma room); 0.25 merit/s per meditating member &times; harmony; 100 merit + 10 per tao held = 1 tao; harmony +2%/s up, &minus;5%/s down</td></tr>
-        <tr><td>Monastery</td><td>Needs a community (white-card members) and 3 tao, earned each life; hall $10,000 + 100,000 nails, &times;2.5 each, 2 seats; a monk moves the lean 0.2% per second; heavy lean costs up to 75% of harmony; each foreman +10% factory output per copper</td></tr>
+        <tr><td>Monastery</td><td>Needs a community (white-card members) or a company (black-card workers) and 3 tao, earned each life; on a black deck it is the barracks, with overseers; hall $10,000 + 100,000 nails, &times;2.5 each, 2 seats; a monk moves the lean 0.2% per second; heavy lean costs up to 75% of harmony; each foreman +10% factory output per copper</td></tr>
         <tr><td>Swarm unlocks</td><td>1 tao held + 1 factory</td></tr>
         <tr><td>Cost of tao</td><td>No cap; the bars and the merit ring are 100 + 10 per tao held (100, 110, 120, ... 8 tao: 180); white cards ease it</td></tr>
         <tr><td>Karma cap</td><td>100; Nirvana is reached when karma gets to 100</td></tr>
         <tr><td>Tao at the start of a new life</td><td>1 (2 from 13 karma, 3 for Nirvana)</td></tr>
-        <tr><td>Cards</td><td>A black-or-white fork first, then a pack of 5 per karma you hold, opened one at a time (cards you leave are gone); the deck has 2 + 1.5 &times; &radic;karma slots (max 10), a quarter of them may hold the other colour; the collection has 12 places; the deck and collection are kept from life to life; black = greed, white = enlightenment; cards are common, uncommon, rare or legendary and add up (diminishing returns past +300% on one stat)</td></tr>
+        <tr><td>Cards</td><td>A black-or-white fork first, then a pack of 5 per karma you hold, opened one at a time (cards you leave are gone); the deck has 2 + 1.5 &times; &radic;karma slots (max 10), the deck holds one colour only; the collection has 12 places and holds any; the deck and collection are kept from life to life; black = greed, white = enlightenment; cards are common, uncommon, rare or legendary and add up (diminishing returns past +300% on one stat)</td></tr>
         <tr><td>Factory floor</td><td>Unlocks at 10 factories; 5&times;5, Mk2 6&times;6 ($500M + 10M nails), Mk3 7&times;7 ($20B + 1B nails + 100 t copper); modules 1.5&times; dearer each; sell for 75%; prices start at battery $800,000, copper press $2M, blueprint table $5M, maker or breaker die $10M, cooler $1.5M</td></tr>
         <tr><td>Swarm flip</td><td>Converts machines at 1 breaker = 10 makers, no loss; no copper; 0.25 s cooldown</td></tr>
         <tr><td>Collapse</td><td>Imbalance &ge; 0.5 (3-to-1) for 1.5 s; yields 1 unstable core; unlocks the skyline</td></tr>
@@ -1412,21 +1412,6 @@
           </div>
         </div>
 
-      <div class="panel" id="factorySquaredSection" style="margin-top:0; display:none;">
-          <div class="panel-header">factory&sup2;</div>
-          <div class="panel-body">
-            <div class="row">
-              <span class="label">factory&sup2;:</span>
-              <span class="value"><span id="valFactorySquaredCount">0</span><span class="bonus-note" id="valFactorySquaredBonus"></span></span>
-              <button id="btnBuyFactorySquared">buy factory&sup2;</button>
-            </div>
-
-            <div class="hint" id="valFactorySquaredMaterialUse">consuming 0 g copper/s</div>
-            <div class="hint">
-              producing: <span id="valFactorySquaredOutputRate">0.0 factories/min</span>
-            </div>
-          </div>
-        </div>
       </div>
 
         <div class="panel" id="communitySection" style="display:none;">
@@ -1437,6 +1422,17 @@
             <div class="row"><span class="label">harmony:</span><span class="value" id="valCommunityHarmony">0%</span></div>
             <div class="row"><span class="label">merit rate:</span><span class="value" id="valCommunityRate">none</span></div>
             <div class="row"><span class="label">merit:</span><span class="value" id="valCommunityMerit">0 / 100</span></div>
+          </div>
+        </div>
+
+        <div class="panel" id="companySection" style="display:none;">
+          <div class="panel-header">the company</div>
+          <div class="panel-body">
+            <canvas id="companyCanvas" width="300" height="330" style="width:100%; display:block;"></canvas>
+            <div class="row"><span class="label">workers:</span><span class="value" id="valCompanyWorkers">0</span></div>
+            <div class="row"><span class="label">manpower:</span><span class="value" id="valCompanyManpower">0%</span></div>
+            <div class="row"><span class="label">output rate:</span><span class="value" id="valCompanyRate">none</span></div>
+            <div class="row"><span class="label">output:</span><span class="value" id="valCompanyOutput">0 / 100</span></div>
           </div>
         </div>
 
@@ -1600,6 +1596,7 @@
 <script src="js/chat.js"></script>
 <script src="js/admin.js"></script>
 <script src="js/community.js"></script>
+<script src="js/company.js"></script>
 <script src="js/monastery.js"></script>
 <script src="js/engine.js"></script>
 

@@ -59,7 +59,7 @@ function runReincarnationRitual(karmaTotal, isNirvana) {
   rc = {
     karmaTotal: karmaTotal,
     isNirvana: !!isNirvana,
-    ready: false,     // true once every pack is open and the loadout has a card in it
+    ready: false,     // true once the loadout has a card in it (packs may be left unopened)
     gain: karmaTotal,  // packs = your total karma
     result: null,
     cells: [],
@@ -163,7 +163,7 @@ el.btnReincarnate.addEventListener("click", startReincarnation);
 
 el.btnReincarnateConfirm.addEventListener("click", function () {
   var ritual = rc;
-  if (!ritual || !ritual.ready) return; // the packs have to be open and the loadout filled
+  if (!ritual || !ritual.ready) return; // the loadout needs a card (unopened packs are fine)
   rc = null;
   el.reincarnateOverlay.style.display = "none";
   el.reincarnateBar.style.display = "none";

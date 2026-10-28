@@ -1,8 +1,8 @@
 "use strict";
 
 // ----------------------------------------------------------------
-// The Community. It exists only while you hold members, and members come only
-// from white cards (cards.js): no white-card members, no community. A picture from the Buddhist notes made into a mechanic:
+// The Community. It exists while you hold members (a white deck always has one), and the rest come only
+// from white cards (cards.js). A picture from the Buddhist notes made into a mechanic:
 //   ฉัน  the dot            you. Its distance from the big circle is
 //                            your karma progress toward Nirvana.
 //   เรา  the spinning center your community. Members make merit; the
@@ -34,8 +34,13 @@ var COMMUNITY_NIRVANA_KARMA = NIRVANA_KARMA; // the dot reaches the center at th
 
 // The community's members come from white cards (cards.js, communityMembers) and nowhere else: they are not
 // recruited, bought or earned with karma. No members, no community.
+// A white deck always has at least ONE member, free, so every white player meets the community; cards add more.
+var COMMUNITY_FREE_MEMBERS = 1;
+
 function communityMemberTotal() {
-  return Math.max(0, Math.floor(cardAdd("communityMembers")));
+  var fromCards = Math.max(0, Math.floor(cardAdd("communityMembers")));
+  var white = typeof cardDeckSide === "function" && cardDeckSide() === "white";
+  return white ? Math.max(COMMUNITY_FREE_MEMBERS, fromCards) : fromCards;
 }
 
 // Merit for the next tao. Like the yin & yang bars it grows with every tao held (taoCostMult in formulas.js),

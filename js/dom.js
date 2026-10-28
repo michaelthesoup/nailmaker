@@ -115,12 +115,6 @@ var el = {
   factoryBreakerPct: document.getElementById("valFactoryBreakerPct"),
   factoryMakerPct: document.getElementById("valFactoryMakerPct"),
 
-  factorySquaredSection: document.getElementById("factorySquaredSection"),
-  factorySquaredCount: document.getElementById("valFactorySquaredCount"),
-  factorySquaredBonus: document.getElementById("valFactorySquaredBonus"),
-  factorySquaredMaterialUse: document.getElementById("valFactorySquaredMaterialUse"),
-  factorySquaredOutputRate: document.getElementById("valFactorySquaredOutputRate"),
-  btnBuyFactorySquared: document.getElementById("btnBuyFactorySquared"),
 
   nailMakerIronRate: document.getElementById("valNailMakerIronRate"),
   nailMakerNailsRate: document.getElementById("valNailMakerNailsRate"),

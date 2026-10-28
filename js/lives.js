@@ -38,7 +38,6 @@ function buildLifeRecord(extra) {
     makers: Math.floor(state.nailMakers),
     breakers: Math.floor(state.breakers),
     factories: Math.floor(state.factories),
-    factorySquared: Math.floor(state.factorySquared),
     marketing: state.marketingLevel,
     map: state.mapIndex,
     collapses: state.swarmCollapses || 0,
@@ -125,8 +124,7 @@ function showEndScreen(opts) {
   sheetAddText(body, subtitle, "sheet-sub");
 
   sheetAddHeading(body, "this life (#" + life.life + ")");
-  var machines = fmtInt(life.makers) + " makers \u00b7 " + fmtInt(life.breakers) + " breakers \u00b7 " + fmtInt(life.factories) + " factories" +
-    (life.factorySquared > 0 ? " \u00b7 " + fmtInt(life.factorySquared) + " factory\u00b2" : "");
+  var machines = fmtInt(life.makers) + " makers \u00b7 " + fmtInt(life.breakers) + " breakers \u00b7 " + fmtInt(life.factories) + " factories";
   sheetAddRows(body, [
     ["nails made (your score)", fmtInt(life.nails)],
     ["time lived", fmtDuration(life.timeSec)],

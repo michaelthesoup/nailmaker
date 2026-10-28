@@ -93,14 +93,6 @@ el.btnBuyFactory.addEventListener("click", function () {
   state.factories += 1;
   render();
 });
-el.btnBuyFactorySquared.addEventListener("click", function () {
-  var cost = factorySquaredBuildCostEffective();
-  if (state.funds < cost) return;
-
-  state.funds -= cost;
-  state.factorySquared += 1;
-  render();
-});
 el.btnBuyBreaker.addEventListener("click", function () {
   if (Date.now() < state.breakerCooldownUntil) return;
   var cost = breakerBuildCostEffective();
@@ -238,11 +230,11 @@ function migrateLoadedState() {
   // now just a count plus one pooled production progress value.
   state.factories = Array.isArray(state.factories) ? state.factories.length : Math.max(0, Math.floor(state.factories || 0));
   state.unlockedMap = state.unlockedMap || state.breakers > 0;
-  state.factorySquared = Math.max(0, Math.floor(state.factorySquared || 0));
   state.factoryProgress = Math.min(state.factories, Math.max(0, Number(state.factoryProgress) || 0));
-  state.factorySquaredProgress = Math.min(state.factorySquared, Math.max(0, Number(state.factorySquaredProgress) || 0));
   delete state.factoryTimers;
-  delete state.factorySquaredTimers;
+  delete state.factorySquared;
+  delete state.factorySquaredProgress;
+  delete state.unlockedFactorySquared;
   if (!state.mapTotalWeight) {
     state.mapTotalWeight = Math.max(
       mapRemainingWeight(state.mapTiles),

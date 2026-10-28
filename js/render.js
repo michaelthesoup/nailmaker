@@ -69,17 +69,6 @@ function render() {
 
   el.btnBuyFactory.textContent = "buy (" + fmtMoney(factoryBuildCostEffective()) + ")";
   el.btnBuyFactory.disabled = state.funds < factoryBuildCostEffective();
-  el.btnBuyFactory.style.display = state.factorySquared > 0 ? "none" : "";
-
-  if (el.factorySquaredCount) {
-    el.factorySquaredCount.textContent = state.factorySquared;
-    el.factorySquaredBonus.textContent = foremanPct > 0 ? "+" + foremanPct + "%" : "";
-    var fsCopperRate = state.factorySquared * (1 / FACTORY_SQUARED_PERIOD_SEC) * factorySquaredCopperCostEffective();
-    el.factorySquaredMaterialUse.textContent = "consuming " + fmtWeight(fsCopperRate) + " copper/s";
-    el.factorySquaredOutputRate.textContent = fmtRateNum(state.factorySquared * (1 / FACTORY_SQUARED_PERIOD_SEC)) + " factories/s";
-    el.btnBuyFactorySquared.textContent = "buy (" + fmtMoney(factorySquaredBuildCostEffective()) + ")";
-    el.btnBuyFactorySquared.disabled = state.funds < factorySquaredBuildCostEffective();
-  }
 
   // ---- machinery: nail breakers ----
   var breakerRates = breakerTheoreticalRates();
@@ -160,18 +149,17 @@ function render() {
   // ---- progressive reveal: unlock once, never re-hide ----
   if (!state.unlockedMap && state.breakers > 0) state.unlockedMap = true;
   if (!state.unlockedMachinery && state.totalNailsMade >= MACHINERY_UNLOCK_NAILS) state.unlockedMachinery = true;
-  if (!state.unlockedFactorySquared && state.nailMakers >= FACTORY_SQUARED_UNLOCK_MAKERS && state.breakers >= FACTORY_SQUARED_UNLOCK_BREAKERS) state.unlockedFactorySquared = true;
   el.mapSection.style.display = state.unlockedMap ? "" : "none";
   if (el.postBreakerSection) el.postBreakerSection.style.display = state.unlockedMap ? "" : "none";
   if (el.factoryBalanceSliderWrap) el.factoryBalanceSliderWrap.style.display = state.factories > 0 ? "" : "none";
   el.machinerySection.style.display = state.unlockedMachinery ? "" : "none";
-  if (el.factorySquaredSection) el.factorySquaredSection.style.display = state.unlockedFactorySquared ? "" : "none";
   el.yinYangSection.style.display = state.unlockedYinYang ? "" : "none";
   if (el.swarmSection) el.swarmSection.style.display = state.unlockedSwarm ? "" : "none";
 
   renderMap();
   if (typeof renderCity === "function") renderCity();
   if (typeof renderCommunity === "function") renderCommunity();
+  if (typeof renderCompany === "function") renderCompany();
   if (typeof renderMonastery === "function") renderMonastery();
   if (typeof renderFloor === "function") renderFloor();
   if (typeof newsRender === "function") newsRender();

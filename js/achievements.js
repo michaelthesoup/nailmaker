@@ -14,7 +14,6 @@ var ACHIEVEMENTS = [
   { id: "factory",     name: "Assembly Line",         desc: "Own a factory.",                                    test: function (s) { return s.factories >= 1; } },
   { id: "map10",       name: "Deep Prospector",       desc: "Reach map 10.",                                     test: function (s, lt) { return lt.deepestMap >= 10; } },
   { id: "million",     name: "Million Nail Club",     desc: "Make 1 million nails in one life.",                 test: function (s, lt) { return lt.bestLifeNails >= 1e6; } },
-  { id: "factory2",    name: "Factory of Factories",  desc: "Own a factory\u00b2.",                              test: function (s) { return s.factorySquared >= 1; } },
   { id: "billion",     name: "Billion Nail Club",     desc: "Make 1 billion nails in one life.",                 test: function (s, lt) { return lt.bestLifeNails >= 1e9; } },
   { id: "yinyang",     name: "Yin Meets Yang",        desc: "Unlock yin & yang.",                                test: function (s) { return !!s.unlockedYinYang; } },
   { id: "tao",         name: "The Way",               desc: "Hold 1 tao.",                                       test: function (s, lt) { return lt.highestTao >= 1; } },

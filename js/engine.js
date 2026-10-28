@@ -48,6 +48,7 @@ function tick(dt, skipRender) {
   state.simTime += dt;
   cityTick(dt);
   if (typeof communityTick === "function") communityTick(dt);
+  if (typeof companyTick === "function") companyTick(dt);
   if (typeof monasteryTick === "function") monasteryTick(dt);
 
   // Production: nail makers turn iron into unsold nails. The "nail
@@ -141,24 +142,6 @@ function tick(dt, skipRender) {
   }
 
   checkYinYangUnlock();
-
-  // Factory Squared: each owned unit produces one regular factory per
-  // cycle, at a real copper cost. Like regular factories this is one
-  // continuous stream (N units = N factories per second) that banks cycles
-  // and simply pauses, rather than erroring, if copper runs short.
-  if (state.unlockedFactorySquared && state.factorySquared > 0) {
-    var fsCopperCost = factorySquaredCopperCostEffective();
-    state.factorySquaredProgress = Math.min(state.factorySquared, (state.factorySquaredProgress || 0) + state.factorySquared * dt / FACTORY_SQUARED_PERIOD_SEC);
-    var fsCycles = Math.floor(state.factorySquaredProgress + 1e-9);
-    if (fsCycles > 0 && fsCopperCost > 0) fsCycles = Math.min(fsCycles, Math.floor(state.copperAmt / fsCopperCost));
-    if (fsCycles > 0) {
-      state.copperAmt -= fsCycles * fsCopperCost;
-      state.factorySquaredProgress -= fsCycles;
-      state.factories += fsCycles;
-    }
-  } else {
-    state.factorySquaredProgress = 0;
-  }
 
   if (!mapHasDeposits(state.mapTiles)) {
     goToNextMap(); // calls render() itself

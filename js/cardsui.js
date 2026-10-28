@@ -89,7 +89,7 @@ function cardDeckElement(deck) {
 
 function loadoutReady() {
   var d = loadout;
-  return !!d && !d.busy && d.path !== null && d.packsOpened >= d.packsTotal && d.equipped.length > 0;
+  return !!d && !d.busy && d.path !== null && d.equipped.length > 0;
 }
 
 function loadoutChanged() {
@@ -193,7 +193,7 @@ function loadoutOpenAll() {
   if (d.busy || d.packsOpened >= d.packsTotal) return;
   var total = d.packsTotal - d.packsOpened;
   var delay = Math.max(30, Math.min(170, Math.round(3200 / total)));
-  var tally = { packs: 0, legendary: 0, banked: 0, deck: 0, swapped: 0 };
+  var tally = { packs: 0, legendary: 0, banked: 0 };
   var run = loadout;
   d.busy = true;
   d.message = "";
@@ -206,12 +206,9 @@ function loadoutOpenAll() {
     d.packsOpened += 1;
     var pack = cardPack(d.seed, d.packsOpened, d.path, d.karma);
     d.opened += pack.length;
-    var st = { deck: d.equipped, kept: d.kept, slots: d.slots, path: d.path };
-    var stats = cardAutoPack(pack, st);
+    var stats = cardAutoPack(pack, { kept: d.kept });
     tally.packs += 1;
     tally.banked += stats.banked;
-    tally.deck += stats.deck;
-    tally.swapped += stats.swapped;
     tally.legendary += pack.filter(function (c) { return c.rarity === 3; }).length;
     d.reel = { pack: pack, tally: tally };
     renderLoadout();
@@ -219,16 +216,12 @@ function loadoutOpenAll() {
   }
 
   function finish() {
-    var st = { deck: d.equipped, kept: d.kept, slots: d.slots, path: d.path };
-    cardAutoFinish(st);
-    d.equipped = st.deck;
-    d.kept = st.kept;
     d.busy = false;
     d.reel = null;
     d.current = [];
     d.message = "opened " + tally.packs + " pack" + (tally.packs === 1 ? "" : "s") + ": " + tally.legendary + " legendary" +
-      (tally.legendary ? " (" + tally.banked + " to your collection" + (tally.deck ? ", " + tally.deck + " to your slots" : "") + ")" : "") +
-      ", and the best of the rest are in your slots.";
+      (tally.legendary ? " (" + tally.banked + " put in your collection" + (tally.legendary > tally.banked ? ", the rest had no room" : "") + ")" : "") +
+      ". Your deck is as you left it.";
     loadoutChanged();
   }
 
@@ -265,6 +258,8 @@ function renderLoadout() {
     d.shown = fork;
     var forkRow = document.createElement("div");
     forkRow.className = "card-hand fade";
+    var oldSide = state.deck && state.deck.length ? state.deck[0].side : null;
+    if (oldSide) box.appendChild(loadoutText("hint", "your deck is " + oldSide + ". Choosing " + (oldSide === "black" ? "white" : "black") + " moves it to your collection (12 places; any cards that don't fit are discarded)."));
     fork.forEach(function (card) { forkRow.appendChild(cardElement(card, function () { loadoutChoosePath(card); })); });
     box.appendChild(forkRow);
     box.appendChild(loadoutText("card-note", "choose your path wisely"));
@@ -301,7 +296,6 @@ function renderLoadout() {
   }
 
   // ---- deck ----
-  var oppAllowed = cardOppositeAllowed(d.slots);
   box.appendChild(loadoutText("sheet-heading", "your deck (" + d.equipped.length + " of " + d.slots + ")"));
   var slotsRow = document.createElement("div");
   slotsRow.className = "card-slots";
@@ -321,9 +315,7 @@ function renderLoadout() {
     }
   }
   box.appendChild(slotsRow);
-  box.appendChild(loadoutText("hint", "click a card in your deck to move it to your collection. " + (oppAllowed > 0
-    ? "Up to " + oppAllowed + " slot" + (oppAllowed === 1 ? "" : "s") + " may hold the other colour (" + cardOppositeCount(d.equipped, d.path) + " used)."
-    : "More karma opens a slot for a card of the other colour.")));
+  box.appendChild(loadoutText("hint", "click a card in your deck to move it to your collection. Your deck holds " + d.path + " cards only; the collection can hold either colour."));
   box.appendChild(loadoutButton("equip best", function () {
     var all = d.equipped.concat(d.kept);
     var best = cardAutoLoadout(all, d.slots, d.path);
@@ -342,8 +334,7 @@ function renderLoadout() {
       " come out about " + over.toFixed(1) + " times stronger. Add " + (lean.ratio > 1 ? "maker-speed" : "breaker-speed or deposit") + " cards to even it out."));
   }
   box.appendChild(cardDeckElement(d.equipped));
-  if (left > 0) box.appendChild(loadoutText("hint", "open all your packs, then begin."));
-  else if (d.equipped.length === 0) box.appendChild(loadoutText("hint", "put at least one card in a slot, then begin."));
+  if (d.equipped.length === 0) box.appendChild(loadoutText("hint", "put at least one card in a slot, then begin (you can begin before every pack is open)."));
 
   // ---- collection ----
   box.appendChild(loadoutText("sheet-heading", "your collection (" + d.kept.length + " of " + CARD_COLLECTION_MAX + ")"));

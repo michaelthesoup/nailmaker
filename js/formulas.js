@@ -86,13 +86,15 @@ function factoryCostGrowth() {
   return Math.max(1.02, 1 + (FACTORY_COST_GROWTH - 1) * cardMult("factoryGrowth"));
 }
 
-function factoryBuildCostEffective() {
-  var discount = typeof moduleFactoryDiscount === "function" ? moduleFactoryDiscount() : 0; // blueprint tables (floor.js)
-  return FACTORY_BUILD_COST_FUNDS * Math.pow(factoryCostGrowth(), state.factories) * (1 - discount) * cardMult("machineCost");
+// Factories you bought yourself. The ones the company builds (company.js) don't make the next factory dearer, or the
+// price would climb to infinity after a few thousand of them.
+function handBuiltFactories() {
+  return Math.max(0, state.factories - Math.min(state.companyFactories || 0, state.factories));
 }
 
-function factorySquaredBuildCostEffective() {
-  return FACTORY_SQUARED_BUILD_COST_FUNDS * Math.pow(FACTORY_SQUARED_COST_GROWTH, state.factorySquared);
+function factoryBuildCostEffective() {
+  var discount = typeof moduleFactoryDiscount === "function" ? moduleFactoryDiscount() : 0; // blueprint tables (floor.js)
+  return FACTORY_BUILD_COST_FUNDS * Math.pow(factoryCostGrowth(), handBuiltFactories()) * (1 - discount) * cardMult("machineCost");
 }
 
 // A factory's material cost per cycle depends on which way the balance
@@ -115,10 +117,6 @@ function factoryCopperCostEffective() {
   var base = FACTORY_COST_BREAKER_SIDE_COPPER * (1 - f) + FACTORY_COST_MAKER_SIDE_COPPER * f;
   var save = typeof moduleCopperSave === "function" ? moduleCopperSave() : 0; // copper presses (floor.js)
   return base / (1 + foremanOutputBonus()) * (1 - save) * cardMult("copperCost");
-}
-
-function factorySquaredCopperCostEffective() {
-  return FACTORY_SQUARED_COPPER_COST / (1 + foremanOutputBonus());
 }
 
 function breakerBuildCostEffective() {

@@ -14,19 +14,20 @@
 //      a time and click the cards you want: a card goes to your deck, or to your collection if the deck is full
 //      (with both full you must discard something). Every card you leave is gone when the next pack opens. Clicking
 //      a card in the deck moves it to the collection and back, and any card can be discarded. Or press "open all"
-//      to have the packs opened for you, one after another: legendaries go to the collection, then the deck, and
-//      the best of the rest fill and improve the deck.
+//      to have the packs opened for you, one after another: it only puts legendaries into empty places in
+//      your collection, and never changes your deck. You can begin your new life before every pack is open.
 //   3. SLOTS. Your karma gives you a number of slots for the deck (cardSlots) and the collection has 12 places.
-//      Opposite-colour cards are limited to a quarter of the slots. Neither path has any debuff; they are just two
-//      ways to play, a simple spiritual life or a fast industrial one.
+//      A deck holds ONE colour, your path's: a black deck is a company, a white deck a community (you can't have
+//      both). The collection holds any colour, so an opposite-colour card from a pack can still be kept. Neither
+//      path has any debuff; they are just two ways to play, a simple spiritual life or a fast industrial one.
 //
 // Cards come in four rarities: common, uncommon, rare and legendary. A legendary card is rare
 // (about 1 in 100 at no karma, up to 1 in 20) and carries two effects, the first stronger than any
 // rare card.
 //
 // Karma gives nothing but the cards (packs and slots). In particular it does not add deposits to the map (use the
-// deposit cards) and it does not make room in the community: members come only from white cards, so a life with
-// none has no community, and no monastery.
+// deposit cards) and it does not make room in the community: a white deck has one free member (community.js) and a
+// black deck one free worker (company.js); white and black cards add more.
 //
 // Nothing is granted when you equip a card: the game just asks cardMult() and cardAdd()
 // whenever it works something out (the trick the lands and the skill tree used), so a
@@ -59,6 +60,8 @@
 //   demandMult     public demand
 //   breakerSpeed   ore per nail the breakers take
 //   makerSpeed     nails per second each maker turns out
+//   companySpeed   how fast the company's workers build factories
+//   companyMembers (add) workers of the company (a black deck only; see company.js). The ONLY way to get any: no workers, no company
 //   deposits       (add) deposits on every map
 //   factoryGrowth  how much each factory you own adds to the price of the next: a share of the usual 40%, so 0.5 halves it
 //   yinYangSpeed   how fast the yin & yang bars fill
@@ -108,6 +111,8 @@ var CARD_EFFECTS = {
   demandMult:    { side: "black", kind: "mult", dir: "high", pct: [[10, 20], [25, 40], [50, 80], [100, 150]] },
   makerSpeed:    { side: "black", kind: "mult", dir: "high", pct: [[10, 20], [25, 40], [50, 80], [100, 150]] },
   breakerSpeed:  { side: "black", kind: "mult", dir: "high", pct: [[10, 20], [25, 40], [50, 80], [100, 150]] },
+  companySpeed:  { side: "black", kind: "mult", dir: "high", pct: [[10, 20], [25, 40], [50, 80], [100, 150]] },
+  companyMembers: { side: "black", kind: "add", sign: 1, step: 1, amount: [[1, 1], [2, 2], [3, 4], [5, 6]], int: true },
   deposits:      { side: "black", kind: "add", sign: 1, step: 1, amount: [[2, 3], [3, 4], [5, 6], [8, 10]], int: true },
   // ---- white: enlightenment ----
   yinYangSpeed:  { side: "white", kind: "mult", dir: "high", pct: [[10, 20], [25, 40], [50, 80], [100, 150]] },
@@ -139,6 +144,8 @@ var CARD_EFFECT_TEXT = {
   communitySpeed: { up: "community makes merit {p}% faster", down: "community makes merit {p}% slower" },
   meritCost:     { up: "merit per tao {p}% higher",       down: "merit per tao {p}% lower" },
   taoGrowth:     { up: "the tao requirement grows {p}% faster", down: "the tao requirement grows {p}% slower" },
+  companySpeed:  { up: "the company builds factories {p}% faster", down: "the company builds factories {p}% slower" },
+  companyMembers: { add: function (n) { return "+" + n + " company worker" + (n === 1 ? "" : "s"); } },
   deposits:      { add: function (n) { return "+" + n + " deposits on every map"; } },
   communityMembers: { add: function (n) { return "+" + n + " community member" + (n === 1 ? "" : "s"); } },
   taoPerCycle:   { add: function (n) { return "+" + n + " extra tao every yin & yang cycle"; } }
@@ -296,9 +303,10 @@ function cardSlots(karma) {
   return Math.min(CARD_SLOTS_MAX, 2 + Math.floor(1.5 * Math.sqrt(Math.max(0, karma || 0))));
 }
 
-// How many of the slots may hold a card of the other colour: a quarter of them.
+// A deck holds one colour only (your path's), so no slot may hold the other colour. The collection can hold any
+// colour. (Kept as a function so the rule is in one place.)
 function cardOppositeAllowed(slots) {
-  return Math.floor(slots / 4);
+  return 0;
 }
 
 function cardOppositeCount(deck, path) {
@@ -311,7 +319,7 @@ function cardOppositeCount(deck, path) {
 function cardLoadoutBlock(deck, card, slots, path) {
   if (deck.indexOf(card) >= 0) return "already equipped";
   if (deck.length >= slots) return "no free slot";
-  if (card.side !== path && cardOppositeCount(deck, path) >= cardOppositeAllowed(slots)) return "no room for another " + card.side + " card";
+  if (card.side !== path) return "a " + path + " deck holds only " + path + " cards";
   return null;
 }
 
@@ -375,61 +383,25 @@ function cardLeanOk(deck, card) {
   return after <= CARD_BALANCE_HARD || after <= cardLean(deck);
 }
 
-// What "open all" does with one pack. st = { deck, kept, slots, path } (changed in place). Legendary cards go to the
-// collection while it has room, then to the deck, and are lost if both are full. The others are taken while the
-// slots have room, and after that only to replace a card that is clearly worse (which goes to the collection if there
-// is room). Returns { banked, deck, swapped }.
+// What "open all" does with one pack. st = { kept } (changed in place). It only ever banks legendary cards, and only
+// into EMPTY collection places: it never touches the deck, never swaps anything out, and a legendary that finds the
+// collection full is simply left (it is gone with the pack). Returns { banked }.
 function cardAutoPack(pack, st) {
-  var stats = { banked: 0, deck: 0, swapped: 0 };
-  var rest = [];
+  var stats = { banked: 0 };
   pack.forEach(function (c) {
-    if (c.rarity !== 3) { rest.push(c); return; }
-    if (st.kept.length < CARD_COLLECTION_MAX) { st.kept.push(c); stats.banked++; }
-    else if (!cardLoadoutBlock(st.deck, c, st.slots, st.path)) { st.deck.push(c); stats.deck++; }
+    if (c.rarity === 3 && st.kept.length < CARD_COLLECTION_MAX) { st.kept.push(c); stats.banked++; }
   });
-  for (;;) {
-    var best = null, bestAt = -1, bestGain = 0, i;
-    if (st.deck.length < st.slots) {
-      for (i = 0; i < rest.length; i++) {
-        if (cardLoadoutBlock(st.deck, rest[i], st.slots, st.path) || !cardLeanOk(st.deck, rest[i])) continue;
-        var s = cardScoreIn(rest[i], st.deck, st.path);
-        if (best === null || s > bestGain) { best = rest[i]; bestGain = s; bestAt = -1; }
-      }
-    } else if (st.deck.length > 0) {
-      var worst = 0, worstScore = Infinity;
-      st.deck.forEach(function (d, k) {
-        var others = st.deck.filter(function (x, j) { return j !== k; });
-        var sc = cardScoreIn(d, others, st.path);
-        if (sc < worstScore) { worstScore = sc; worst = k; }
-      });
-      var without = st.deck.filter(function (x, j) { return j !== worst; });
-      for (i = 0; i < rest.length; i++) {
-        if (cardLoadoutBlock(without, rest[i], st.slots, st.path) || !cardLeanOk(without, rest[i])) continue;
-        var gain = cardScoreIn(rest[i], without, st.path) - worstScore;
-        if (gain > 0 && (best === null || gain > bestGain)) { best = rest[i]; bestGain = gain; bestAt = worst; }
-      }
-    }
-    if (!best) break;
-    rest.splice(rest.indexOf(best), 1);
-    if (bestAt >= 0) {
-      var out = st.deck[bestAt];
-      st.deck[bestAt] = best;
-      if (st.kept.length < CARD_COLLECTION_MAX) st.kept.push(out);
-      stats.swapped++;
-    } else { st.deck.push(best); stats.deck++; }
-  }
   return stats;
 }
 
-// When "open all" has finished: the best deck from what is in the deck and the collection. What isn't chosen stays
-// in the collection (the strongest first, if there are more than it holds).
-function cardAutoFinish(st) {
-  var all = st.deck.concat(st.kept);
-  st.deck = cardAutoLoadout(all, st.slots, st.path);
-  st.kept = cardSorted(all.filter(function (c) { return st.deck.indexOf(c) < 0; })).slice(0, CARD_COLLECTION_MAX);
-}
-
 // ---------------- the deck ----------------
+
+// The colour of the deck (a deck holds one): "black", "white", or null for no cards. A black deck has the company
+// (company.js), a white deck the community (community.js).
+function cardDeckSide() {
+  var deck = cardDeck();
+  return deck.length ? deck[0].side : null;
+}
 
 function cardDeck() {
   return (typeof state !== "undefined" && state && Array.isArray(state.deck)) ? state.deck : [];
@@ -565,6 +537,13 @@ function cardsNormalize() {
     seen[c.id] = true;
     keptDeck.push(c);
   });
+  // A deck holds one colour: the one most of it is (black if level). The rest go to the collection.
+  var blacks = keptDeck.filter(function (c) { return c.side === "black"; }).length;
+  var deckSide = blacks >= keptDeck.length - blacks ? "black" : "white";
+  var wrongColour = keptDeck.filter(function (c) { return c.side !== deckSide; });
+  keptDeck = keptDeck.filter(function (c) { return c.side === deckSide; });
+  wrongColour.forEach(function (c) { delete seen[c.id]; });
+  collection = wrongColour.concat(collection);
   var keptCollection = [];
   collection.forEach(function (c) {
     if (c.id !== undefined && seen[c.id]) return;   // already in the deck (older saves kept a copy in both)

@@ -9,6 +9,8 @@
 // that finds the center between them -- turned by the Wheel of the
 // Dharma (ธรรมจักร), which spins faster the more monks there are.
 //
+//   - A black deck has a twin of all this, THE BARRACKS (company workers instead of community members; monks are
+//     called overseers; the lean drains manpower instead of harmony). See monasteryBlack().
 //   - Unlocks once you have a community (members from white cards, see cards.js) AND hold 3 tao
 //     (earned again each life, like the swarm).
 //   - Halls cost funds AND a lot of unsold nails, and seat monks (a
@@ -39,9 +41,25 @@ var MONK_RELAX_STEPS_PER_SEC = 2;       // with no monks the lean drifts back to
 
 var monkStepAccum = 0; // fractional monk steps carried between ticks (not saved)
 
+// A white deck has the monastery, powered by the community's members; a black deck has its twin, THE BARRACKS,
+// powered by the company's workers. Same halls, same seats, same lean, same price: only the words and the picture
+// change (monks are called overseers there), and the lean drains manpower instead of harmony.
+function monasteryBlack() {
+  return typeof cardDeckSide === "function" && cardDeckSide() === "black";
+}
+
+// The people the monastery (or barracks) draws on: community members, or company workers.
+function monasteryPool() {
+  if (monasteryBlack()) return typeof companyWorkers === "function" ? companyWorkers() : 0;
+  return state.members;
+}
+
 function monasteryCheckUnlock() {
   if (state.unlockedMonastery) return;
-  if (typeof communityUnlocked === "function" && communityUnlocked() && state.tao >= MONASTERY_UNLOCK_TAO) state.unlockedMonastery = true;
+  var has = monasteryBlack()
+    ? (typeof companyUnlocked === "function" && companyUnlocked())
+    : (typeof communityUnlocked === "function" && communityUnlocked());
+  if (has && state.tao >= MONASTERY_UNLOCK_TAO) state.unlockedMonastery = true;
 }
 
 function monasteryUnlocked() {
@@ -76,8 +94,9 @@ function monasteryTargetLean() {
 function monasteryTick(dt) {
   monasteryCheckUnlock();
   if (!monasteryUnlocked()) return;
-  if (state.monks > state.members) state.monks = state.members;
-  if ((state.foremen || 0) > state.members - state.monks) state.foremen = state.members - state.monks;
+  var pool = monasteryPool();
+  if (state.monks > pool) state.monks = pool;
+  if ((state.foremen || 0) > pool - state.monks) state.foremen = Math.max(0, pool - state.monks);
 
   if (taoRateBonus() <= 0) { state.monkShift = 0; monkStepAccum = 0; return; }
 
@@ -111,7 +130,7 @@ el.btnBuildHall.addEventListener("click", function () {
 // Seats are shared by monks and foremen, and both come out of the community.
 function monasterySeatsFree() {
   var staffed = state.monks + (state.foremen || 0);
-  return Math.min(monasterySeats() - staffed, state.members - staffed);
+  return Math.min(monasterySeats() - staffed, monasteryPool() - staffed);
 }
 
 el.btnMonkAdd.addEventListener("click", function () {
@@ -142,11 +161,30 @@ function fmtBonusPct(x) {
   return "+" + Math.round(x * 100) + "%";
 }
 
+var monasteryEls = {
+  header: document.querySelector("#monasterySection .panel-header"),
+  monksLabel: document.getElementById("valMonasteryMonks") && document.getElementById("valMonasteryMonks").previousElementSibling,
+  meditatingLabel: document.getElementById("valMonasteryMeditating") && document.getElementById("valMonasteryMeditating").previousElementSibling,
+  drainLabel: document.getElementById("valMonasteryDrain") && document.getElementById("valMonasteryDrain").previousElementSibling
+};
+
+function setMonasteryText(node, text) {
+  if (node && node.textContent !== text) node.textContent = text;
+}
+
 // Called from render().
 function renderMonastery() {
   monasteryCheckUnlock();
   el.monasterySection.style.display = monasteryUnlocked() ? "" : "none";
   if (!monasteryUnlocked()) return;
+
+  var black = monasteryBlack();
+  setMonasteryText(monasteryEls.header, black ? "the barracks" : "the monastery");
+  setMonasteryText(monasteryEls.monksLabel, black ? "overseers:" : "monks:");
+  setMonasteryText(monasteryEls.meditatingLabel, black ? "on the line:" : "meditating:");
+  setMonasteryText(monasteryEls.drainLabel, black ? "manpower drain:" : "harmony drain:");
+  setMonasteryText(el.btnMonkAdd, black ? "+ overseer" : "+ monk");
+  setMonasteryText(el.btnMonkRemove, black ? "\u2212 overseer" : "\u2212 monk");
 
   var seats = monasterySeats();
   var staffed = state.monks + (state.foremen || 0);
@@ -158,12 +196,12 @@ function renderMonastery() {
   el.monasterySeats.textContent = staffed + " / " + seats;
   el.monasteryMonks.textContent = String(state.monks);
   el.monasteryForemen.textContent = String(state.foremen || 0);
-  el.monasteryMeditating.textContent = String(state.members - staffed);
+  el.monasteryMeditating.textContent = String(monasteryPool() - staffed);
   el.monasteryMakerBonus.textContent = fmtBonusPct(makerRateBonus());
   el.monasteryBreakerBonus.textContent = fmtBonusPct(breakerRateBonus());
 
   var drainPct = Math.round(communityLeanDrain() * 100);
-  el.monasteryDrain.textContent = drainPct > 0 ? "\u2212" + drainPct + "% harmony" : "none";
+  el.monasteryDrain.textContent = drainPct > 0 ? "\u2212" + drainPct + "% " + (black ? "manpower" : "harmony") : "none";
   el.monasteryFactoryBonus.textContent = "+" + Math.round(foremanOutputBonus() * 100) + "%";
 
   var free = monasterySeatsFree();
@@ -216,6 +254,32 @@ function drawDharmaWheel(ctx, x, y, r, angle, ink, paper) {
   ctx.restore();
 }
 
+// The barracks' picture: a flywheel, the dharma wheel with square teeth on its rim in place of the beads.
+function drawFlywheel(ctx, x, y, r, angle, ink, paper) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(angle);
+  ctx.strokeStyle = ink;
+  ctx.fillStyle = ink;
+  ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.arc(0, 0, r - 5, 0, Math.PI * 2); ctx.stroke();
+  for (var i = 0; i < 12; i++) {
+    ctx.save();
+    ctx.rotate(i * Math.PI / 6);
+    ctx.fillRect(-4, -r, 8, 9);
+    ctx.restore();
+  }
+  for (var k = 0; k < 4; k++) {
+    var a = k * Math.PI / 2;
+    ctx.lineWidth = 5;
+    ctx.beginPath(); ctx.moveTo(Math.cos(a) * 11, Math.sin(a) * 11); ctx.lineTo(Math.cos(a) * (r - 8), Math.sin(a) * (r - 8)); ctx.stroke();
+  }
+  ctx.beginPath(); ctx.arc(0, 0, 11, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = paper;
+  ctx.beginPath(); ctx.arc(0, 0, 4, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+
 function drawMonastery() {
   requestAnimationFrame(drawMonastery);
   var now = Date.now();
@@ -232,7 +296,7 @@ function drawMonastery() {
 
   ctx.clearRect(0, 0, w, h);
   var shake = Math.pow(Math.abs(monkLean()), 2) * 3;
-  drawDharmaWheel(ctx, w / 2 + Math.sin(now / 55) * shake, 62 + Math.cos(now / 70) * shake, 52, monasteryWheelAngle, ink, paper);
+  (monasteryBlack() ? drawFlywheel : drawDharmaWheel)(ctx, w / 2 + Math.sin(now / 55) * shake, 62 + Math.cos(now / 70) * shake, 52, monasteryWheelAngle, ink, paper);
 
   // the Middle Way: breaking on the left, making on the right, balance in the center
   var x0 = 38, x1 = w - 38, mid = w / 2, y = 148, half = (x1 - x0) / 2;
@@ -269,7 +333,7 @@ function drawMonastery() {
   ctx.fillText("breaking", x0, y + 28);
   ctx.fillText("making", x1, y + 28);
   ctx.font = "bold 14px sans-serif";
-  ctx.fillText("\u0e17\u0e32\u0e07\u0e2a\u0e32\u0e22\u0e01\u0e25\u0e32\u0e07", mid, y + 30);
+  ctx.fillText(monasteryBlack() ? "the balance" : "\u0e17\u0e32\u0e07\u0e2a\u0e32\u0e22\u0e01\u0e25\u0e32\u0e07", mid, y + 30);
 }
 
 requestAnimationFrame(drawMonastery);

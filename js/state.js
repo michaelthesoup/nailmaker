@@ -54,18 +54,6 @@ var BREAKER_BUILD_COST_FUNDS = 75;
 var BREAKER_COOLDOWN_MS = 1000; // pacing between buys, like nail makers
 var BREAKER_INTAKE_RATE = 1; // nails/sec consumed per breaker
 
-// Factory Squared ("factory-squared"): the next tier of automation after
-// factories automate buying makers/breakers, this automates buying
-// factories. Unlocks only once you've got a serious economy going
-// (100k of BOTH makers and breakers) -- by then the copper cost below
-// is meant to be a real but manageable drain, not free.
-var FACTORY_SQUARED_UNLOCK_MAKERS = 100000;
-var FACTORY_SQUARED_UNLOCK_BREAKERS = 100000;
-var FACTORY_SQUARED_BUILD_COST_FUNDS = 1000000000; // $1 billion
-var FACTORY_SQUARED_COST_GROWTH = 1.1; // each factory-squared you own makes the next one cost this much more -- otherwise a fixed price would eventually buy infinite factories for pocket change
-var FACTORY_SQUARED_PERIOD_SEC = 1; // produces one factory per cycle, per owned factory-squared
-var FACTORY_SQUARED_COPPER_COST = 10000000; // 10 tonnes of copper, in grams, per production cycle
-
 // Each monastery foreman raises factory output per copper by this much (a copper discount).
 var FOREMAN_PRODUCTIVITY_PER = 0.10;
 
@@ -353,8 +341,6 @@ function defaultState() {
     factoryBalance: FACTORY_BALANCE_DEFAULT, // 0 = all breakers, 100 = all makers
     factoryAllocAccum: 0, // Bresenham-style accumulator so output matches the slider ratio exactly over time
 
-    factorySquared: 0,
-    factorySquaredProgress: 0, // same, for factory squared
 
     breakers: 0,
     breakerCooldownUntil: 0,
@@ -365,7 +351,6 @@ function defaultState() {
 
     unlockedMap: false,
     unlockedMachinery: false,
-    unlockedFactorySquared: false,
     guideSeen: {
       handmade: false,
       machinery: false,
@@ -409,6 +394,10 @@ function defaultState() {
     members: 0, // the community's size: set every tick from the white cards (see community.js), never saved by hand
     merit: 0,   // progress toward the next tao from the community
     harmony: 0, // how settled the community is (0..1); chases the economy's balance with inertia
+    unlockedCompany: false, // earned per life: a black deck with workers + 1 tao (see company.js)
+    manpower: 0,       // how together the workers are (0..1); chases the economy's balance with inertia, like harmony
+    companyFactories: 0, // factories the company has built: they don't raise the price of the next one you buy
+    companyProgress: 0, // output toward the next factory (the ring)
     unlockedMonastery: false, // earned per life: reincarnated at least once + 3 tao (see monastery.js)
     monasteryHalls: 0, // halls bought with funds and unsold nails; each seats monks (see monastery.js)
     monks: 0,          // community members working in the monastery instead of meditating

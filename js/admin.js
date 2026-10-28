@@ -96,7 +96,6 @@ function adminRefreshValues() {
 
 function adminAfter(key) {
   if (key === "factories") state.factoryProgress = Math.min(state.factoryProgress || 0, state.factories);
-  if (key === "factorySquared") state.factorySquaredProgress = Math.min(state.factorySquaredProgress || 0, state.factorySquared);
   if (key === "breakers" && state.breakers > 0) state.unlockedMap = true;
   render();
   adminRefreshValues();
@@ -146,13 +145,22 @@ function adminUnlockEverything() {
   if (!adminAllowed()) return;
   state.unlockedMap = true;
   state.unlockedMachinery = true;
-  state.unlockedFactorySquared = true;
   state.unlockedYinYang = true;
   state.unlockedSwarm = true;
   state.unlockedCity = true;
   state.unlockedMonastery = true;
   state.unlockedFloor = true;
   render();
+}
+
+// Starts a reincarnation right now, without the tao needed or anything unlocked (it adds at least 1 karma, so there is a deck to fill).
+function adminReincarnate() {
+  if (!adminAllowed()) return;
+  var gain = reincarnationKarmaGainNow();
+  if (gain < 1 && state.karma < KARMA_CAP) gain = 1;
+  reincarnationKarmaGain = gain;
+  adminClose();
+  runReincarnationRitual(state.karma + gain, state.karma + gain >= NIRVANA_KARMA);
 }
 
 function buildMePanel(p) {
@@ -170,7 +178,6 @@ function buildMePanel(p) {
   adminRow(p, "nail makers", function () { return fmtInt(state.nailMakers); }, adminAmountButtons("nailMakers", countBig, { min: 0, whole: true, minus: true }));
   adminRow(p, "nail breakers", function () { return fmtInt(state.breakers); }, adminAmountButtons("breakers", countBig, { min: 0, whole: true, minus: true }));
   adminRow(p, "factories", function () { return fmtInt(state.factories); }, adminAmountButtons("factories", count, { min: 0, whole: true, minus: true }));
-  adminRow(p, "factory\u00b2", function () { return fmtInt(state.factorySquared); }, adminAmountButtons("factorySquared", [1, 10], { min: 0, whole: true, minus: true }));
   adminRow(p, "marketing level", function () { return String(state.marketingLevel); }, adminAmountButtons("marketingLevel", count, { min: 0, whole: true, minus: true }));
 
   sheetAddHeading(p, "progress");
@@ -184,7 +191,7 @@ function buildMePanel(p) {
   ]);
 
   sheetAddHeading(p, "unlocks");
-  adminButtons(p, [["unlock everything", adminUnlockEverything]]);
+  adminButtons(p, [["unlock everything", adminUnlockEverything], ["reincarnate now", adminReincarnate]]);
 }
 
 // ---------------- tab "players" ----------------
