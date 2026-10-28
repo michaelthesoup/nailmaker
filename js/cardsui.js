@@ -105,6 +105,18 @@ function loadoutRemoveFromPack(card) {
 
 function loadoutChoosePath(card) {
   var d = loadout;
+  // Picking the other colour from your last life resets your deck: its cards go to the collection (12 places, the
+  // rest are discarded). Ask first. Picking the same colour as last time, or having no deck yet, asks nothing.
+  var oldDeck = d.equipped;
+  if (oldDeck.length > 0 && oldDeck[0].side !== card.side) {
+    var room = Math.max(0, CARD_COLLECTION_MAX - d.kept.length);
+    var toCollection = Math.min(oldDeck.length, room), discarded = oldDeck.length - toCollection;
+    var ok = window.confirm(
+      "Your deck is " + oldDeck[0].side + ", and you chose " + card.side + ". A deck holds one colour, so this resets your deck:\n\n" +
+      toCollection + " of its " + oldDeck.length + " card" + (oldDeck.length === 1 ? "" : "s") + " move" + (toCollection === 1 ? "s" : "") + " to your collection" +
+      (discarded > 0 ? ", and " + discarded + " " + (discarded === 1 ? "is" : "are") + " discarded because the collection is full" : "") + ".\n\nContinue?");
+    if (!ok) return;
+  }
   d.path = card.side;
   // The deck is saved from life to life, so it comes in with you. Any card that the new path has no room for
   // (the other colour is limited) goes to the collection, or is lost if that is full.
@@ -327,12 +339,6 @@ function renderLoadout() {
   box.appendChild(loadoutText("hint", "equip best picks the strongest deck from your deck and your collection."));
 
   if (d.message) box.appendChild(loadoutText("card-warn", d.message));
-  var lean = cardBalance(d.equipped);
-  var over = lean.ratio >= 1 ? lean.ratio : 1 / lean.ratio;
-  if (over > CARD_BALANCE_SOFT) {
-    box.appendChild(loadoutText("card-warn", "your makers and breakers are out of step: " + (lean.ratio > 1 ? "breakers" : "makers") +
-      " come out about " + over.toFixed(1) + " times stronger. Add " + (lean.ratio > 1 ? "maker-speed" : "breaker-speed or deposit") + " cards to even it out."));
-  }
   box.appendChild(cardDeckElement(d.equipped));
   if (d.equipped.length === 0) box.appendChild(loadoutText("hint", "put at least one card in a slot, then begin (you can begin before every pack is open)."));
 
@@ -401,3 +407,75 @@ function loadoutResult() {
   if (!d) return null;
   return { equipped: d.equipped.slice(), kept: d.kept.slice(), opened: d.opened + (d.path ? 1 : 0), packs: d.packsOpened, path: d.path };
 }
+
+
+// ---------------- "deck & collection" in the more menu ----------------
+// Shows the cards you hold (the deck and the collection) outside a reincarnation. Built here, so it needs no markup.
+
+(function () {
+  var menu = el.moreMenu;
+  if (!menu) return;
+  var btn = document.createElement("button");
+  btn.id = "btnCards";
+  btn.textContent = "deck & collection";
+  btn.style.display = "none";
+  var anchor = document.getElementById("btnStats");
+  menu.insertBefore(btn, anchor || menu.firstChild);
+
+  var overlay = document.createElement("div");
+  overlay.id = "cardsOverlay";
+  overlay.className = "sheet-overlay";
+  var box = document.createElement("div");
+  box.className = "sheet-box";
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+
+  function holdsCards() {
+    return (Array.isArray(state.deck) && state.deck.length > 0) || (Array.isArray(state.collection) && state.collection.length > 0);
+  }
+
+  function cardGrid(cards) {
+    var grid = document.createElement("div");
+    grid.className = "card-hand";
+    cards.forEach(function (c) {
+      var tile = document.createElement("div");
+      tile.className = "card-tile";
+      tile.appendChild(cardElement(c, null, { mini: true }));
+      grid.appendChild(tile);
+    });
+    return grid;
+  }
+
+  function render() {
+    box.innerHTML = "";
+    var title = document.createElement("div");
+    title.className = "sheet-title";
+    title.textContent = "deck & collection";
+    box.appendChild(title);
+
+    var deck = Array.isArray(state.deck) ? state.deck : [];
+    var kept = Array.isArray(state.collection) ? state.collection : [];
+    box.appendChild(loadoutText("sheet-heading", "your deck (" + deck.length + " of " + cardSlots(state.karma) + " places)"));
+    if (deck.length === 0) box.appendChild(loadoutText("hint", "empty."));
+    else { box.appendChild(cardGrid(deck)); box.appendChild(cardDeckElement(deck)); }
+
+    box.appendChild(loadoutText("sheet-heading", "your collection (" + kept.length + " of " + CARD_COLLECTION_MAX + " places)"));
+    if (kept.length === 0) box.appendChild(loadoutText("hint", "empty."));
+    else box.appendChild(cardGrid(kept));
+    box.appendChild(loadoutText("hint", "You can change them when you reincarnate."));
+
+    var actions = document.createElement("div");
+    actions.className = "sheet-actions";
+    actions.appendChild(loadoutButton("close", function () { overlay.style.display = "none"; }));
+    box.appendChild(actions);
+  }
+
+  btn.addEventListener("click", function () {
+    render();
+    overlay.style.display = "flex";
+    box.scrollTop = 0;
+  });
+  overlay.addEventListener("click", function (e) { if (e.target === overlay) overlay.style.display = "none"; });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") overlay.style.display = "none"; });
+  if (el.btnMore) el.btnMore.addEventListener("click", function () { btn.style.display = holdsCards() ? "" : "none"; });
+})();
