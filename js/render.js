@@ -18,7 +18,6 @@ function render() {
   var demandBonusPct = Math.round(permanentDemandBonus() * 100);
   el.demandYYNote.textContent = demandBonusPct > 0 ? "+" + demandBonusPct + "%" : "";
   // Same idea for machine speed: the tao rate bonus applies to makers and breakers alike.
-  // (the monastery can lean it between the two, so they may differ)
   var makerBonusPct = Math.round(makerRateBonus() * 100);
   var breakerBonusPct = Math.round(breakerRateBonus() * 100);
   el.nailMakerBonus.textContent = makerBonusPct > 0 ? "+" + makerBonusPct + "%" : "";
@@ -28,8 +27,7 @@ function render() {
   el.copper.textContent = fmtWeight(state.copperAmt);
   el.nailMakers.textContent = state.nailMakers;
   el.factories.textContent = state.factories;
-  var foremanPct = Math.round(foremanOutputBonus() * 100); // foremen (monastery) raise factory output per copper
-  el.factoryBonus.textContent = foremanPct > 0 ? "+" + foremanPct + "%" : "";
+  el.factoryBonus.textContent = "";
   el.breakers.textContent = state.breakers;
   // What the makers could do with unlimited iron. This is the number shown under the nail makers, because it is
   // the same one the swarm and yin & yang compare against what the breakers bring in (ironDemandRate):
@@ -158,9 +156,8 @@ function render() {
 
   renderMap();
   if (typeof renderCity === "function") renderCity();
-  if (typeof renderCommunity === "function") renderCommunity();
-  if (typeof renderCompany === "function") renderCompany();
-  if (typeof renderMonastery === "function") renderMonastery();
+  if (typeof renderResonance === "function") renderResonance();
+  if (typeof renderSlots === "function") renderSlots();
   if (typeof renderFloor === "function") renderFloor();
   if (typeof newsRender === "function") newsRender();
 }

@@ -16,6 +16,8 @@
 var CHAT_MAX_LEN = 200;
 var CHAT_COOLDOWN_MS = 3000;
 var CHAT_HISTORY = 50;
+var CHAT_HISTORY_EXPANDED = 200; // the big chat window loads more (falls back to CHAT_HISTORY if the rules refuse it)
+var chatLimit = CHAT_HISTORY;
 
 var chatUnsub = null;
 var chatLastSent = 0;
@@ -112,7 +114,7 @@ function chatOpen() {
   if (chatUnsub || typeof db === "undefined" || !currentAuthUser()) return;
   chatSeenMessageIds = Object.create(null);
   var initialSnapshot = true;
-  chatUnsub = db.collection("chat").orderBy("createdAt", "desc").limit(CHAT_HISTORY).onSnapshot(function (snap) {
+  chatUnsub = db.collection("chat").orderBy("createdAt", "desc").limit(chatLimit).onSnapshot(function (snap) {
     var user = currentAuthUser();
     var countUnread = !initialSnapshot && leaderboardTab !== "chat" && !!user;
     snap.docChanges().forEach(function (change) {
@@ -135,6 +137,7 @@ function chatOpen() {
     console.error("Chat listener failed", err);
     chatUnsub = null;
     chatSeenMessageIds = Object.create(null);
+    if (chatLimit !== CHAT_HISTORY) { chatLimit = CHAT_HISTORY; chatOpen(); return; } // the bigger window was refused: go back to the usual amount
     chatSetHint("couldn't load chat -- check the Firestore rules for 'chat'", 8000);
   });
 }
@@ -204,3 +207,55 @@ el.btnChatSend.addEventListener("click", chatSend);
 el.chatInput.addEventListener("keydown", function (e) { if (e.key === "Enter") chatSend(); });
 if (el.btnChatClear) el.btnChatClear.addEventListener("click", chatClearShown);
 if (el.btnLbChat) el.btnLbChat.addEventListener("click", function () { setLeaderboardTab("chat"); });
+
+// ---------------- expanding the chat ----------------
+// A button in the chat tab turns the leaderboard panel into a big chat window (and back). Built here, so it needs no
+// markup: the styles are added from here too. Leaving the chat tab, hiding the panel or pressing Escape shrinks it again.
+
+(function () {
+  var style = document.createElement("style");
+  style.textContent =
+    "#leaderboardSection.chat-expanded { top: 2vh !important; bottom: 2vh; left: 50% !important; right: auto !important; width: min(1300px, 96vw); transform: translateX(-50%); z-index: 100 !important; display: flex; flex-direction: column; box-shadow: 0 0 0 100vmax rgba(0,0,0,0.55); }" +
+    "#leaderboardSection.chat-expanded .panel-body { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 14px 18px; }" +
+    "#leaderboardSection.chat-expanded #leaderboardTabs { max-width: 420px; }" +
+    "#leaderboardSection.chat-expanded #chatView:not([style*='none']) { flex: 1; min-height: 0; display: flex; flex-direction: column; }" +
+    "#leaderboardSection.chat-expanded #chatList { flex: 1; max-height: none; min-height: 0; font-size: 15px; line-height: 1.6; padding: 10px 14px; }" +
+    "#leaderboardSection.chat-expanded .chat-msg { padding: 3px 0; }" +
+    "#leaderboardSection.chat-expanded #chatInput { font-size: 15px; padding: 8px 10px; }" +
+    "#btnChatExpand { padding: 3px 10px; }";
+  document.head.appendChild(style);
+
+  var section = document.getElementById("leaderboardSection");
+  if (!section || !el.chatView) return;
+
+  var btn = document.createElement("button");
+  btn.id = "btnChatExpand";
+  btn.textContent = "expand chat";
+  var row = document.createElement("div");
+  row.style.cssText = "display:flex; justify-content:flex-end; margin-bottom:4px;";
+  row.appendChild(btn);
+  el.chatView.insertBefore(row, el.chatView.firstChild);
+
+  window.chatSetExpanded = function (open) {
+    section.classList.toggle("chat-expanded", !!open);
+    btn.textContent = open ? "shrink chat" : "expand chat";
+    var want = open ? CHAT_HISTORY_EXPANDED : CHAT_HISTORY;
+    if (want !== chatLimit) {
+      chatLimit = want;
+      if (chatUnsub) { chatUnsub(); chatUnsub = null; chatOpen(); }
+    }
+    if (el.chatList) el.chatList.scrollTop = el.chatList.scrollHeight;
+    if (open && el.chatInput) el.chatInput.focus();
+  };
+
+  btn.addEventListener("click", function () { window.chatSetExpanded(!section.classList.contains("chat-expanded")); });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && section.classList.contains("chat-expanded")) window.chatSetExpanded(false);
+  });
+  var hideBtn = document.getElementById("btnToggleLeaderboard");
+  if (hideBtn) hideBtn.addEventListener("click", function () { window.chatSetExpanded(false); });
+  ["btnLbWeek", "btnLbAll"].forEach(function (id) {
+    var b = document.getElementById(id);
+    if (b) b.addEventListener("click", function () { window.chatSetExpanded(false); });
+  });
+})();

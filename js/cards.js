@@ -8,7 +8,7 @@
 // Reincarnation (cardsui.js shows it):
 //   1. A fork: one BLACK card and one WHITE card, and the words "choose your path wisely".
 //      Black is the path of greed (the machine). White is the path of enlightenment (tao,
-//      karma, the community). Taking one is your first card and sets your path.
+//      karma, the oscillator's tao). Taking one is your first card and sets your path.
 //   2. PACKS. Every karma you hold (your total) is a pack of five cards, all of your path's colour except now and
 //      then one of the OTHER colour (a good person with a little bad in them, or the reverse). You open them one at
 //      a time and click the cards you want: a card goes to your deck, or to your collection if the deck is full
@@ -17,8 +17,8 @@
 //      to have the packs opened for you, one after another: it only puts legendaries into empty places in
 //      your collection, and never changes your deck. You can begin your new life before every pack is open.
 //   3. SLOTS. Your karma gives you a number of slots for the deck (cardSlots) and the collection has 12 places.
-//      A deck holds ONE colour, your path's: a black deck is a company, a white deck a community (you can't have
-//      both). The collection holds any colour, so an opposite-colour card from a pack can still be kept. Neither
+//      A deck holds ONE colour, your path's: the oscillator makes tao on either path (you can't have
+//      both colours). The collection holds any colour, so an opposite-colour card from a pack can still be kept. Neither
 //      path has any debuff; they are just two ways to play, a simple spiritual life or a fast industrial one.
 //
 // Cards come in four rarities: common, uncommon, rare and legendary. A legendary card is rare
@@ -26,8 +26,8 @@
 // rare card.
 //
 // Karma gives nothing but the cards (packs and slots). In particular it does not add deposits to the map (use the
-// deposit cards) and it does not make room in the community: a white deck has one free member (community.js) and a
-// black deck one free worker (company.js); white and black cards add more.
+// deposit cards) and it does not change resonance: every deck has one free steady hand (resonance.js); white and black
+// cards add more.
 //
 // Nothing is granted when you equip a card: the game just asks cardMult() and cardAdd()
 // whenever it works something out (the trick the lands and the skill tree used), so a
@@ -60,16 +60,19 @@
 //   demandMult     public demand
 //   breakerSpeed   ore per nail the breakers take
 //   makerSpeed     nails per second each maker turns out
-//   companySpeed   how fast the company's workers build factories
-//   companyMembers (add) workers of the company (a black deck only; see company.js). The ONLY way to get any: no workers, no company
+//   slotJackpot    how much the slot machine's three-7s jackpot pays (slots.js)
+//   slotSpeed      how fast the slot machine spins (slots.js)
 //   deposits       (add) deposits on every map
 //   factoryGrowth  how much each factory you own adds to the price of the next: a share of the usual 40%, so 0.5 halves it
 //   yinYangSpeed   how fast the yin & yang bars fill
 //   taoRate        how strong the machine-speed bonus from each held tao is
 //   taoDemand      how strong the demand bonus from each held tao is
-//   communitySpeed how fast members make merit
-//   meritCost      merit needed per tao (the community's price of tao)
-//   communityMembers (add) members of the community. This is the ONLY way to get any: no members, no community
+//   resonanceTao   how fast the resonance bar fills on a white deck (resonance.js)
+//   resonancePer   (add) extra tao for every full resonance bar (on top of the 1 you always get)
+//   meritCost      the size of the oscillator's bar
+//   tunersW        (add) steady hands: each slows the oscillator's drift by 15% (you always have one)
+//   windowW        how wide the oscillator's lock window is on a white deck
+//   driftW         how hard resonance drifts (a cost) on a white deck
 //   taoPerCycle    (add) extra tao every time the yin & yang bars complete a cycle (on top of the 1 you always get)
 //   taoGrowth      how much each tao you hold adds to the size of the bars: a share of the usual +10, so 0.5 makes it +5
 // ----------------------------------------------------------------
@@ -111,17 +114,20 @@ var CARD_EFFECTS = {
   demandMult:    { side: "black", kind: "mult", dir: "high", pct: [[10, 20], [25, 40], [50, 80], [100, 150]] },
   makerSpeed:    { side: "black", kind: "mult", dir: "high", pct: [[10, 20], [25, 40], [50, 80], [100, 150]] },
   breakerSpeed:  { side: "black", kind: "mult", dir: "high", pct: [[10, 20], [25, 40], [50, 80], [100, 150]] },
-  companySpeed:  { side: "black", kind: "mult", dir: "high", pct: [[10, 20], [25, 40], [50, 80], [100, 150]] },
-  companyMembers: { side: "black", kind: "add", sign: 1, step: 1, amount: [[1, 1], [2, 2], [3, 4], [5, 6]], int: true },
+  slotJackpot:   { side: "black", kind: "mult", dir: "high", pct: [[10, 20], [25, 40], [50, 80], [100, 150]] },
+  slotSpeed:     { side: "black", kind: "mult", dir: "high", pct: [[10, 20], [25, 40], [50, 70], [80, 120]] },
   deposits:      { side: "black", kind: "add", sign: 1, step: 1, amount: [[2, 3], [3, 4], [5, 6], [8, 10]], int: true },
   // ---- white: enlightenment ----
   yinYangSpeed:  { side: "white", kind: "mult", dir: "high", pct: [[10, 20], [25, 40], [50, 80], [100, 150]] },
   taoRate:       { side: "white", kind: "mult", dir: "high", pct: [[10, 15], [20, 30], [35, 50], [60, 80]] },
   taoDemand:     { side: "white", kind: "mult", dir: "high", pct: [[10, 15], [20, 30], [35, 50], [60, 80]] },
-  communitySpeed: { side: "white", kind: "mult", dir: "high", pct: [[10, 20], [25, 40], [50, 80], [100, 150]] },
+  resonanceTao:  { side: "white", kind: "mult", dir: "high", pct: [[10, 20], [25, 40], [50, 80], [100, 150]] },
   meritCost:     { side: "white", kind: "mult", dir: "low",  pct: [[5, 10], [12, 18], [20, 30], [35, 50]] },
   taoGrowth:     { side: "white", kind: "mult", dir: "low",  pct: [[5, 10], [10, 15], [15, 25], [30, 40]], minRarity: 2 },
-  communityMembers: { side: "white", kind: "add", sign: 1, step: 1, amount: [[1, 1], [2, 2], [3, 4], [5, 6]], int: true },
+  tunersW:       { side: "white", kind: "add", sign: 1, step: 1, amount: [[1, 1], [1, 1], [2, 2], [3, 3]], int: true },
+  windowW:       { side: "white", kind: "mult", dir: "high", pct: [[10, 20], [25, 35], [40, 60], [70, 100]] },
+  driftW:        { side: "white", kind: "mult", dir: "low",  pct: [[10, 20], [25, 35], [40, 55], [60, 75]] },
+  resonancePer:  { side: "white", kind: "add", sign: 1, step: 1, amount: [[1, 1], [1, 1], [1, 1], [2, 2]], int: true, minRarity: 2, noCompanion: true },
   taoPerCycle:   { side: "white", kind: "add", sign: 1, step: 1, amount: [[1, 1], [1, 1], [1, 1], [2, 2]], int: true, minRarity: 2, noCompanion: true }
 };
 
@@ -141,13 +147,16 @@ var CARD_EFFECT_TEXT = {
   yinYangSpeed:  { up: "yin & yang {p}% faster",          down: "yin & yang {p}% slower" },
   taoRate:       { up: "each tao's speed bonus {p}% stronger",  down: "each tao's speed bonus {p}% weaker" },
   taoDemand:     { up: "each tao's demand bonus {p}% stronger", down: "each tao's demand bonus {p}% weaker" },
-  communitySpeed: { up: "community makes merit {p}% faster", down: "community makes merit {p}% slower" },
-  meritCost:     { up: "merit per tao {p}% higher",       down: "merit per tao {p}% lower" },
+  resonanceTao:  { up: "the resonance bar fills {p}% faster", down: "the resonance bar fills {p}% slower" },
+  meritCost:     { up: "the resonance bar {p}% bigger", down: "the resonance bar {p}% smaller" },
+  windowW:       { up: "the resonance alignment window {p}% wider", down: "the resonance alignment window {p}% narrower" },
+  driftW:        { up: "resonance drifts {p}% harder", down: "resonance drifts {p}% less" },
+  resonancePer:  { add: function (n) { return "+" + n + " extra tao for every full resonance bar"; } },
+  tunersW:       { add: function (n) { return "+" + n + " steady hand" + (n === 1 ? "" : "s") + ": resonance drifts 15% slower"; } },
   taoGrowth:     { up: "the tao requirement grows {p}% faster", down: "the tao requirement grows {p}% slower" },
-  companySpeed:  { up: "the company builds factories {p}% faster", down: "the company builds factories {p}% slower" },
-  companyMembers: { add: function (n) { return "+" + n + " company worker" + (n === 1 ? "" : "s"); } },
+  slotJackpot:   { up: "the slot machine's 777 jackpot pays {p}% more", down: "the slot machine's 777 jackpot pays {p}% less" },
+  slotSpeed:     { up: "the slot machine spins {p}% faster", down: "the slot machine spins {p}% slower" },
   deposits:      { add: function (n) { return "+" + n + " deposits on every map"; } },
-  communityMembers: { add: function (n) { return "+" + n + " community member" + (n === 1 ? "" : "s"); } },
   taoPerCycle:   { add: function (n) { return "+" + n + " extra tao every yin & yang cycle"; } }
 };
 
@@ -396,8 +405,7 @@ function cardAutoPack(pack, st) {
 
 // ---------------- the deck ----------------
 
-// The colour of the deck (a deck holds one): "black", "white", or null for no cards. A black deck has the company
-// (company.js), a white deck the community (community.js).
+// The colour of the deck (a deck holds one): "black", "white", or null for no cards. (Resonance, a white-card feature, makes tao: resonance.js.)
 function cardDeckSide() {
   var deck = cardDeck();
   return deck.length ? deck[0].side : null;

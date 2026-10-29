@@ -148,7 +148,7 @@ function adminUnlockEverything() {
   state.unlockedYinYang = true;
   state.unlockedSwarm = true;
   state.unlockedCity = true;
-  state.unlockedMonastery = true;
+  state.unlockedResonance = true;
   state.unlockedFloor = true;
   render();
 }

@@ -54,8 +54,6 @@ var BREAKER_BUILD_COST_FUNDS = 75;
 var BREAKER_COOLDOWN_MS = 1000; // pacing between buys, like nail makers
 var BREAKER_INTAKE_RATE = 1; // nails/sec consumed per breaker
 
-// Each monastery foreman raises factory output per copper by this much (a copper discount).
-var FOREMAN_PRODUCTIVITY_PER = 0.10;
 
 var COPPER_SELL_PRICE = 0.05; // $ per gram
 
@@ -108,7 +106,7 @@ var YINYANG_PD_BONUS_PER_LEVEL = 0.1; // +10% public demand per held tao point
 // to rewrite each time you're reborn.
 var KARMA_TAO_THRESHOLD = 3; // tao points per 1 karma, checked at the moment of reincarnating
 // There is no limit on tao. Instead every tao you hold makes the next one a little dearer: the yin and yang bars
-// (and the community's merit ring) are YINYANG_MAX for your first tao, then TAO_COST_STEP bigger for each tao held
+// (and the oscillator's tao ring) are YINYANG_MAX for your first tao, then TAO_COST_STEP bigger for each tao held
 // (100, 110, 120, ...; 8 tao means 180). White cards can shrink the step (see cards.js: taoGrowth). Karma cannot grow
 // past KARMA_CAP, and Nirvana is reached exactly when your karma gets to NIRVANA_KARMA (it is no longer a roll).
 var TAO_COST_STEP = 10;
@@ -391,18 +389,10 @@ function defaultState() {
 
     // Stats for the end-of-life screen and the past lives log.
     totalEarned: 0, // lifetime money earned from selling nails this life
-    members: 0, // the community's size: set every tick from the white cards (see community.js), never saved by hand
-    merit: 0,   // progress toward the next tao from the community
-    harmony: 0, // how settled the community is (0..1); chases the economy's balance with inertia
-    unlockedCompany: false, // earned per life: a black deck with workers + 1 tao (see company.js)
-    manpower: 0,       // how together the workers are (0..1); chases the economy's balance with inertia, like harmony
-    companyFactories: 0, // factories the company has built: they don't raise the price of the next one you buy
-    companyProgress: 0, // output toward the next factory (the ring)
-    unlockedMonastery: false, // earned per life: reincarnated at least once + 3 tao (see monastery.js)
-    monasteryHalls: 0, // halls bought with funds and unsold nails; each seats monks (see monastery.js)
-    monks: 0,          // community members working in the monastery instead of meditating
-    foremen: 0,        // members working as factory foremen (they also sit in the monastery's halls)
-    monkShift: 0,      // -1..+1: how far the tao rate bonus is leaned toward makers (+) or breakers (-)
+    unlockedResonance: false, // earned per life: a path chosen + 1 tao (see resonance.js)
+    resonanceProgress: 0,     // output toward the next tao (white) or factory (black): the ring on the oscilloscope
+    autoFactories: 0,         // factories the oscillator has built: they don't raise the price of the next one you buy
+    res: null,                // the oscillator bench: control positions, lock, streak (resonance.js makes it)
     swarmCollapses: 0, // times the swarm has collapsed this life
     pastLives: [], // log of lives ended by reincarnation; erased by ending a run (see lives.js)
 

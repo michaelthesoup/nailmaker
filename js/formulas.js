@@ -86,10 +86,10 @@ function factoryCostGrowth() {
   return Math.max(1.02, 1 + (FACTORY_COST_GROWTH - 1) * cardMult("factoryGrowth"));
 }
 
-// Factories you bought yourself. The ones the company builds (company.js) don't make the next factory dearer, or the
-// price would climb to infinity after a few thousand of them.
+// Factories you bought yourself. The ones a black oscillator builds (resonance.js) don't make the next factory dearer,
+// or the price would climb to infinity after a few thousand of them.
 function handBuiltFactories() {
-  return Math.max(0, state.factories - Math.min(state.companyFactories || 0, state.factories));
+  return Math.max(0, state.factories - Math.min(state.autoFactories || 0, state.factories));
 }
 
 function factoryBuildCostEffective() {
@@ -107,16 +107,11 @@ function factoryMakerFraction() {
   return state.factoryBalance / 100;
 }
 
-// Foremen (monastery.js) raise factory output per gram of copper.
-function foremanOutputBonus() {
-  return (state.foremen || 0) * FOREMAN_PRODUCTIVITY_PER;
-}
-
 function factoryCopperCostEffective() {
   var f = factoryMakerFraction();
   var base = FACTORY_COST_BREAKER_SIDE_COPPER * (1 - f) + FACTORY_COST_MAKER_SIDE_COPPER * f;
   var save = typeof moduleCopperSave === "function" ? moduleCopperSave() : 0; // copper presses (floor.js)
-  return base / (1 + foremanOutputBonus()) * (1 - save) * cardMult("copperCost");
+  return base * (1 - save) * cardMult("copperCost");
 }
 
 function breakerBuildCostEffective() {
@@ -338,18 +333,12 @@ function productionRateBonusMultiplier() {
   return 1 + taoRateBonus();
 }
 
-// The monastery (monastery.js) leans the tao bonus between the two sides
-// without changing the total: +lean favors makers, -lean favors breakers.
-function monkLean() {
-  return Math.max(-1, Math.min(1, state.monkShift || 0));
-}
-
 function makerRateBonus() {
-  return taoRateBonus() * (1 + monkLean());
+  return taoRateBonus();
 }
 
 function breakerRateBonus() {
-  return taoRateBonus() * (1 - monkLean());
+  return taoRateBonus();
 }
 
 // Cards can stack the yin & yang speed very high. The bars settle at most 20 times a second (like the breakers
@@ -412,7 +401,7 @@ function yinYangMax() {
 }
 
 // How many times the first tao's price the next one costs: 1 for the first, 1.1 for the second, 1.2 for the third...
-// (the community's merit ring is scaled the same way).
+// (the oscillator's tao ring is scaled the same way).
 function taoCostMult() {
   return yinYangMax() / YINYANG_MAX;
 }
