@@ -180,6 +180,7 @@ var NUMBER_SCALE_NAMES = [
 ];
 
 function fmtAbbrev(n) {
+  if (!isFinite(n)) return n < 0 ? "-way too much" : "way too much"; // (a price that has run off the end of the number line)
   var neg = n < 0;
   n = Math.abs(n);
   if (n < 1000) return (neg ? "-" : "") + Math.floor(n).toLocaleString();
@@ -191,6 +192,7 @@ function fmtAbbrev(n) {
 }
 
 function fmtMoney(n) {
+  if (!isFinite(n)) return n < 0 ? "-way too much" : "way too much";
   var neg = n < 0;
   var abs = Math.abs(n);
   if (abs >= 1000) return (neg ? "-$" : "$") + fmtAbbrev(abs);

@@ -89,9 +89,15 @@ function friendlyAuthError(err) {
     case "auth/email-already-in-use": return "that username is already taken";
     case "auth/user-not-found": return "no account with that username";
     case "auth/wrong-password": return "wrong password";
+    // Newer Firebase hides whether the username exists or the password was wrong, and reports both as invalid-credential.
+    case "auth/invalid-credential":
+    case "auth/invalid-login-credentials": return authMode === "signup" ? "could not create that account" : "wrong username or password";
+    case "auth/too-many-requests": return "too many tries -- wait a few minutes and try again";
+    case "auth/network-request-failed": return "no connection -- check your internet and try again";
+    case "auth/user-disabled": return "that account has been disabled";
     case "auth/weak-password": return "password must be at least 6 characters";
     case "auth/invalid-email": return "that username has characters it can't use -- letters and numbers work best";
-    default: return err.message;
+    default: return "could not log in (" + (err.code || "unknown error") + ")";
   }
 }
 

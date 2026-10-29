@@ -183,6 +183,7 @@ el.btnReincarnateConfirm.addEventListener("click", function () {
   var collectionCarried = state.collection || []; // the cards you have put aside: they outlast the life (ending the run is what wipes them)
   var cardSerialCarried = state.cardSerial || 1;
   var wipeAppliedCarried = state.wipeApplied; // which admin wipe this player has already had (gifts.js), so a new life isn't wiped for an old one
+  var resetAppliedCarried = state.resetApplied; // the same for the admin's single-thing resets
 
   var justReachedNirvana = ritual.isNirvana && !state.nirvanaAchieved;
 
@@ -211,6 +212,7 @@ el.btnReincarnateConfirm.addEventListener("click", function () {
   state.guideSeen = guideSeenCarried;
   state.autoNextMap = autoNextMapCarried;
   if (wipeAppliedCarried) state.wipeApplied = wipeAppliedCarried;
+  if (resetAppliedCarried) state.resetApplied = resetAppliedCarried;
   // Deposit cards add deposits to the ground, so lay map 1 again now that the deck is in place.
   state.mapIndex = 1;
   state.mapTiles = generateMapTiles(1);

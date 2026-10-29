@@ -19,6 +19,9 @@
 // applies it once, when it next checks (gifts.js), so it reaches offline players when they log in.
 // It uses the same 'config' rules as the news: signed-in players read it, only the admin writes it.
 //
+// "reset everyone's ..." (players tab) works the same way for one thing at a time (factories, funds, cards and so on, the
+// list is RESET_KINDS in gifts.js): it writes an entry into config/resets, and every game applies it once (checkResets).
+//
 // "sync scores from saves" (players tab) reads every player's cloud save and
 // raises their board entries to the life they are in right now. It needs the
 // admin read on saves and the admin write on scores and weeks in the rules.
@@ -287,6 +290,26 @@ function adminWipeEveryone(status) {
   });
 }
 
+// Resets one thing (see RESET_KINDS in gifts.js) for every player: publishes an entry in config/resets, and each game
+// applies it once, the next time it checks.
+function adminResetEveryone(kind, status) {
+  if (!adminAllowed() || typeof RESET_KINDS === "undefined" || !RESET_KINDS[kind]) return;
+  var label = RESET_KINDS[kind].label;
+  if (!window.confirm("Reset EVERYONE's " + label + "?\n\nEvery player's " + label + " is set back to its starting value the next time their game checks: within a few minutes if they are online, or when they next log in. That includes you. Nothing else is touched.\n\nThis can't be undone.")) return;
+  if (!window.confirm("Are you sure? This affects every account.")) return;
+  var me = currentAuthUser();
+  var entry = {};
+  entry[kind] = { at: Date.now(), by: me ? (me.displayName || "admin") : "admin" };
+  entry.updatedAt = firebase.firestore.FieldValue.serverTimestamp();
+  db.collection("config").doc("resets").set(entry, { merge: true }).then(function () {
+    status.textContent = "done. Everyone's " + label + " are reset as their game checks in (you too, in a moment).";
+    if (typeof checkResets === "function") checkResets();
+  }).catch(function (err) {
+    console.error(err);
+    status.textContent = "couldn't publish the reset -- check the Firestore rules for 'config'";
+  });
+}
+
 // Raises every player's leaderboard entries to the nail count of the life they are in right now, read
 // from their cloud save. It only ever RAISES a score (never lowers or removes one) and skips banned players.
 // The weekly board is only touched for players whose save was written this week.
@@ -490,6 +513,16 @@ function buildPlayersPanel(p) {
   sheetAddHeading(p, "everyone");
   var wipeStatus = adminStatus(p);
   adminButtons(p, [["wipe everyone's tao and karma", function () { adminWipeEveryone(wipeStatus); }]]);
+
+  sheetAddHeading(p, "reset one thing for everyone");
+  var resetStatus = adminStatus(p);
+  if (typeof RESET_KINDS !== "undefined") {
+    var resetDefs = [];
+    Object.keys(RESET_KINDS).forEach(function (kind) {
+      resetDefs.push(["reset " + RESET_KINDS[kind].label, function () { adminResetEveryone(kind, resetStatus); }]);
+    });
+    adminButtons(p, resetDefs);
+  }
 
   adminPanels.players.targetLine = targetLine;
   adminPanels.players.search = search;

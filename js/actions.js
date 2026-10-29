@@ -216,9 +216,11 @@ el.btnEndRun.addEventListener("click", function () {
 
   var nirvanaCarried = state.nirvanaAchieved; // a real achievement -- survives even this
   var wipeAppliedCarried = state.wipeApplied; // which admin wipe this player has had (gifts.js), so it isn't applied again
+  var resetAppliedCarried = state.resetApplied; // the same for the admin's single-thing resets
   state = defaultState();
   state.nirvanaAchieved = nirvanaCarried;
   if (wipeAppliedCarried) state.wipeApplied = wipeAppliedCarried;
+  if (resetAppliedCarried) state.resetApplied = resetAppliedCarried;
 
   render();
   showEndScreen({ kind: "ended", life: endedLife, allLives: allLives, karmaLost: karmaLost });
