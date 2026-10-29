@@ -389,6 +389,7 @@ function defaultState() {
 
     // Stats for the end-of-life screen and the past lives log.
     totalEarned: 0, // lifetime money earned from selling nails this life
+    unlockedSlots: false,     // unlocks the first time you hold 10,000 funds (see slots.js)
     unlockedResonance: false, // earned per life: a path chosen + 1 tao (see resonance.js)
     resonanceProgress: 0,     // output toward the next tao (white) or factory (black): the ring on the oscilloscope
     autoFactories: 0,         // factories the oscillator has built: they don't raise the price of the next one you buy

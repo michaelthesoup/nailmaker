@@ -149,6 +149,7 @@ function adminUnlockEverything() {
   state.unlockedSwarm = true;
   state.unlockedCity = true;
   state.unlockedResonance = true;
+  state.unlockedSlots = true;
   state.unlockedFloor = true;
   render();
 }
