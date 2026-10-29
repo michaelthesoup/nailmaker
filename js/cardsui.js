@@ -139,7 +139,7 @@ function loadoutOpenPack() {
   var d = loadout;
   if (d.busy || d.packsOpened >= d.packsTotal) return;
   d.packsOpened += 1;
-  d.current = cardPack(d.seed, d.packsOpened, d.path, d.karma);
+  d.current = cardPack(d.seed, d.packsOpened, d.path, d.karma, d.pity);
   d.opened += d.current.length;
   d.message = "";
   loadoutChanged();
@@ -216,7 +216,7 @@ function loadoutOpenAll() {
     if (loadout !== run) return; // the ritual was abandoned
     if (d.packsOpened >= d.packsTotal) { finish(); return; }
     d.packsOpened += 1;
-    var pack = cardPack(d.seed, d.packsOpened, d.path, d.karma);
+    var pack = cardPack(d.seed, d.packsOpened, d.path, d.karma, d.pity);
     d.opened += pack.length;
     var stats = cardAutoPack(pack, { kept: d.kept });
     tally.packs += 1;
@@ -265,7 +265,7 @@ function renderLoadout() {
   d.choose = null;
 
   if (d.path === null) { // the fork
-    var fork = cardFork(d.seed, d.karma);
+    var fork = cardFork(d.seed, d.karma, d.pity);
     d.choose = loadoutChoosePath;
     d.shown = fork;
     var forkRow = document.createElement("div");
@@ -382,6 +382,7 @@ function showLoadout(box, karma, packs, onReady) {
     box: box,
     seed: state.draftSeed,
     karma: karma,
+    pity: state.slotPity || 0, // slot spins since the last jackpot: the longer, the better the cards (cards.js)
     slots: cardSlots(karma),
     path: null,
     packsTotal: cardPackCount(packs),

@@ -159,6 +159,19 @@ function mapDepositCount() {
   return Math.max(1, Math.min(DEPOSITS_MAX, DEPOSITS_PER_MAP + cardExtra));
 }
 
+// How many of a map's deposits are iron (the rest are copper). It is random every time a map is laid, but never fewer than
+// 3 of either, so 15 deposits can be 3 iron and 12 copper but never 1 and 14. Slot pity (slots.js, state.slotPity) pulls
+// the split toward even: with no pity any split from 3 up to total-3 is equally likely, and at full pity it is nearly
+// always 6, 7, 8 or 9 iron out of 15. `luck` is the pity share from 0 to 1.
+var MAP_MIN_OF_EACH = 3;
+function mapIronCount(total, luck) {
+  var lo = Math.min(MAP_MIN_OF_EACH, Math.floor(total / 2)), hi = total - lo;
+  var mid = total / 2;
+  var u = lo - 0.5 + Math.random() * (hi - lo + 1); // every whole number from lo to hi equally likely, once rounded
+  var pulled = mid + (u - mid) * (1 - 0.7 * Math.max(0, Math.min(1, luck || 0)));
+  return Math.max(lo, Math.min(hi, Math.round(pulled)));
+}
+
 function generateMapTiles(mapIndex) {
   var rand = mulberry32(mapIndex * 7919 + 13);
   var capacity = depositCapacityForMap(mapIndex);
@@ -174,13 +187,18 @@ function generateMapTiles(mapIndex) {
   var placed = 0;
   var attempts = 0;
   var depositTarget = mapDepositCount();
+  var luck = typeof cardPityShare === "function" && typeof state !== "undefined" && state ? cardPityShare(state.slotPity) : 0;
+  var types = [], ironCount = mapIronCount(depositTarget, luck);
+  for (var t = 0; t < depositTarget; t++) types.push(t < ironCount ? "i" : "c");
+  for (var t2 = types.length - 1; t2 > 0; t2--) { // shuffle which spots are iron
+    var j = Math.floor(Math.random() * (t2 + 1)), tmp = types[t2]; types[t2] = types[j]; types[j] = tmp;
+  }
   while (placed < depositTarget && attempts < 1000) {
     attempts++;
     var r = Math.floor(rand() * MAP_ROWS);
     var c = Math.floor(rand() * MAP_COLS);
     if (tiles[r][c].type !== ".") continue;
-    var type = rand() < 0.5 ? "i" : "c";
-    tiles[r][c] = { type: type, remaining: capacity };
+    tiles[r][c] = { type: types[placed], remaining: capacity };
     placed++;
   }
   return tiles;
@@ -389,6 +407,7 @@ function defaultState() {
 
     // Stats for the end-of-life screen and the past lives log.
     totalEarned: 0, // lifetime money earned from selling nails this life
+    slotPity: 0,              // slot spins since the last jackpot; it carries over into new lives and makes the next cards better (slots.js, cards.js)
     unlockedSlots: false,     // unlocks the first time you hold 10,000 funds (see slots.js)
     unlockedResonance: false, // earned per life: a path chosen + 1 tao (see resonance.js)
     resonanceProgress: 0,     // output toward the next tao (white) or factory (black): the ring on the oscilloscope

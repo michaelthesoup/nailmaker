@@ -192,17 +192,26 @@ function cardRng(seed, index, salt) {
   return mulberry32(cardHash(cardHash(seed >>> 0, index), salt));
 }
 
-// Weights of [common, uncommon, rare, legendary]. Karma slowly makes the better ones likelier.
-function cardRarityWeights(karma) {
-  var k = Math.max(0, karma || 0);
-  var legendary = 1 + Math.min(4, k * 0.04);
-  var rare = 5 + Math.min(15, k * 0.15);
-  var uncommon = 25 + Math.min(20, k * 0.25);
-  return [100 - legendary - rare - uncommon, uncommon, rare, legendary];
+// Weights of [common, uncommon, rare, legendary]. Karma slowly makes the better ones likelier. `pity` is the number of
+// slot machine spins since the last jackpot (state.slotPity, slots.js): it is a pity system, so the longer you go
+// without a jackpot the better your cards get, up to CARD_PITY_FULL spins, and a jackpot sets it back to nothing.
+var CARD_PITY_FULL = 500;      // spins without a jackpot at which the bonus is at its biggest
+var CARD_PITY_BONUS = [0, 10, 25, 12]; // what the biggest bonus adds to the weights (the common ones shrink to make room)
+
+function cardPityShare(pity) {
+  return Math.max(0, Math.min(1, (pity || 0) / CARD_PITY_FULL));
 }
 
-function cardPickRarity(rng, karma, maxRarity) {
-  var w = cardRarityWeights(karma);
+function cardRarityWeights(karma, pity) {
+  var k = Math.max(0, karma || 0), b = cardPityShare(pity);
+  var legendary = 1 + Math.min(4, k * 0.04) + CARD_PITY_BONUS[3] * b;
+  var rare = 5 + Math.min(15, k * 0.15) + CARD_PITY_BONUS[2] * b;
+  var uncommon = 25 + Math.min(20, k * 0.25) + CARD_PITY_BONUS[1] * b;
+  return [Math.max(0, 100 - legendary - rare - uncommon), uncommon, rare, legendary];
+}
+
+function cardPickRarity(rng, karma, maxRarity, pity) {
+  var w = cardRarityWeights(karma, pity);
   var limit = maxRarity === undefined ? 3 : maxRarity;
   var total = 0, i;
   for (i = 0; i <= limit; i++) total += w[i];
@@ -260,7 +269,7 @@ function cardBalance(deck) {
 // rare strength.
 function cardMake(rng, side, opts) {
   opts = opts || {};
-  var rarity = cardPickRarity(rng, opts.karma, opts.maxRarity);
+  var rarity = cardPickRarity(rng, opts.karma, opts.maxRarity, opts.pity);
   var pool = cardPool(side, rarity, opts.avoid, false);
   if (pool.length === 0) pool = cardPool(side, rarity, null, false); // every effect already used: allow a repeat rather than fail
   var chosen = pool[Math.floor(rng() * pool.length)];
@@ -282,24 +291,24 @@ function cardMake(rng, side, opts) {
 function cardOtherSide(side) { return side === "black" ? "white" : "black"; }
 
 // The fork at the start of a rebirth: [black card, white card]. Plain cards only, like "20% cheaper machines".
-function cardFork(seed, karma) {
+function cardFork(seed, karma, pity) {
   var rng = cardRng(seed, 0, 1);
   return [
-    cardMake(rng, "black", { karma: karma, maxRarity: 1 }),
-    cardMake(rng, "white", { karma: karma, maxRarity: 1 })
+    cardMake(rng, "black", { karma: karma, maxRarity: 1, pity: pity }),
+    cardMake(rng, "white", { karma: karma, maxRarity: 1, pity: pity })
   ];
 }
 
 // Pack number `index` (1, 2, 3...) on a path: CARD_PACK_SIZE cards of the path's colour, each with a small chance of
 // being of the other colour. The same seed, pack and path always give the same pack. Within a pack the effects
 // don't repeat (while there are enough to go round), so five cards are five different things.
-function cardPack(seed, index, path, karma) {
+function cardPack(seed, index, path, karma, pity) {
   var rng = cardRng(seed, 100 + index, path === "black" ? 2 : 3);
   var avoid = { black: {}, white: {} };
   var pack = [];
   for (var i = 0; i < CARD_PACK_SIZE; i++) {
     var side = rng() < CARD_OPPOSITE_CHANCE ? cardOtherSide(path) : path;
-    pack.push(cardMake(rng, side, { karma: karma, avoid: avoid[side] }));
+    pack.push(cardMake(rng, side, { karma: karma, avoid: avoid[side], pity: pity }));
   }
   return pack;
 }

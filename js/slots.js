@@ -10,12 +10,16 @@
 //   three 7s            77x
 // Each box is a fair 1-9, so these odds pay back MORE than the bet on average (about 139%). Change SLOT_PAYOUT to tune.
 // Black cards can raise the 777 jackpot (slotJackpot) and make it spin faster (slotSpeed).
+// PITY. A tiny number in the corner counts spins since the last jackpot (three 7s). It is kept in state.slotPity and
+// goes with you into the next life, and when you reincarnate the packs you open are better the bigger it is (cards.js,
+// cardPityShare). A jackpot sets it straight back to 0. Admins can set it from the me tab.
 // The panel appears the first time you hold SLOT_UNLOCK_FUNDS (10,000) and stays for the life.
 // Nothing about a spin is saved: it is over in two seconds.
 // ----------------------------------------------------------------
 
 var SLOT_PAYOUT = { pair: 2, triple: 9, twoSevens: 20, threeSevens: 77 };
 var SLOT_STOP_MS = [900, 1350, 1800]; // when each box stops, from the moment you press spin
+var SLOT_PITY_MIN_SHARE = 0.01;       // a spin only counts toward the pity counter if the bet is at least this share of your funds (and $1), so tiny bets can't farm it
 var SLOT_UNLOCK_FUNDS = 10000;        // funds needed to unlock the slot machine
 var SLOT_SPIN_SPEED = 14;             // digits a second while a box is spinning at full speed
 var SLOT_BRAKE_MS = 650;              // how long a box takes to slow down and settle on its digit
@@ -58,6 +62,7 @@ function slotSpin() {
   if (!(bet > 0)) { slotSay("type how much to bet"); return; }
   if (bet > state.funds) { slotSay("you only have " + fmtMoney(state.funds)); return; }
 
+  if (bet >= Math.max(1, state.funds * SLOT_PITY_MIN_SHARE)) state.slotPity = (state.slotPity || 0) + 1;
   state.funds -= bet;
   slotSpinning = true;
   slotUI.btn.disabled = true;
@@ -98,6 +103,7 @@ function slotSpin() {
     if (finished < 3) { requestAnimationFrame(frame); return; }
     slotUI.pos = pos;
     var mult = slotMultiplier(digits), win = bet * mult;
+    if (digits[0] === 7 && digits[1] === 7 && digits[2] === 7) state.slotPity = 0; // a jackpot: the pity starts again
     if (win > 0) {
       state.funds += win;
       slotSay("x" + Math.round(mult * 10) / 10 + "  +" + fmtMoney(win));
@@ -116,10 +122,11 @@ function slotBuildUI() {
   var st = document.createElement("style");
   st.textContent =
     "#slotSection { grid-column: 1; grid-row: 3; align-self: start; }" +
-    ".slot-reels { display: flex; gap: 6px; justify-content: center; border: 1px solid var(--ink); padding: 6px; }" +
+    ".slot-reels { position: relative; display: flex; gap: 6px; justify-content: center; border: 1px solid var(--ink); padding: 6px; }" +
     ".slot-box { width: 44px; height: 54px; border: 1px solid var(--ink); overflow: hidden; user-select: none; }" +
     ".slot-strip { will-change: transform; }" +
     ".slot-cell { height: 54px; display: flex; align-items: center; justify-content: center; font-size: 30px; font-variant-numeric: tabular-nums; }" +
+    ".slot-pity { position: absolute; top: 1px; right: 4px; font-size: 9px; opacity: 0.55; font-variant-numeric: tabular-nums; }" +
     ".slot-bet { display: flex; gap: 4px; margin-top: 6px; }" +
     ".slot-bet input { flex: 1; min-width: 0; font-size: 12px; padding: 2px 4px; border: 1px solid var(--ink); background: var(--paper); color: var(--ink); }" +
     ".slot-bet button { font-size: 11px; padding: 1px 7px; }" +
@@ -145,6 +152,9 @@ function slotBuildUI() {
     b.appendChild(strip);
     reels.appendChild(b); boxes.push(b); strips.push(strip);
   }
+  var pity = document.createElement("span");
+  pity.className = "slot-pity"; pity.title = "spins since the last jackpot";
+  reels.appendChild(pity);
   body.appendChild(reels);
 
   var bet = document.createElement("div");
@@ -165,7 +175,7 @@ function slotBuildUI() {
   btn.addEventListener("click", slotSpin);
   maxBtn.addEventListener("click", function () { input.value = (Math.floor(state.funds * 100) / 100).toString(); });
   input.addEventListener("keydown", function (e) { if (e.key === "Enter") slotSpin(); });
-  slotUI = { section: section, boxes: boxes, strips: strips, pos: [6, 6, 6], input: input, btn: btn, result: result };
+  slotUI = { section: section, boxes: boxes, strips: strips, pity: pity, pos: [6, 6, 6], input: input, btn: btn, result: result };
   for (var k = 0; k < 3; k++) slotPlace(k, 6); // start on 7
 }
 
@@ -175,6 +185,7 @@ function renderSlots() {
   if (!slotUI) slotBuildUI();
   if (!state.unlockedSlots && state.funds >= SLOT_UNLOCK_FUNDS) state.unlockedSlots = true;
   section.style.display = state.unlockedSlots ? "" : "none";
+  if (slotUI) slotUI.pity.textContent = String(state.slotPity || 0);
   if (slotUI0) {
     var jackpot = Math.round(SLOT_PAYOUT.threeSevens * cardMult("slotJackpot") * 10) / 10;
     slotUI0.textContent = "pair x" + SLOT_PAYOUT.pair + " · three x" + SLOT_PAYOUT.triple + " · two 7s x" + SLOT_PAYOUT.twoSevens + " · 777 x" + jackpot;

@@ -187,6 +187,7 @@ function buildMePanel(p) {
   sheetAddHeading(p, "progress");
   adminRow(p, "tao", function () { return String(state.tao); }, adminAmountButtons("tao", count, { whole: true, minus: true }));
   adminRow(p, "karma", function () { return String(state.karma); }, adminAmountButtons("karma", [1, 5], { min: 0, whole: true, minus: true }));
+  adminRow(p, "slot pity (spins without a jackpot)", function () { return fmtInt(state.slotPity || 0); }, adminAmountButtons("slotPity", [100, 500, 1000], { min: 0, whole: true, minus: true }));
   adminRow(p, "nailbombs dropped", function () { return String(state.cityBombs); }, adminAmountButtons("cityBombs", [1, 10], { min: 0, whole: true }));
   adminRow(p, "yin & yang", function () { return fmtInt(state.yin) + " / " + fmtInt(state.yang); }, [
     ["fill yin", function () { adminSet("yin", yinYangMax()); }],
