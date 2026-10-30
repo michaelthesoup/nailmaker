@@ -2,6 +2,22 @@
 
 var AUTH_EMAIL_DOMAIN = "@nailmaker.local";
 var authMode = "login";
+var AUTH_NAME_MIN = 3;
+var AUTH_NAME_MAX = 20;
+var AUTH_NAME_PATTERN = /^[A-Za-z0-9_.\-]+$/;
+var AUTH_SIGNUP_COOLDOWN_MS = 30 * 60 * 1000;
+var AUTH_SIGNUP_KEY = "nailMakerLastSignup";
+
+function authSignupWaitMs() {
+  try {
+    var last = Number(localStorage.getItem(AUTH_SIGNUP_KEY)) || 0;
+    return Math.max(0, last + AUTH_SIGNUP_COOLDOWN_MS - Date.now());
+  } catch (e) { return 0; }
+}
+
+function authNoteSignup() {
+  try { localStorage.setItem(AUTH_SIGNUP_KEY, String(Date.now())); } catch (e) { }
+}
 
 function usernameToEmail(username) {
   var clean = username.trim().toLowerCase().replace(/[^a-z0-9_\-\.]/g, "");
@@ -16,6 +32,7 @@ function showAuthOverlay(mode) {
   el.authError.textContent = "";
   el.authUsername.value = "";
   el.authPassword.value = "";
+  el.authUsername.maxLength = mode === "signup" ? AUTH_NAME_MAX : 64;
   el.authOverlay.style.display = "flex";
   el.authUsername.focus();
 }
@@ -45,8 +62,22 @@ function submitAuthForm() {
   var password = el.authPassword.value;
   el.authError.textContent = "";
 
-  if (username.length < 3) {
-    el.authError.textContent = "username must be at least 3 characters";
+  if (authMode === "signup") {
+    if (username.length < AUTH_NAME_MIN || username.length > AUTH_NAME_MAX) {
+      el.authError.textContent = "username must be " + AUTH_NAME_MIN + " to " + AUTH_NAME_MAX + " characters";
+      return;
+    }
+    if (!AUTH_NAME_PATTERN.test(username)) {
+      el.authError.textContent = "username can only use letters, numbers, _ . and -, no spaces";
+      return;
+    }
+    var wait = authSignupWaitMs();
+    if (wait > 0) {
+      el.authError.textContent = "you just made an account -- try again in " + Math.ceil(wait / 60000) + " min";
+      return;
+    }
+  } else if (username.length < 1) {
+    el.authError.textContent = "enter your username";
     return;
   }
   if (password.length < 6) {
@@ -59,7 +90,7 @@ function submitAuthForm() {
 
   var request = authMode === "signup"
     ? firebase.auth().createUserWithEmailAndPassword(email, password)
-        .then(function (cred) { return cred.user.updateProfile({ displayName: username }); })
+        .then(function (cred) { authNoteSignup(); return cred.user.updateProfile({ displayName: username }); })
         .then(function () { if (typeof cloudSaveLifetime === "function") cloudSaveLifetime(); })
     : firebase.auth().signInWithEmailAndPassword(email, password);
 
@@ -89,6 +120,10 @@ function friendlyAuthError(err) {
     default: return "could not log in (" + (err.code || "unknown error") + ")";
   }
 }
+
+el.authUsername.addEventListener("input", function () {
+  if (authMode === "signup") el.authUsername.value = el.authUsername.value.replace(/[^A-Za-z0-9_.\-]/g, "").slice(0, AUTH_NAME_MAX);
+});
 
 el.btnAuthSubmit.addEventListener("click", submitAuthForm);
 el.authPassword.addEventListener("keydown", function (e) {
