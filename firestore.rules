@@ -9,7 +9,7 @@ service cloud.firestore {
     // delete any entry you haven't actually registered.
     function isAdmin() {
       return request.auth != null
-          && request.auth.token.email in ['nailmaker@nailmaker.local', 'mining@nailmaker.local'];
+          && request.auth.token.email in ['nailmaker@nailmaker.local'];
     }
 
     // Kicked players can't post scores until the admin restores them.
@@ -45,7 +45,8 @@ service cloud.firestore {
     // admin panel can raise leaderboard scores to each player's current life.
     match /saves/{uid} {
       allow read: if request.auth != null && (request.auth.uid == uid || isAdmin());
-      allow write: if request.auth != null && request.auth.uid == uid;
+      allow write: if request.auth != null && request.auth.uid == uid && !isBanned();
+      allow delete: if isAdmin();
     }
 
     // ---- weekly leaderboard ----
@@ -66,7 +67,8 @@ service cloud.firestore {
     // ---- public player profiles ----
     match /profiles/{uid} {
       allow read: if true;
-      allow write: if request.auth != null && request.auth.uid == uid;
+      allow write: if request.auth != null && request.auth.uid == uid && !isBanned();
+      allow delete: if isAdmin();
     }
 
     // ---- NEW: medallions. Everyone reads; ONLY the admin account writes. ----
@@ -92,7 +94,8 @@ service cloud.firestore {
     // ---- NEW: online presence (the green dots). Logged-in players read; each writes only their own heartbeat. ----
     match /presence/{uid} {
       allow read: if request.auth != null;
-      allow write: if request.auth != null && request.auth.uid == uid;
+      allow write: if request.auth != null && request.auth.uid == uid && !isBanned();
+      allow delete: if isAdmin();
     }
 
     // ---- NEW: global chat. Logged-in players read and post; only the admin deletes.

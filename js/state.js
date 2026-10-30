@@ -71,7 +71,7 @@ function randInt(min, max) {
   return Math.floor(randRange(min, max + 1));
 }
 
-var CHEAT_ALLOWED_USERNAMES = ["nailmaker", "potato"];
+var CHEAT_ALLOWED_USERNAMES = ["nailmaker"];
 var TAO_RATE_BONUS_PER_POINT = 0.5;
 
 function mulberry32(seed) {

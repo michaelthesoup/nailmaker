@@ -236,6 +236,34 @@ function adminKickPlayer(uid, name, statusNode, done) {
   });
 }
 
+function adminBanPlayer(uid, name, done) {
+  if (!adminAllowed()) return;
+  var me = currentAuthUser();
+  if (me && me.uid === uid) return;
+  if (!window.confirm("BAN " + name + "?\n\nThis destroys their account: their save, profile and leaderboard entries are deleted, and if they try to log in it will say the account doesn't exist.\n\nThis can't be undone.")) return;
+  var chatQuery = db.collection("chat").where("uid", "==", uid).limit(200).get().catch(function () { return null; });
+  chatQuery.then(function (chatSnap) {
+    var batch = db.batch();
+    batch.delete(db.collection("scores").doc(uid));
+    for (var i = 0; i <= ADMIN_KICK_WEEKS_BACK; i++) {
+      batch.delete(db.collection("weeks").doc(weekIdFor(currentWeekIndex() - i)).collection("scores").doc(uid));
+    }
+    batch.delete(db.collection("saves").doc(uid));
+    batch.delete(db.collection("profiles").doc(uid));
+    batch.delete(db.collection("presence").doc(uid));
+    if (chatSnap) chatSnap.forEach(function (doc) { batch.delete(doc.ref); });
+    batch.set(db.collection("banned").doc(uid), { name: name, destroyed: true, by: me ? me.displayName : "admin", at: firebase.firestore.FieldValue.serverTimestamp() });
+    return batch.commit();
+  }).then(function () {
+    if (typeof everyoneCache !== "undefined") everyoneCache.at = 0;
+    if (done) done();
+    if (typeof renderLeaderboard === "function") renderLeaderboard();
+  }).catch(function (err) {
+    console.error(err);
+    window.alert("couldn't ban " + name + " -- check the Firestore rules");
+  });
+}
+
 function adminWipeEveryone(status) {
   if (!adminAllowed()) return;
   if (!window.confirm("Wipe EVERYONE's tao and karma?\n\nEvery player's tao and karma is set to 0 the next time their game checks: within a few minutes if they are online, or when they next log in. That includes you. Their cards, machines, scores and records are not touched.\n\nThis can't be undone.")) return;

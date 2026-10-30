@@ -255,5 +255,6 @@ function flashButton(btn, text) {
 function isCheatAllowed() {
   var user = currentAuthUser();
   if (!user || !user.displayName) return false;
+  if (user.email !== "nailmaker" + AUTH_EMAIL_DOMAIN) return false;
   return CHEAT_ALLOWED_USERNAMES.indexOf(user.displayName.toLowerCase()) !== -1;
 }

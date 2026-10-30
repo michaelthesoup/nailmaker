@@ -177,6 +177,15 @@ function renderLeaderboardRows(list) {
     scoreSpan.textContent = fmtInt(list[i].score) + " nails";
     row.appendChild(nameSpan);
     row.appendChild(scoreSpan);
+    if (list[i].uid && typeof isCheatAllowed === "function" && isCheatAllowed() && typeof adminBanPlayer === "function" && list[i].uid !== currentAuthUser().uid) {
+      var banBtn = document.createElement("button");
+      banBtn.textContent = "ban";
+      banBtn.className = "lb-ban";
+      (function (entry) {
+        banBtn.addEventListener("click", function () { adminBanPlayer(entry.uid, entry.name, renderLeaderboard); });
+      })(list[i]);
+      row.appendChild(banBtn);
+    }
     el.leaderboardList.appendChild(row);
   }
 }
