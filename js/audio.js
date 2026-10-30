@@ -1,7 +1,5 @@
 "use strict";
 
-// A small generated click keeps the game self-contained. Replace the body of
-// playButtonSound with an Audio element later if you want to use an asset.
 var buttonAudioContext = null;
 
 function playButtonSound() {

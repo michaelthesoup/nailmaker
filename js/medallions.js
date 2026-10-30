@@ -1,23 +1,11 @@
 "use strict";
 
-// ----------------------------------------------------------------
-// Medallions. At the end of each week the top three players on the weekly
-// board (leaderboard.js) earn a gold, silver or bronze medallion. They are
-// awarded by the admin from the admin panel (admin.js), never by a player's
-// own game: the Firestore rules only let the admin account write to the
-// "medallions" collection, so nobody can hand themselves one.
-//
-// One document per medallion: medallions/{weekId}_{rank}
-//   { weekId, weekIndex, rank (1-3), medal ("gold"...), uid, name, score, karma, awardedAt }
-// ----------------------------------------------------------------
-
 var MEDALLION_NAMES = { 1: "gold", 2: "silver", 3: "bronze" };
 
 function medallionWeekLabel(weekIndex) {
   return "week of " + new Date(weekStartMs(weekIndex)).toLocaleDateString(undefined, { month: "short", day: "numeric", timeZone: "UTC" });
 }
 
-// All the medallions a player holds, newest week first.
 function fetchMedallions(uid) {
   return db.collection("medallions").where("uid", "==", uid).get().then(function (snap) {
     var list = [];
@@ -27,7 +15,6 @@ function fetchMedallions(uid) {
   });
 }
 
-// The small gold circle shown beside the name of anyone who holds a medallion (leaderboard rows).
 function medallionDot(count) {
   var dot = document.createElement("span");
   dot.className = "medal-dot";
@@ -35,7 +22,6 @@ function medallionDot(count) {
   return dot;
 }
 
-// Counts and the list, in the stats-screen style (used on profiles).
 function renderMedallionRows(parent, list) {
   if (list.length === 0) {
     sheetAddText(parent, "none yet \u2014 finish in the top three of a week to earn one");
@@ -51,7 +37,7 @@ function renderMedallionRows(parent, list) {
   var rows = [];
   for (var j = 0; j < list.length; j++) {
     var m = list[j];
-    if (m.gift) { // handed out by the admin for something other than a weekly finish
+    if (m.gift) {
       var when = m.awardedAt && m.awardedAt.toMillis ? new Date(m.awardedAt.toMillis()).toLocaleDateString() : "";
       rows.push([MEDALLION_NAMES[m.rank] + " \u00b7 special award", when]);
     } else {
@@ -61,7 +47,6 @@ function renderMedallionRows(parent, list) {
   sheetAddRows(parent, rows);
 }
 
-// A toast the first time you log in after being awarded one.
 function checkNewMedallions(user) {
   var key = "nailMakerMedallionsSeen_" + user.uid;
   fetchMedallions(user.uid).then(function (list) {
@@ -75,7 +60,7 @@ function checkNewMedallions(user) {
     }
     showNextAchievementToast();
     try { localStorage.setItem(key, String(fresh[fresh.length - 1].weekIndex)); } catch (e) {}
-  }).catch(function () { /* rules not published yet, or offline -- nothing to show */ });
+  }).catch(function () {  });
 }
 
 if (typeof firebase !== "undefined" && firebase.auth) {

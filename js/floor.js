@@ -1,40 +1,16 @@
 "use strict";
 
-// ----------------------------------------------------------------
-// The Factory Floor. Factories are the main way you get nail makers and
-// breakers, and this is how you tune them. The floor is a small grid; you buy
-// MODULES (each takes up a rectangle of cells) and place them on it. Every
-// placed module changes your factories:
-//
-//   battery         2x2   factories work faster              (time bottleneck)
-//   copper press    1x2   each cycle costs less copper       (copper bottleneck)
-//   blueprint table 2x1   new factories cost less            (money bottleneck)
-//   maker die       1x3   more nail makers per maker cycle
-//   breaker die     1x3   more nail breakers per breaker cycle
-//   cooler          1x1   does nothing alone, but boosts the batteries and
-//                         copper presses it touches (+50% each, up to two)
-//
-// Space is the real limit, so which modules you fit (and where the coolers
-// go) is the build. Bonuses add up within a module type, and each stat has a
-// cap. Each module you own makes the next of its type dearer, and expanding
-// the floor (Mk2, Mk3) costs funds and nails, and for Mk3 copper too.
-//
-// Everything here is saved in the normal game state: state.modules (placed),
-// state.moduleStock (bought, waiting to be placed), state.floorTier.
-// The effects are read by formulas.js and engine.js through moduleBonuses().
-// ----------------------------------------------------------------
-
 var FLOOR_UNLOCK_FACTORIES = 10;
-var FLOOR_SIZES = [5, 6, 7]; // the floor is n x n cells, by tier
+var FLOOR_SIZES = [5, 6, 7];
 var FLOOR_EXPAND_COSTS = [
   null,
-  { funds: 5e8, nails: 1e7, copper: 0 },     // Mk2: 6x6
-  { funds: 2e10, nails: 1e9, copper: 1e8 }   // Mk3: 7x7 (copper in grams: 100 tonnes)
+  { funds: 5e8, nails: 1e7, copper: 0 },
+  { funds: 2e10, nails: 1e9, copper: 1e8 }
 ];
-var MODULE_SELL_REFUND = 0.75;   // share of what you paid that selling gives back
-var MODULE_PRICE_GROWTH = 1.5;   // each module of a type you own makes the next dearer by this
-var MODULE_COOLER_BONUS = 0.5;   // each adjacent cooler adds this share of a module's own bonus...
-var MODULE_COOLER_MAX = 2;       // ...up to this many coolers
+var MODULE_SELL_REFUND = 0.75;
+var MODULE_PRICE_GROWTH = 1.5;
+var MODULE_COOLER_BONUS = 0.5;
+var MODULE_COOLER_MAX = 2;
 var MODULE_CAPS = { speed: 3, copper: 0.6, price: 0.5, makerYield: 5, breakerYield: 5 };
 
 var MODULES = {
@@ -46,8 +22,6 @@ var MODULES = {
   cooler:  { name: "cooler",          code: "C", w: 1, h: 1, price: 1.5e6, effect: null,                                     what: "boosts the batteries and copper presses beside it by 50% (up to two coolers each)" }
 };
 var MODULE_ORDER = ["battery", "press", "table", "maker", "breaker", "cooler"];
-
-// ---------------- geometry ----------------
 
 function floorSize() {
   var tier = Math.max(1, Math.min(FLOOR_SIZES.length, Math.floor(state.floorTier || 1)));
@@ -66,7 +40,6 @@ function moduleCells(m) {
   return cells;
 }
 
-// grid[y][x] = id of the module covering that cell, or 0. skipId leaves one module out.
 function floorOccupancy(skipId) {
   var n = floorSize();
   var grid = [];
@@ -101,8 +74,6 @@ function canPlaceModule(type, rot, x, y, skipId) {
   return true;
 }
 
-// ---------------- the bonuses everything else reads ----------------
-
 function coolersTouching(m, coolers) {
   var n = 0;
   for (var i = 0; i < coolers.length; i++) if (modulesTouch(m, coolers[i])) n++;
@@ -129,8 +100,6 @@ function moduleSpeedMult() { return 1 + moduleBonuses().speed; }
 function moduleCopperSave() { return moduleBonuses().copper; }
 function moduleFactoryDiscount() { return moduleBonuses().price; }
 
-// ---------------- buying, selling, placing ----------------
-
 function moduleOwnedCount(type) {
   var n = 0, i;
   for (i = 0; i < state.modules.length; i++) if (state.modules[i].type === type) n++;
@@ -142,7 +111,6 @@ function modulePrice(type) {
   return MODULES[type].price * Math.pow(MODULE_PRICE_GROWTH, moduleOwnedCount(type));
 }
 
-// Brings an old or hand-edited save into shape.
 function floorNormalize() {
   if (!Array.isArray(state.modules)) state.modules = [];
   if (!Array.isArray(state.moduleStock)) state.moduleStock = [];
@@ -158,7 +126,7 @@ function floorNormalize() {
     var m = all[i];
     if (!m || !MODULES[m.type]) continue;
     var rot = m.rot ? 1 : 0;
-    if (!canPlaceModule(m.type, rot, Math.floor(m.x), Math.floor(m.y))) continue; // out of bounds or overlapping
+    if (!canPlaceModule(m.type, rot, Math.floor(m.x), Math.floor(m.y))) continue;
     var clean = { id: Math.floor(m.id) || 0, type: m.type, x: Math.floor(m.x), y: Math.floor(m.y), rot: rot, paid: Number(m.paid) || 0 };
     if (!clean.id || kept.some(function (k) { return k.id === clean.id; })) clean.id = maxId + 1;
     maxId = Math.max(maxId, clean.id);
@@ -192,7 +160,7 @@ function floorPlaceHeld(x, y) {
   var item = state.moduleStock.splice(idx, 1)[0];
   var m = { id: state.moduleNextId++, type: item.type, x: x, y: y, rot: floorHold.rot, paid: item.paid };
   state.modules.push(m);
-  if (floorFindStock(floorHold.type) < 0) floorHold = null; // none left in stock
+  if (floorFindStock(floorHold.type) < 0) floorHold = null;
   floorSelected = null;
   floorRender();
   render();
@@ -262,10 +230,8 @@ function floorExpand() {
   render();
 }
 
-// ---------------- the screen ----------------
-
-var floorHold = null;       // { type, rot } -- a module from stock being placed
-var floorSelected = null;   // id of a placed module that is selected
+var floorHold = null;
+var floorSelected = null;
 var floorOpen = false;
 var floorUi = { buy: {}, sellBtn: null, expandBtn: null };
 var floorCellEls = [];
@@ -288,7 +254,7 @@ function floorSetHint(text) {
 
 function floorDefaultHint() {
   var m = floorSelectedModule();
-  return m ? moduleInfoText(m) : ""; // only says something when a module is selected
+  return m ? moduleInfoText(m) : "";
 }
 
 function fmtPct(x) { return Math.round(x * 1000) / 10 + "%"; }
@@ -346,7 +312,6 @@ function floorBuildGrid(parent) {
         cell.textContent = MODULES[m.type].code;
         cell.title = MODULES[m.type].name;
         if (floorSelected === id) cell.classList.add("sel");
-        // no wall between cells of the same module, so it reads as one block
         if (y > 0 && occ[y - 1][x] === id) cell.classList.add("no-top");
         if (y < n - 1 && occ[y + 1][x] === id) cell.classList.add("no-bottom");
         if (x > 0 && occ[y][x - 1] === id) cell.classList.add("no-left");
@@ -409,7 +374,6 @@ function floorRender() {
   floorHintNode.style.textAlign = "center";
   body.appendChild(floorHintNode);
 
-  // stock waiting to be placed
   var counts = {};
   state.moduleStock.forEach(function (s) { counts[s.type] = (counts[s.type] || 0) + 1; });
   var stockTypes = MODULE_ORDER.filter(function (t) { return counts[t]; });
@@ -427,7 +391,6 @@ function floorRender() {
     body.appendChild(chips);
   }
 
-  // shop
   sheetAddHeading(body, "shop");
   MODULE_ORDER.forEach(function (t) {
     var def = MODULES[t];
@@ -443,7 +406,6 @@ function floorRender() {
     floorUi.buy[t] = { btn: buy, price: price };
   });
 
-  // expansion
   var cost = floorExpandCost();
   sheetAddHeading(body, "expand the floor");
   if ((state.floorTier || 1) >= FLOOR_SIZES.length || !cost) {
@@ -459,7 +421,6 @@ function floorRender() {
   floorUpdate();
 }
 
-// Cheap per-tick refresh of the things that depend on your money.
 function floorUpdate() {
   for (var t in floorUi.buy) {
     var price = modulePrice(t);
@@ -469,7 +430,6 @@ function floorUpdate() {
   if (floorUi.expandBtn) floorUi.expandBtn.disabled = !floorCanAfford(floorExpandCost());
 }
 
-// Called from render().
 function renderFloor() {
   if (!el.floorWrap) return;
   if (!state.unlockedFloor && state.factories >= FLOOR_UNLOCK_FACTORIES) state.unlockedFloor = true;

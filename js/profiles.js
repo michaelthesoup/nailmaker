@@ -1,20 +1,10 @@
 "use strict";
 
-// ----------------------------------------------------------------
-// Player profiles. Every logged-in player has a public "profiles"
-// document (written by lifetime.js): their name, when they joined, their
-// lifetime stats and their achievements. This screen lets anyone search
-// for a player by name or open one straight from a leaderboard row.
-//
-// Stats on a profile are the ones recorded when a life ends, so the life
-// someone is in the middle of is not counted until it finishes.
-// ----------------------------------------------------------------
-
 var PROFILE_SEARCH_LIMIT = 10;
 var PROFILE_SEARCH_DEBOUNCE_MS = 300;
 
 var profileSearchTimer = null;
-var profileRequestToken = 0; // ignore replies from an older search/open
+var profileRequestToken = 0;
 
 function profileOverlayOpen() {
   return el.profileOverlay.style.display === "flex";
@@ -33,8 +23,6 @@ function profileMessage(parent, text) {
   sheetAddText(parent, text);
 }
 
-// ---------------- search ----------------
-
 function searchProfiles(rawQuery) {
   var q = rawQuery.trim().toLowerCase();
   var token = ++profileRequestToken;
@@ -46,7 +34,6 @@ function searchProfiles(rawQuery) {
     return;
   }
 
-  // Prefix match on the lowercased name.
   db.collection("profiles").orderBy("nameLower").startAt(q).endAt(q + "\uf8ff").limit(PROFILE_SEARCH_LIMIT).get()
     .then(function (snapshot) {
       if (token !== profileRequestToken) return;
@@ -88,11 +75,6 @@ el.profileSearch.addEventListener("keydown", function (e) {
   searchProfiles(el.profileSearch.value);
 });
 
-// ---------------- opening a profile ----------------
-
-// Opens the overlay on a given player's profile (called from leaderboard rows too).
-// fallback (optional) is the leaderboard row that was clicked: if the player has no
-// profile document yet, that is what gets shown instead of an error.
 function openProfile(uid, fallback) {
   showProfileOverlay();
   var token = ++profileRequestToken;
@@ -120,9 +102,6 @@ function openProfile(uid, fallback) {
     });
 }
 
-// A profile document is only written when a player logs in or finishes a life, so
-// one can be missing. Never show a dead end: build yours from this browser's stats
-// (and write it now), or show what the leaderboard row says about someone else.
 function showProfileFallback(uid, fallback) {
   var me = currentAuthUser();
   if (me && me.uid === uid) {
@@ -149,7 +128,7 @@ function showProfileFallback(uid, fallback) {
 }
 
 function renderProfile(d, uid) {
-  var stats = mergeLifetime(defaultLifetime(), d.stats || {}); // fills anything missing with zeros
+  var stats = mergeLifetime(defaultLifetime(), d.stats || {});
   var body = el.profileBody;
   body.innerHTML = "";
 
@@ -188,7 +167,7 @@ function renderProfile(d, uid) {
     fetchMedallions(uid).then(function (list) {
       sheetAddHeading(medalBox, "medallions");
       renderMedallionRows(medalBox, list);
-    }).catch(function () { /* rules not published yet -- just no section */ });
+    }).catch(function () {  });
   }
 
   var earned = 0;
@@ -225,8 +204,6 @@ function renderProfile(d, uid) {
   el.profileOverlay.firstElementChild.scrollTop = 0;
 }
 
-// ---------------- buttons ----------------
-
 el.btnPlayers.addEventListener("click", function () {
   showProfileOverlay();
   el.profileSearch.focus();
@@ -248,7 +225,6 @@ document.addEventListener("keydown", function (e) {
   if (e.key === "Escape" && profileOverlayOpen()) closeProfileOverlay();
 });
 
-// Clicking the dimmed area outside the box closes it too.
 el.profileOverlay.addEventListener("click", function (e) {
   if (e.target === el.profileOverlay) closeProfileOverlay();
 });

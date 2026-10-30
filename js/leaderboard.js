@@ -1,35 +1,17 @@
 "use strict";
 
-// ----------------------------------------------------------------
-// Leaderboard. Two tiers:
-//  - Not logged in: no leaderboard at all -- the panel just invites the
-//    player to sign up (nothing is posted or stored for them).
-//  - Logged in: a global leaderboard in Firestore, one row per player
-//    (keyed by their user id) holding their personal best score. Every
-//    "end run" also still writes to the local list, so nothing is lost
-//    if Firestore is briefly unreachable.
-//
-// On top of that there is a WEEKLY board: it resets every Monday at 00:00
-// UTC, shows the best life each player finished that week, and anyone can
-// read it (logged in or not). Weekly scores live in
-// weeks/{weekId}/scores/{uid}, so one single-field index covers it.
-// Names with an account open that player's profile (profiles.js).
-// ----------------------------------------------------------------
-
 var LOCAL_LEADERBOARD_KEY = "nailMakerLeaderboard";
-var LEADERBOARD_MAX_ENTRIES = 100;   // the local (this browser) list
-var LEADERBOARD_ONLINE_MAX = 500;    // rows shown on the online boards
+var LEADERBOARD_MAX_ENTRIES = 100;
+var LEADERBOARD_ONLINE_MAX = 500;
 var EVERYONE_CACHE_MS = 2 * 60 * 1000;
 var everyoneCache = { at: 0, players: null, banned: null, medals: null };
 
-// Every account (taken from the public profiles) and who is banned from the boards.
-// Cached for a couple of minutes so flicking between tabs doesn't re-read everyone.
 function fetchEveryone() {
   if (everyoneCache.players && Date.now() - everyoneCache.at < EVERYONE_CACHE_MS) return Promise.resolve(everyoneCache);
   return Promise.all([
     db.collection("profiles").limit(1000).get(),
-    db.collection("banned").get().catch(function () { return null; }), // not readable yet -> simply hide no one
-    db.collection("medallions").get().catch(function () { return null; }) // not readable yet -> simply no gold dots
+    db.collection("banned").get().catch(function () { return null; }),
+    db.collection("medallions").get().catch(function () { return null; })
   ]).then(function (res) {
     var players = [];
     res[0].forEach(function (doc) {
@@ -38,15 +20,13 @@ function fetchEveryone() {
     });
     var banned = {};
     if (res[1]) res[1].forEach(function (doc) { banned[doc.id] = true; });
-    var medals = {}; // uid -> how many medallions they hold
+    var medals = {};
     if (res[2]) res[2].forEach(function (doc) { var uid = doc.data().uid; if (uid) medals[uid] = (medals[uid] || 0) + 1; });
     everyoneCache = { at: Date.now(), players: players, banned: banned, medals: medals };
     return everyoneCache;
   });
 }
 
-// The board lists every player with an account: anyone who hasn't ended a run or
-// reincarnated yet simply shows as 0 nails. Kicked players are left off.
 function withEveryone(list) {
   return fetchEveryone().then(function (all) {
     var seen = {};
@@ -59,14 +39,8 @@ function withEveryone(list) {
       return (b.score - a.score) || String(a.name).toLowerCase().localeCompare(String(b.name).toLowerCase());
     });
     return merged;
-  }).catch(function () { return list; }); // if profiles can't be read, just show the scores
+  }).catch(function () { return list; });
 }
-
-// ----------------------------------------------------------------
-// Weeks. Week 0 starts on a Monday (1970-01-05 00:00 UTC; the Unix epoch
-// itself is a Thursday, hence the 4-day offset), and every 7 days after
-// that is the next week.
-// ----------------------------------------------------------------
 
 var WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 var WEEK_EPOCH_OFFSET_MS = 4 * 24 * 60 * 60 * 1000;
@@ -87,8 +61,8 @@ function fmtWeekCountdown(ms) {
   return m + "m";
 }
 
-var leaderboardTab = "week"; // "week" or "all"
-var leaderboardRenderToken = 0; // ignore replies from an older request
+var leaderboardTab = "week";
+var leaderboardRenderToken = 0;
 var leaderboardWeekShown = null;
 
 function weeklyNoteText() {
@@ -117,7 +91,6 @@ if (el.btnLeaderboardSignup) el.btnLeaderboardSignup.addEventListener("click", f
 if (el.btnLbWeek) el.btnLbWeek.addEventListener("click", function () { setLeaderboardTab("week"); });
 if (el.btnLbAll) el.btnLbAll.addEventListener("click", function () { setLeaderboardTab("all"); });
 
-// Keeps the countdown fresh and rolls the board over when a new week starts.
 setInterval(function () {
   if (leaderboardTab !== "week") return;
   if (leaderboardWeekShown !== null && leaderboardWeekShown !== currentWeekIndex()) {
@@ -126,11 +99,6 @@ setInterval(function () {
     el.leaderboardNote.textContent = weeklyNoteText();
   }
 }, 60000);
-
-// ----------------------------------------------------------------
-// Open/close toggle -- purely a UI preference, not saved state. Starts
-// open; the button just flips the panel body's visibility.
-// ----------------------------------------------------------------
 
 var leaderboardOpen = true;
 
@@ -212,7 +180,6 @@ function renderLeaderboardRows(list) {
   }
 }
 
-// Shows or hides each row's green dot as players come and go, without rebuilding the list.
 function leaderboardRepaintPresence() {
   if (!el.leaderboardList || !el.leaderboardList.querySelectorAll) return;
   var dots = el.leaderboardList.querySelectorAll(".online-dot[data-uid]");
@@ -225,10 +192,7 @@ function currentAuthUser() {
   return (typeof firebase !== "undefined" && firebase.auth) ? firebase.auth().currentUser : null;
 }
 
-// Renders whichever board applies right now. Logged in -> pull the
-// global top 10 from Firestore. Logged out -> show the local list.
 function renderLeaderboard() {
-  // Without an account there is no leaderboard, just an invitation to sign up.
   var signedIn = !!currentAuthUser();
   if (el.leaderboardTabs) el.leaderboardTabs.style.display = signedIn ? "" : "none";
   var chatTab = signedIn && leaderboardTab === "chat";
@@ -237,7 +201,7 @@ function renderLeaderboard() {
   if (el.chatView) el.chatView.style.display = chatTab ? "" : "none";
   if (el.leaderboardSignup) el.leaderboardSignup.style.display = signedIn ? "none" : "";
   if (!signedIn) {
-    leaderboardRenderToken++; // drop any reply still on its way
+    leaderboardRenderToken++;
     leaderboardWeekShown = null;
     if (typeof chatClose === "function") chatClose();
     return;
@@ -302,24 +266,16 @@ function renderWeeklyBoard() {
     });
 }
 
-// Called from the "end run" handler. Always banks locally; if signed
-// in, also upserts the player's Firestore doc, but only when the new
-// score beats whatever's already stored -- so the global board always
-// shows each player's personal best, not just their latest run.
-// extra (optional): { karma, timeSec } -- shown next to the score so a veteran's
-// head-started life reads differently from a fresh one.
 function submitScore(name, score, extra) {
   extra = extra || {};
   var user = currentAuthUser();
-  if (!user) return; // scores are only posted for logged-in players
-  addLocalLeaderboardEntry(name, score); // still kept locally as a backup
+  if (!user) return;
+  addLocalLeaderboardEntry(name, score);
 
   var karma = Math.max(0, Math.floor(extra.karma || 0));
   var allTimeRef = db.collection("scores").doc(user.uid);
   var weekRef = db.collection("weeks").doc(weekIdFor(currentWeekIndex())).collection("scores").doc(user.uid);
 
-  // Only ever replaces an entry when the new score beats it, so each board
-  // shows personal bests.
   function upsertIfBetter(ref, data) {
     return ref.get().then(function (doc) {
       var best = doc.exists ? doc.data().score : -1;

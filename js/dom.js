@@ -1,9 +1,5 @@
 "use strict";
 
-// ----------------------------------------------------------------
-// DOM refs
-// ----------------------------------------------------------------
-
 var el = {
   title: document.getElementById("titleCount"),
   funds: document.getElementById("valFunds"),
@@ -115,7 +111,6 @@ var el = {
   factoryBreakerPct: document.getElementById("valFactoryBreakerPct"),
   factoryMakerPct: document.getElementById("valFactoryMakerPct"),
 
-
   nailMakerIronRate: document.getElementById("valNailMakerIronRate"),
   nailMakerNailsRate: document.getElementById("valNailMakerNailsRate"),
   breakerNailsRate: document.getElementById("valBreakerNailsRate"),
@@ -166,13 +161,6 @@ var el = {
   pageShakeWrap: document.getElementById("pageShakeWrap"),
 };
 
-// ----------------------------------------------------------------
-// Formatting
-// ----------------------------------------------------------------
-
-// Once numbers get big, long digit strings stop being readable at a
-// glance -- so past 1000 we switch to "14.4 million" style names
-// instead. Below 1000, still just show the plain number.
 var NUMBER_SCALE_NAMES = [
   "", " thousand", " million", " billion", " trillion", " quadrillion",
   " quintillion", " sextillion", " septillion", " octillion",
@@ -180,7 +168,7 @@ var NUMBER_SCALE_NAMES = [
 ];
 
 function fmtAbbrev(n) {
-  if (!isFinite(n)) return n < 0 ? "-way too much" : "way too much"; // (a price that has run off the end of the number line)
+  if (!isFinite(n)) return n < 0 ? "-way too much" : "way too much";
   var neg = n < 0;
   n = Math.abs(n);
   if (n < 1000) return (neg ? "-" : "") + Math.floor(n).toLocaleString();
@@ -210,15 +198,12 @@ function fmtDecimal(n, places) {
   return n.toFixed(places === undefined ? 1 : places);
 }
 
-// A per-second number with up to two decimals (never rounded away: 100 and 101 must not both read "100"),
-// big ones named as usual. 0.9 -> "0.9", 12 -> "12", 0.125 -> "0.13".
 function fmtRateNum(n) {
   if (!isFinite(n)) return "0";
   if (Math.abs(n) >= 1000) return fmtAbbrev(n);
   return n.toFixed(2).replace(/\.?0+$/, "");
 }
 
-// A weight per second (iron, copper) with the same care: grams keep their decimals, bigger ones use fmtWeight's units.
 function fmtRate(grams) {
   if (!isFinite(grams)) return "0 g";
   if (grams < 1000) return fmtRateNum(grams) + " g";
@@ -226,7 +211,7 @@ function fmtRate(grams) {
 }
 
 function fmtWeight(grams) {
-  if (grams >= 1e15) return fmtAbbrev(grams / 1e6) + " t"; // beyond gigatons, just name the tonnage
+  if (grams >= 1e15) return fmtAbbrev(grams / 1e6) + " t";
   if (grams >= 1e12) return (grams / 1e12).toFixed(2) + " Gt";
   if (grams >= 1e9) return (grams / 1e9).toFixed(2) + " Mt";
   if (grams >= 1e6) return (grams / 1e6).toFixed(2) + " t";

@@ -1,12 +1,5 @@
 "use strict";
 
-// ----------------------------------------------------------------
-// Achievements + the "stats & achievements" screen. Unlocks are stored
-// in the lifetime record (lifetime.js), so they survive ending a run.
-// Each test gets (state, lt): the live game state and the lifetime
-// totals INCLUDING the life in progress.
-// ----------------------------------------------------------------
-
 var ACHIEVEMENTS = [
   { id: "hundred",     name: "Hammer and Iron",       desc: "Make 100 nails in one life.",                       test: function (s, lt) { return s.totalNailsMade >= 100; } },
   { id: "breaker",     name: "Into the Ground",       desc: "Own a nail breaker.",                               test: function (s) { return s.breakers >= 1; } },
@@ -30,8 +23,6 @@ var ACHIEVEMENTS = [
   { id: "nirvana",     name: "Nirvana",               desc: "Reach Nirvana.",                                    test: function (s, lt) { return !!s.nirvanaAchieved || lt.nirvanaLives >= 1; } }
 ];
 
-// ---------------- toast ----------------
-
 var achievementToastQueue = [];
 var achievementToastShowing = false;
 var achievementToastEl = document.createElement("div");
@@ -52,13 +43,10 @@ function showNextAchievementToast() {
   }, 3500);
 }
 
-// ---------------- checking ----------------
-
 function achievementCount() {
   return Object.keys(lifetime.achievements).length;
 }
 
-// Hidden until the first achievement is earned, so a new player sees nothing but the game.
 function updateAchievementButton() {
   if (!el.btnStats) return;
   var count = achievementCount();
@@ -91,8 +79,6 @@ function checkAchievements() {
 
 setInterval(checkAchievements, 1000);
 updateAchievementButton();
-
-// ---------------- stats & achievements screen ----------------
 
 function fmtDate(ms) {
   var d = new Date(ms);

@@ -1,9 +1,5 @@
 "use strict";
 
-// ----------------------------------------------------------------
-// Actions
-// ----------------------------------------------------------------
-
 setupRepeatButton(el.btnPriceMinus, function (steps) {
   steps = steps || 1;
   state.price = Math.max(PRICE_MIN, round2(state.price - PRICE_STEP * steps));
@@ -89,7 +85,7 @@ el.btnBuyFactory.addEventListener("click", function () {
   if (state.funds < cost) return;
 
   state.funds -= cost;
-  if (state.factories === 0) state.factoryBalance = FACTORY_BALANCE_DEFAULT; // your first factory builds 90% makers, 10% breakers
+  if (state.factories === 0) state.factoryBalance = FACTORY_BALANCE_DEFAULT;
   state.factories += 1;
   render();
 });
@@ -135,10 +131,6 @@ el.btnLoad.addEventListener("click", function () {
   }
 });
 
-// ----------------------------------------------------------------
-// Guide
-// ----------------------------------------------------------------
-
 el.btnGuide.addEventListener("click", function () {
   markGuideRead();
   el.guideOverlay.style.display = "block";
@@ -155,7 +147,6 @@ document.addEventListener("keydown", function (e) {
   }
 });
 
-// Table-of-contents links scroll the guide itself, not the page behind it.
 el.guideOverlay.addEventListener("click", function (e) {
   var link = e.target.closest("a[data-goto]");
   if (!link) return;
@@ -181,10 +172,6 @@ function markGuideRead() {
   }
 }
 
-// ----------------------------------------------------------------
-// End Run -- leaderboard storage/rendering itself lives in leaderboard.js
-// ----------------------------------------------------------------
-
 el.btnEndRun.addEventListener("click", function () {
   var karmaWarning = state.karma > 0
     ? "\n\nYour " + fmtInt(state.karma) + " karma will be lost. You'll start over with nothing, exactly like a brand new player. This is a dead end -- if you want your karma to carry forward and improve your next life, reincarnate instead."
@@ -199,24 +186,20 @@ el.btnEndRun.addEventListener("click", function () {
   );
   if (!confirmed) return;
 
-  // Only logged-in players post scores, under their account name (submitScore ignores everyone else).
   var user = currentAuthUser();
   var name = user ? (user.displayName || "player") : "anonymous";
 
   submitScore(name, Math.floor(state.totalNailsMade), { karma: state.karma, timeSec: state.simTime });
   deleteAllSaves();
 
-  // Capture this life (and the whole run) for the end screen before the
-  // reset below wipes it -- including the past lives log, which ending a
-  // run destroys.
   var endedLife = buildLifeRecord({ how: "ended" });
   var allLives = (state.pastLives || []).concat([endedLife]);
   var karmaLost = Math.max(0, state.karma);
-  recordLifeEnd(endedLife, "ended", allLives, karmaLost); // lifetime stats survive the wipe below
+  recordLifeEnd(endedLife, "ended", allLives, karmaLost);
 
-  var nirvanaCarried = state.nirvanaAchieved; // a real achievement -- survives even this
-  var wipeAppliedCarried = state.wipeApplied; // which admin wipe this player has had (gifts.js), so it isn't applied again
-  var resetAppliedCarried = state.resetApplied; // the same for the admin's single-thing resets
+  var nirvanaCarried = state.nirvanaAchieved;
+  var wipeAppliedCarried = state.wipeApplied;
+  var resetAppliedCarried = state.resetApplied;
   state = defaultState();
   state.nirvanaAchieved = nirvanaCarried;
   if (wipeAppliedCarried) state.wipeApplied = wipeAppliedCarried;
@@ -228,8 +211,6 @@ el.btnEndRun.addEventListener("click", function () {
 
 function migrateLoadedState() {
   state.marketingLevel = clampMarketingLevel(state.marketingLevel);
-  // Factories used to be an array (and later had a timer array); they are
-  // now just a count plus one pooled production progress value.
   state.factories = Array.isArray(state.factories) ? state.factories.length : Math.max(0, Math.floor(state.factories || 0));
   state.unlockedMap = state.unlockedMap || state.breakers > 0;
   state.factoryProgress = Math.min(state.factories, Math.max(0, Number(state.factoryProgress) || 0));
@@ -249,22 +230,18 @@ function migrateLoadedState() {
   delete state.blueprints;
   delete state.upgradesOwned;
 
-  // Old saves used "yinYangLevel" -- carry it over as tao points, and
-  // backfill the permanent bonus stack it would have earned.
   if (typeof state.tao !== "number") {
     state.tao = typeof state.yinYangLevel === "number" ? state.yinYangLevel : 0;
   }
   delete state.taoBonusStack;
   delete state.yinYangLevel;
 
-  // The karma lock no longer exists (nailbombs drain tao instead). A save
-  // made under the old rule has karma stuck at -1 -- reset it to 0.
   if (state.cityKarmaLocked && state.karma < 0) state.karma = 0;
   delete state.cityKarmaLocked;
 
   if (!Array.isArray(state.pastLives)) state.pastLives = [];
-  if (typeof cardsNormalize === "function") cardsNormalize(); // the deck of cards: drops anything that is not a real card, and the skill tree / lands of older versions
-  if (typeof floorNormalize === "function") floorNormalize(); // factory floor modules
+  if (typeof cardsNormalize === "function") cardsNormalize();
+  if (typeof floorNormalize === "function") floorNormalize();
 }
 
 function flashButton(btn, text) {
@@ -274,12 +251,6 @@ function flashButton(btn, text) {
     btn.textContent = old;
   }, 1000);
 }
-
-// ----------------------------------------------------------------
-// Admin check. Only accounts on CHEAT_ALLOWED_USERNAMES (see state.js) get the
-// admin panel (admin.js). This is for tidiness only: the Firestore rules are
-// what actually protect the shared data.
-// ----------------------------------------------------------------
 
 function isCheatAllowed() {
   var user = currentAuthUser();

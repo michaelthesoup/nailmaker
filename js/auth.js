@@ -1,15 +1,7 @@
 "use strict";
 
-// ----------------------------------------------------------------
-// Auth. Firebase's password auth wants an email, not a bare username --
-// so behind the scenes we turn "someuser" into "someuser@nailmaker.local"
-// before ever talking to Firebase. The player only ever sees "username."
-// The real display name (what shows on the leaderboard) is stored as
-// the Firebase user's displayName.
-// ----------------------------------------------------------------
-
 var AUTH_EMAIL_DOMAIN = "@nailmaker.local";
-var authMode = "login"; // or "signup"
+var authMode = "login";
 
 function usernameToEmail(username) {
   var clean = username.trim().toLowerCase().replace(/[^a-z0-9_\-\.]/g, "");
@@ -68,7 +60,7 @@ function submitAuthForm() {
   var request = authMode === "signup"
     ? firebase.auth().createUserWithEmailAndPassword(email, password)
         .then(function (cred) { return cred.user.updateProfile({ displayName: username }); })
-        .then(function () { if (typeof cloudSaveLifetime === "function") cloudSaveLifetime(); }) // the first sync ran before the name was set
+        .then(function () { if (typeof cloudSaveLifetime === "function") cloudSaveLifetime(); })
     : firebase.auth().signInWithEmailAndPassword(email, password);
 
   request
@@ -82,14 +74,11 @@ function submitAuthForm() {
     });
 }
 
-// Firebase's raw error messages mention "email" and Firebase-specific
-// codes -- reworded here since the player only ever sees "username."
 function friendlyAuthError(err) {
   switch (err.code) {
     case "auth/email-already-in-use": return "that username is already taken";
     case "auth/user-not-found": return "no account with that username";
     case "auth/wrong-password": return "wrong password";
-    // Newer Firebase hides whether the username exists or the password was wrong, and reports both as invalid-credential.
     case "auth/invalid-credential":
     case "auth/invalid-login-credentials": return authMode === "signup" ? "could not create that account" : "wrong username or password";
     case "auth/too-many-requests": return "too many tries -- wait a few minutes and try again";

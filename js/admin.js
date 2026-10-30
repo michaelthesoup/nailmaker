@@ -1,32 +1,5 @@
 "use strict";
 
-// ----------------------------------------------------------------
-// The admin panel. Only accounts on CHEAT_ALLOWED_USERNAMES (state.js) see the
-// button for it, in the "more" menu. This check is just for tidiness: what
-// actually protects anything is the Firestore rules, which only let the admin
-// ACCOUNT write medallions, gifts, bans and the news. The panel has four tabs:
-//
-//   me       give yourself resources, machines and progress with buttons
-//   players  find a player, send them gifts, kick them off the leaderboards, wipe everyone's tao and karma
-//   weekly   look at a week's board, remove entries, award medallions
-//   news     write the headlines in the scrolling ticker at the top of the page
-//
-// Kicking a player deletes their leaderboard entries (all-time and the last
-// few weeks) and adds them to the "banned" collection, which the rules use to
-// stop them posting again until you restore them.
-//
-// "wipe everyone's tao and karma" (players tab) writes one marker document, config/wipe. Every game
-// applies it once, when it next checks (gifts.js), so it reaches offline players when they log in.
-// It uses the same 'config' rules as the news: signed-in players read it, only the admin writes it.
-//
-// "reset everyone's ..." (players tab) works the same way for one thing at a time (factories, funds, cards and so on, the
-// list is RESET_KINDS in gifts.js): it writes an entry into config/resets, and every game applies it once (checkResets).
-//
-// "sync scores from saves" (players tab) reads every player's cloud save and
-// raises their board entries to the life they are in right now. It needs the
-// admin read on saves and the admin write on scores and weeks in the rules.
-// ----------------------------------------------------------------
-
 var ADMIN_TABS = [["me", "me"], ["players", "players"], ["weekly", "weekly"], ["news", "news"]];
 var ADMIN_KICK_WEEKS_BACK = 8;
 
@@ -34,15 +7,13 @@ var adminBuilt = false;
 var adminPanels = {};
 var adminTabButtons = {};
 var adminValueUpdaters = [];
-var adminTarget = null; // { uid, name }
-var adminWeekOffset = -1; // 0 = this week, -1 = last week, ...
+var adminTarget = null;
+var adminWeekOffset = -1;
 var adminWeekToken = 0;
 var adminSearchToken = 0;
 var adminSearchTimer = null;
 var adminNewsDraft = [];
 var adminRefreshTimer = null;
-
-// ---------------- small helpers ----------------
 
 function adminMake(tag, className, text) {
   var node = document.createElement(tag);
@@ -90,8 +61,6 @@ function adminTextInput(placeholder, maxLen) {
   input.className = "admin-input";
   return input;
 }
-
-// ---------------- tab "me": give yourself things ----------------
 
 function adminRefreshValues() {
   for (var i = 0; i < adminValueUpdaters.length; i++) adminValueUpdaters[i]();
@@ -157,7 +126,6 @@ function adminUnlockEverything() {
   render();
 }
 
-// Starts a reincarnation right now, without the tao needed or anything unlocked (it adds at least 1 karma, so there is a deck to fill).
 function adminReincarnate() {
   if (!adminAllowed()) return;
   var gain = reincarnationKarmaGainNow();
@@ -187,7 +155,7 @@ function buildMePanel(p) {
   sheetAddHeading(p, "progress");
   adminRow(p, "tao", function () { return String(state.tao); }, adminAmountButtons("tao", count, { whole: true, minus: true }));
   adminRow(p, "karma", function () { return String(state.karma); }, adminAmountButtons("karma", [1, 5], { min: 0, whole: true, minus: true }));
-  adminRow(p, "slot pity (spins without a jackpot)", function () { return fmtInt(state.slotPity || 0); }, adminAmountButtons("slotPity", [100, 500, 1000], { min: 0, whole: true, minus: true }));
+  adminRow(p, "slot pity (spins without a jackpot)", function () { return fmtInt(state.slotPity || 0); }, adminAmountButtons("slotPity", [100, 1000, 10000], { min: 0, whole: true, minus: true }));
   adminRow(p, "nailbombs dropped", function () { return String(state.cityBombs); }, adminAmountButtons("cityBombs", [1, 10], { min: 0, whole: true }));
   adminRow(p, "yin & yang", function () { return fmtInt(state.yin) + " / " + fmtInt(state.yang); }, [
     ["fill yin", function () { adminSet("yin", yinYangMax()); }],
@@ -198,8 +166,6 @@ function buildMePanel(p) {
   sheetAddHeading(p, "unlocks");
   adminButtons(p, [["unlock everything", adminUnlockEverything], ["reincarnate now", adminReincarnate]]);
 }
-
-// ---------------- tab "players" ----------------
 
 function adminSelectTarget(uid, name) {
   adminTarget = { uid: uid, name: name || "player" };
@@ -260,7 +226,7 @@ function adminKickPlayer(uid, name, statusNode, done) {
   var me = currentAuthUser();
   batch.set(db.collection("banned").doc(uid), { name: name, by: me ? me.displayName : "admin", at: firebase.firestore.FieldValue.serverTimestamp() });
   batch.commit().then(function () {
-    if (typeof everyoneCache !== "undefined") everyoneCache.at = 0; // the boards should re-read who is banned
+    if (typeof everyoneCache !== "undefined") everyoneCache.at = 0;
     statusNode.textContent = name + " was kicked off the leaderboards and can't post or chat until restored.";
     if (done) done();
     if (typeof renderLeaderboard === "function") renderLeaderboard();
@@ -270,8 +236,6 @@ function adminKickPlayer(uid, name, statusNode, done) {
   });
 }
 
-// Sets every player's tao and karma to 0. Nothing is changed in anyone's save from here: this only publishes
-// a marker (config/wipe), and each game wipes itself the next time it checks (gifts.js, checkWipe).
 function adminWipeEveryone(status) {
   if (!adminAllowed()) return;
   if (!window.confirm("Wipe EVERYONE's tao and karma?\n\nEvery player's tao and karma is set to 0 the next time their game checks: within a few minutes if they are online, or when they next log in. That includes you. Their cards, machines, scores and records are not touched.\n\nThis can't be undone.")) return;
@@ -291,8 +255,6 @@ function adminWipeEveryone(status) {
   });
 }
 
-// Resets one thing (see RESET_KINDS in gifts.js) for every player: publishes an entry in config/resets, and each game
-// applies it once, the next time it checks.
 function adminResetEveryone(kind, status) {
   if (!adminAllowed() || typeof RESET_KINDS === "undefined" || !RESET_KINDS[kind]) return;
   var label = RESET_KINDS[kind].label;
@@ -311,10 +273,7 @@ function adminResetEveryone(kind, status) {
   });
 }
 
-// Raises every player's leaderboard entries to the nail count of the life they are in right now, read
-// from their cloud save. It only ever RAISES a score (never lowers or removes one) and skips banned players.
-// The weekly board is only touched for players whose save was written this week.
-var ADMIN_SYNC_BATCH = 400; // Firestore allows 500 writes per batch
+var ADMIN_SYNC_BATCH = 400;
 
 function adminSyncScores(status) {
   if (!adminAllowed()) return;
@@ -350,9 +309,9 @@ function adminSyncScores(status) {
       var nails = Math.floor(Number(s && s.totalNailsMade));
       if (!isFinite(nails) || nails <= 0) return;
       var name = String((allTime[uid] && allTime[uid].name) || names[uid] || "").slice(0, 30);
-      if (!name) { skipped++; return; } // nothing to show on the board without a name
+      if (!name) { skipped++; return; }
 
-      var karma = Math.max(0, Math.floor(Number(s.karma) || 0)); // karma the life began with, same as an end-run score
+      var karma = Math.max(0, Math.floor(Number(s.karma) || 0));
       var timeSec = Math.max(0, Math.floor(Number(s.simTime) || 0));
       var stamp = firebase.firestore.FieldValue.serverTimestamp();
 
@@ -400,9 +359,6 @@ function adminRestorePlayer(uid, name, statusNode) {
   });
 }
 
-// ---- medallions given by hand (any player, any time) ----
-// A gift medallion is its own document with weekId "gift", so it never gets mixed up with a week's top three
-// (the weekly tab only looks at documents for that week). It shows on the profile and as a gold dot on the boards.
 function adminRefreshMedalList() {
   var box = adminPanels.players.medalBox;
   if (!box) return;
@@ -440,7 +396,7 @@ function adminGiveMedallion(rank, status) {
     uid: target.uid, name: target.name, score: 0, karma: 0, gift: true,
     awardedAt: firebase.firestore.FieldValue.serverTimestamp()
   }).then(function () {
-    if (typeof everyoneCache !== "undefined") everyoneCache.at = 0; // the boards should re-read who holds medallions
+    if (typeof everyoneCache !== "undefined") everyoneCache.at = 0;
     status.textContent = "gave " + target.name + " a " + MEDALLION_NAMES[rank] + " medallion (they see a notice next time they log in).";
     adminRefreshMedalList();
     if (typeof renderLeaderboard === "function") renderLeaderboard();
@@ -532,8 +488,6 @@ function buildPlayersPanel(p) {
   adminPanels.players.medalStatus = medalStatus;
   adminPanels.players.medalBox = medalBox;
 }
-
-// ---------------- tab "weekly" ----------------
 
 function adminAwardMedallions(weekIndex, top, statusNode) {
   var weekId = weekIdFor(weekIndex);
@@ -641,8 +595,6 @@ function buildWeeklyPanel(p) {
   adminPanels.weekly.dynamic = dynamic;
 }
 
-// ---------------- tab "news" ----------------
-
 function adminRenderNewsList() {
   var list = adminPanels.news.list;
   list.innerHTML = "";
@@ -702,8 +654,6 @@ function buildNewsPanel(p) {
 
   adminPanels.news.list = list;
 }
-
-// ---------------- the overlay ----------------
 
 function adminShowTab(name) {
   for (var key in adminPanels) {

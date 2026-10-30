@@ -1,19 +1,9 @@
 "use strict";
 
-// ----------------------------------------------------------------
-// Cloud save -- only active while logged in. Reuses the exact same
-// JSON.stringify(state) format as the local save button, just stored
-// in Firestore under the player's own user id instead of localStorage,
-// so progress follows their account across devices/browsers.
-// ----------------------------------------------------------------
-
-var CLOUD_AUTOSAVE_INTERVAL_MS = 30000; // every 30s while logged in
+var CLOUD_AUTOSAVE_INTERVAL_MS = 30000;
 var cloudAutosaveTimer = null;
-var suppressNextCloudAutosave = false; // avoid immediately re-saving what we just loaded
+var suppressNextCloudAutosave = false;
 
-// Wipes any way back to the old run: the local save and, if logged in,
-// the cloud save too. Called from "end run" and reincarnation so a
-// player can't just hit "load" to undo either one.
 function deleteAllSaves() {
   localStorage.removeItem("nailMakerSave");
 
@@ -73,7 +63,7 @@ firebase.auth().onAuthStateChanged(function (user) {
       if (data) {
         state = Object.assign(defaultState(), data);
         migrateLoadedState();
-        suppressNextCloudAutosave = true; // don't immediately write back what we just read
+        suppressNextCloudAutosave = true;
         render();
         flashButton(el.btnAuthToggle, "cloud save loaded!");
       }
@@ -84,8 +74,6 @@ firebase.auth().onAuthStateChanged(function (user) {
   }
 });
 
-// Catch the tab closing/reloading so the last few seconds of progress
-// aren't lost waiting for the next 30s tick.
 window.addEventListener("beforeunload", function () {
   if (currentAuthUser()) cloudSaveState();
 });

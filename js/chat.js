@@ -1,27 +1,14 @@
 "use strict";
 
-// ----------------------------------------------------------------
-// Global chat: a third tab in the leaderboard panel. Only logged-in players
-// can read or write it. Messages live in chat/{id} as
-//   { uid, name, text, createdAt }
-// and the panel shows the latest CHAT_HISTORY of them. While signed in, a
-// lightweight listener also tracks new messages for the unread tab count.
-//
-// Plain text only, CHAT_MAX_LEN characters, one message per CHAT_COOLDOWN_MS.
-// The admin account sees a delete and a kick button on every message, plus
-// "clear shown". Players kicked off the leaderboards (admin.js) are banned from
-// chat too: the Firestore rules refuse their messages.
-// ----------------------------------------------------------------
-
 var CHAT_MAX_LEN = 200;
 var CHAT_COOLDOWN_MS = 3000;
 var CHAT_HISTORY = 50;
-var CHAT_HISTORY_EXPANDED = 200; // the big chat window loads more (falls back to CHAT_HISTORY if the rules refuse it)
+var CHAT_HISTORY_EXPANDED = 200;
 var chatLimit = CHAT_HISTORY;
 
 var chatUnsub = null;
 var chatLastSent = 0;
-var chatShown = []; // [{ id, uid, name, text, ms }] oldest first, as drawn
+var chatShown = [];
 var chatHintTimer = null;
 var chatUnreadCount = 0;
 var chatSeenMessageIds = Object.create(null);
@@ -56,7 +43,7 @@ function chatTime(ms) {
 
 function chatRender() {
   var box = el.chatList;
-  var stick = box.scrollTop + box.clientHeight >= box.scrollHeight - 24; // keep following if you were at the bottom
+  var stick = box.scrollTop + box.clientHeight >= box.scrollHeight - 24;
   box.innerHTML = "";
   var admin = chatIsAdmin();
 
@@ -86,7 +73,7 @@ function chatRender() {
 
     row.appendChild(document.createTextNode(": "));
     var text = document.createElement("span");
-    text.textContent = m.text; // textContent only: nothing a player types is ever treated as HTML
+    text.textContent = m.text;
     row.appendChild(text);
 
     if (admin) {
@@ -108,8 +95,6 @@ function chatRender() {
   if (stick) box.scrollTop = box.scrollHeight;
 }
 
-// ---------------- live listener ----------------
-
 function chatOpen() {
   if (chatUnsub || typeof db === "undefined" || !currentAuthUser()) return;
   chatSeenMessageIds = Object.create(null);
@@ -126,18 +111,18 @@ function chatOpen() {
 
     var list = [];
     snap.forEach(function (doc) {
-      var d = doc.data({ serverTimestamps: "estimate" }); // a message you just sent has no time yet
+      var d = doc.data({ serverTimestamps: "estimate" });
       chatSeenMessageIds[doc.id] = true;
       list.push({ id: doc.id, uid: d.uid, name: String(d.name || "player"), text: String(d.text || ""), ms: d.createdAt && d.createdAt.toMillis ? d.createdAt.toMillis() : 0 });
     });
-    chatShown = list.reverse(); // newest was first; draw oldest first
+    chatShown = list.reverse();
     chatUpdateUnreadLabel();
     chatRender();
   }, function (err) {
     console.error("Chat listener failed", err);
     chatUnsub = null;
     chatSeenMessageIds = Object.create(null);
-    if (chatLimit !== CHAT_HISTORY) { chatLimit = CHAT_HISTORY; chatOpen(); return; } // the bigger window was refused: go back to the usual amount
+    if (chatLimit !== CHAT_HISTORY) { chatLimit = CHAT_HISTORY; chatOpen(); return; }
     chatSetHint("couldn't load chat -- check the Firestore rules for 'chat'", 8000);
   });
 }
@@ -147,8 +132,6 @@ function chatClose() {
   chatSeenMessageIds = Object.create(null);
   chatMarkRead();
 }
-
-// ---------------- sending ----------------
 
 function chatSend() {
   var user = currentAuthUser();
@@ -170,12 +153,10 @@ function chatSend() {
   }).catch(function (err) {
     console.error("Chat send failed", err);
     chatLastSent = 0;
-    el.chatInput.value = text; // give them their words back
+    el.chatInput.value = text;
     chatSetHint("couldn't send \u2014 you may be muted, or the chat rules aren't published", 6000);
   });
 }
-
-// ---------------- admin tools ----------------
 
 function chatDelete(id) {
   if (!chatIsAdmin()) return;
@@ -187,7 +168,6 @@ function chatDelete(id) {
 
 function chatKick(m) {
   if (!chatIsAdmin() || typeof adminKickPlayer !== "function") return;
-  // adminKickPlayer reports through a status node's textContent; here that is the chat hint line.
   var status = { set textContent(v) { chatSetHint(v, 6000); } };
   adminKickPlayer(m.uid, m.name, status);
 }
@@ -207,10 +187,6 @@ el.btnChatSend.addEventListener("click", chatSend);
 el.chatInput.addEventListener("keydown", function (e) { if (e.key === "Enter") chatSend(); });
 if (el.btnChatClear) el.btnChatClear.addEventListener("click", chatClearShown);
 if (el.btnLbChat) el.btnLbChat.addEventListener("click", function () { setLeaderboardTab("chat"); });
-
-// ---------------- expanding the chat ----------------
-// A button in the chat tab turns the leaderboard panel into a big chat window (and back). Built here, so it needs no
-// markup: the styles are added from here too. Leaving the chat tab, hiding the panel or pressing Escape shrinks it again.
 
 (function () {
   var style = document.createElement("style");

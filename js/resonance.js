@@ -1,27 +1,13 @@
 "use strict";
 
-// ----------------------------------------------------------------
-// Resonance. A small oscilloscope. A faint dashed TARGET wave and your solid wave; two sliders (frequency and phase)
-// move your wave. Line them up and a bar fills; the fuller it gets, the more you are paid.
-//
-//   THE TARGET   Comes from this life's seed (state.draftSeed). It never moves.
-//   THE DRIFT    Your frequency and phase sliders slowly creep away from where you set them (very slowly), so you have to keep
-//                nudging them back: stay active and it keeps paying. The more lopsided your iron (see resBalanceWord)
-//                the faster it drifts. While it is roughly even (up to about 14 : 16) the drift is tiny.
-//   THE ALIGNMENT How well the waves overlap, 0..100%, smoothed. There is no punishment.
-//   THE BAR      Always 100 long. It fills by your alignment each second: 100% fills 1 a second, 50% half that.
-//                A full bar is 1 TAO (cards can add more). Black and white both make tao here for now. The path only changes the feel: white
-//                has a wide window and slow drift, black a narrower window and faster drift.
-// ----------------------------------------------------------------
-
-var RES_EVEN_ZONE = 0.10;               // iron imbalance that still counts as even: 14 : 16 is 0.07, 12 : 18 is 0.2
-var RES_UNEVEN_FULL = 0.40;              // ...and the imbalance at which the drift is at its worst
-var RES_UNLOCK_TAO = 1;              // held tao needed (earned again each life, like the swarm)
-var RES_RING_SIZE = 100;             // the bar: always 100, whatever your tao
-var RES_TOL = { f: 0.045, p: 0.06 }; // how far each control may be off, before the path and cards widen/narrow it
-var RES_LOCK_RISE = 2, RES_LOCK_FALL = 3; // how quickly the lock follows the match (per second)
-var RES_DRIFT_RATE = 0.0008;         // how fast a slider creeps (per second, at its fastest) when the iron is even
-var RES_CTL = ["f", "p"];            // frequency, phase
+var RES_EVEN_ZONE = 0.10;
+var RES_UNEVEN_FULL = 0.40;
+var RES_UNLOCK_TAO = 1;
+var RES_RING_SIZE = 100;
+var RES_TOL = { f: 0.045, p: 0.06 };
+var RES_LOCK_RISE = 2, RES_LOCK_FALL = 3;
+var RES_DRIFT_RATE = 0.0008;
+var RES_CTL = ["f", "p"];
 
 function resSide() {
   return typeof cardDeckSide === "function" ? cardDeckSide() : null;
@@ -44,12 +30,9 @@ function resUnlocked() {
   return !!state.unlockedResonance && !!resSide();
 }
 
-// Extra "steady hands" from cards: each one slows the drift by 15%. You always have one.
 function resTuners() {
   return Math.min(8, 1 + Math.max(0, Math.floor(cardAdd("tunersW"))));
 }
-
-// ---------------- the seed ----------------
 
 var resModelCache = null;
 
@@ -66,20 +49,16 @@ function resModel() {
   return m;
 }
 
-// ---------------- the drift ----------------
-
 function resImbalance() {
-  if (ironDemandRate() <= 0 || ironSupplyRate() <= 0) return 0; // no real economy to measure yet: nothing pulls the wave
+  if (ironDemandRate() <= 0 || ironSupplyRate() <= 0) return 0;
   var v = ironStructuralImbalance();
   return isFinite(v) ? Math.max(-0.5, Math.min(0.5, v)) : 0;
 }
 
-// How uneven the iron is, as 0 (even enough) .. 1 (as lopsided as the drift gets).
 function resUneven(imb) {
   return Math.max(0, Math.min(1, (Math.abs(imb) - RES_EVEN_ZONE) / (RES_UNEVEN_FULL - RES_EVEN_ZONE)));
 }
 
-// The same, shown to the player in words.
 function resBalanceWord(imb) {
   var u = resUneven(imb);
   return u <= 0 ? "even" : (u < 0.5 ? "uneven" : "lopsided");
@@ -87,32 +66,27 @@ function resBalanceWord(imb) {
 
 function resPathDrift(side) { return side === "white" ? 0.7 : 1.1; }
 
-// How fast the controls wander, per second.
 function resDriftRate(side, imb) {
   var mult = resPathDrift(side) * cardMult("driftW");
   return RES_DRIFT_RATE * (0.4 + 4 * resUneven(imb)) * mult / (1 + 0.15 * (resTuners() - 1));
 }
 
-// The direction the drift is pushing right now: slow and meandering, between -1 and 1.
 function resDriftDir(m, i, time) {
   var d = m.dp[i];
-  // mostly one way (the seed picks which), with slow swells: it never settles back by itself
   return d.sgn * (0.55 + 0.45 * (Math.sin(d.w1 * time + d.f1) + 0.6 * Math.sin(d.w2 * time + d.f2)) / 1.6);
 }
 
 function resDriftStep(dt, time) {
   var r = resEnsure(), m = resModel(), rate = resDriftRate(resSide(), resImbalance());
   RES_CTL.forEach(function (key, i) {
-    r.c[key] = Math.max(0, Math.min(1, r.c[key] + resDriftDir(m, i, time) * rate * Math.min(dt, 5))); // the slider itself creeps
+    r.c[key] = Math.max(0, Math.min(1, r.c[key] + resDriftDir(m, i, time) * rate * Math.min(dt, 5)));
   });
 }
 
-// Tolerance multiplier: the path (white forgiving, black strict) and cards.
 function resTolMult(side) {
   return (side === "white" ? 1.4 : 0.9) * cardMult("windowW");
 }
 
-// How well your wave matches the target right now: z is how many tolerances off each control is (signed).
 function resEvaluate() {
   var r = resEnsure(), m = resModel(), tm = resTolMult(resSide());
   var e = { f: r.c.f, p: r.c.p }, z = {}, z2 = 0;
@@ -123,22 +97,18 @@ function resEvaluate() {
   return { e: e, z: z, z2: z2, q: Math.exp(-0.35 * z2) };
 }
 
-var resLast = null; // the latest evaluation, for the screen
-
-// ---------------- the payout ----------------
+var resLast = null;
 
 function resGain() {
   return cardMult("resonanceTao");
 }
 
-// The bar fills at your alignment: 100% fills 1 a second, 50% half that, and so on (still visible when it is low).
 function resOutputRate() {
   var r = resEnsure();
   if (!resSide()) return 0;
   return r.lock * resGain();
 }
 
-// The size of the bar: 100 (white cards can shrink it). It does not grow with your tao.
 function resRingSize() {
   return RES_RING_SIZE * cardMult("meritCost");
 }
@@ -163,15 +133,10 @@ function resonanceTick(dt) {
   }
 }
 
-// ---------------- controls ----------------
-
 function resSet(key, v) {
   var r = resEnsure();
   r.c[key] = Math.max(0, Math.min(1, v));
 }
-
-// ---------------- the panel ----------------
-// Small and plain: black and white like the rest of the game, no flashing, nothing that punishes.
 
 var resUI = null;
 
@@ -204,7 +169,6 @@ function resBuildStyle() {
   document.head.appendChild(st);
 }
 
-// The meter shows which way a control is off: dot left of the middle = too low, right = too high; it fills in when it matches.
 function resMeterSet(meter, dot, z) {
   var zz = Math.max(-3, Math.min(3, z || 0));
   dot.style.left = (50 + zz / 3 * 50).toFixed(1) + "%";
@@ -292,8 +256,6 @@ function renderResonance() {
     : "stay lined up and the bar fills. It slowly drifts, so keep nudging it back";
 }
 
-// ---------------- the screen ----------------
-
 function resWave(f, p, u, scroll) {
   return Math.sin(6.2832 * ((2 + 5 * f) * u + scroll + (p - 0.5)));
 }
@@ -315,11 +277,11 @@ function drawResonance() {
 
   ctx.clearRect(0, 0, w, h);
   ctx.strokeStyle = ink; ctx.lineWidth = 1;
-  ctx.strokeRect(X + 0.5, Y + 0.5, W - 1, H - 1); // the screen: a plain rectangle
+  ctx.strokeRect(X + 0.5, Y + 0.5, W - 1, H - 1);
 
   ctx.save();
   ctx.beginPath(); ctx.rect(X + 1, Y + 1, W - 2, H - 2); ctx.clip();
-  ctx.globalAlpha = 0.5; ctx.setLineDash([4, 4]); ctx.lineWidth = 1; // the target: faint and dashed
+  ctx.globalAlpha = 0.5; ctx.setLineDash([4, 4]); ctx.lineWidth = 1;
   ctx.beginPath();
   for (var px = 0; px <= W; px += 3) {
     var yt = cy - resWave(m.t.f, m.t.p, px / W - 0.5, scroll) * amp;
@@ -327,7 +289,7 @@ function drawResonance() {
   }
   ctx.stroke();
   ctx.setLineDash([]);
-  ctx.globalAlpha = 1; ctx.lineWidth = 1.5; // yours: solid
+  ctx.globalAlpha = 1; ctx.lineWidth = 1.5;
   ctx.beginPath();
   for (var px2 = 0; px2 <= W; px2 += 3) {
     var ym = cy - resWave(Math.max(0, Math.min(1.2, ev.e.f)), ev.e.p, px2 / W - 0.5, scroll) * amp;
@@ -336,7 +298,6 @@ function drawResonance() {
   ctx.stroke();
   ctx.restore();
 
-  // the bar: fills toward the next tao
   var by = H + 10, bh = 6;
   ctx.lineWidth = 1; ctx.strokeRect(X + 0.5, by + 0.5, W - 1, bh - 1);
   var frac = Math.min(1, (state.resonanceProgress || 0) / resRingSize());
@@ -346,10 +307,6 @@ function drawResonance() {
 }
 
 requestAnimationFrame(drawResonance);
-
-// ---------------- sound: the beating of two tones ----------------
-// A tone for the target and one for your wave. Detuned, you hear them beat (a wobble); as you line up, the wobble
-// slows and vanishes. Off until you press the button (browsers need a click before they will play sound).
 
 var resAudio = null;
 
@@ -372,7 +329,7 @@ function resSoundUpdate(ev) {
   if (!resAudio || !resAudio.on) return;
   var m = resModel(), t = resAudio.ctx.currentTime;
   var base = 110 + m.t.f * 140;
-  var diff = (ev.e.f - m.t.f) * 40; // hertz apart: a few hertz is a slow wobble you can hear
+  var diff = (ev.e.f - m.t.f) * 40;
   resAudio.a.frequency.setTargetAtTime(base, t, 0.05);
   resAudio.b.frequency.setTargetAtTime(base + diff, t, 0.05);
   resAudio.gain.gain.setTargetAtTime(0.035, t, 0.1);

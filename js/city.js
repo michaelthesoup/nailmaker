@@ -1,29 +1,17 @@
 "use strict";
 
-// ----------------------------------------------------------------
-// The skyline (foundation -- tunables live in state.js, the marketing
-// payoff lives in formulas.js as cityFeverMult()).
-//
-// The skyline is an endlessly generated street. Each district reflects
-// the current maker/breaker mix; camera travel removes buildings
-// behind the player and generates more ahead. Bombs pause the camera,
-// damage real units, and leave a visible corridor of ruins to cross.
-// ----------------------------------------------------------------
-
 var cityCanvasEl = null;
 var cityCtx = null;
-var cityLayout = []; // last drawn district layout: [{type, units, x, w}]
-var cityBlast = null; // { x, r, max } -- the expanding blast ring animation
+var cityLayout = [];
+var cityBlast = null;
 var cityShake = 0;
 var cityCameraX = 0;
 var cityNextDistrictX = 0;
 var cityBuildings = [];
-var cityAftermath = null; // { hitX, startX, endX, span, killRadius }
+var cityAftermath = null;
 var cityWorldStateRef = null;
 
-// Cached between rebuilds so the skyline doesn't reshuffle or resize
-// every frame -- see the header comment above.
-var cityCachedSlots = []; // stable slot identities: [{type, indexInType, units, seed}]
+var cityCachedSlots = [];
 var cityRebuildAccum = 0;
 
 function cityRestoreWorld() {
@@ -96,9 +84,9 @@ function cityBuildSlots() {
       merged.push({
         type: fresh[f].type,
         indexInType: fresh[f].indexInType,
-        units: fresh[f].units, // units update live even when position/seed stay put
+        units: fresh[f].units,
         seed: prev ? prev.seed : Math.floor(Math.random() * 99999),
-        orderKey: prev ? prev.orderKey : Math.random() // stays put unless this exact slot is new
+        orderKey: prev ? prev.orderKey : Math.random()
       });
     }
   }
@@ -200,7 +188,6 @@ function cityBombCost() {
   return Math.round(CITY_BOMB_BASE_NAILS * Math.pow(CITY_BOMB_COST_GROWTH, state.cityBombs));
 }
 
-// The Nth nailbomb needs N unstable cores (1st: 1, 2nd: 2, 5th: 5, ...).
 function cityIsotopesNeeded() {
   return CORE_ISOTOPES_BASE + state.cityBombs;
 }
@@ -213,10 +200,6 @@ function cityBombPower() {
   return CITY_BOMB_BASE_POWER + state.cityBombs * CITY_BOMB_POWER_GROWTH;
 }
 
-// Both the fever ceiling and what a single nailbomb adds to it grow
-// EXPONENTIALLY with nailbombs already detonated, at the same rate the
-// nailbomb's own cost grows -- see the CITY_FEVER_EXP_GROWTH comment in
-// state.js.
 function cityFeverMax() {
   return CITY_FEVER_MAX_BASE * Math.pow(CITY_FEVER_EXP_GROWTH, state.cityBombs);
 }
@@ -224,11 +207,6 @@ function cityFeverMax() {
 function cityFeverGainForNextBomb() {
   return CITY_FEVER_PER_BOMB_BASE * Math.pow(CITY_FEVER_EXP_GROWTH, state.cityBombs);
 }
-
-// ----------------------------------------------------------------
-// Pedestrians share world coordinates with the city so they can remain
-// still in the blast zone as the camera continues past them.
-// ----------------------------------------------------------------
 
 var cityPeds = [];
 
@@ -277,7 +255,7 @@ function cityUpdatePedestrians(dt) {
     var speed = CITY_PED_WALK_SPEED * (panicking ? CITY_PED_PANIC_SPEED_MULT : 1);
     p.worldX += p.dir * speed * dt * 60;
 
-    if (!panicking && Math.random() < 0.004) p.dir *= -1; // calm wandering: occasionally change direction
+    if (!panicking && Math.random() < 0.004) p.dir *= -1;
   }
 }
 
@@ -296,13 +274,8 @@ function cityDrawPedestrians(groundY, ink) {
   }
 }
 
-// Arming checks and pays BOTH costs up front (nails and one unstable core), then
-// starts the drop sequence. The actual destruction doesn't happen until
-// the dropped nailbomb visually lands -- see cityApplyImpact() -- so the
-// damage, fever/panic gain, and page shake all land together with the
-// animation instead of popping in the instant the button is clicked.
 function cityArmAndDrop() {
-  if (cityDropActive) return; // one nailbomb in flight at a time
+  if (cityDropActive) return;
 
   var nailsCost = cityBombCost();
   var isoCost = cityIsotopesNeeded();
@@ -348,8 +321,8 @@ function cityApplyImpact(targetWorldX) {
   state.cityBombs += 1;
   state.cityFever = Math.min(cityFeverMax(), state.cityFever + gain);
   state.cityMarketScar = Math.min(CITY_MARKET_SCAR_MAX, state.cityMarketScar + CITY_MARKET_SCAR_PER_BOMB);
-  state.tao -= Math.max(1, Math.round(CITY_BOMB_TAO_PER_POWER * power)); // bigger bombs drain more tao; it can go negative
-  state.cityPanic = CITY_PANIC_PER_BOMB; // a nailbomb always maxes out the panic meter -- how long that panic actually lasts on-screen is per-pedestrian, below
+  state.tao -= Math.max(1, Math.round(CITY_BOMB_TAO_PER_POWER * power));
+  state.cityPanic = CITY_PANIC_PER_BOMB;
 
   var aftermathSpan = CITY_AFTERMATH_BASE_DISTANCE
     + radius * CITY_AFTERMATH_RADIUS_DISTANCE
@@ -366,18 +339,11 @@ function cityApplyImpact(targetWorldX) {
   cityShake = 10;
   var hitX = targetWorldX - cityCameraX;
   cityBlast = { x: hitX, r: 0, max: 60 + radius * 22 };
-  cityRebuildAccum = CITY_REBUILD_INTERVAL_SEC; // force an immediate rebuild so the destroyed building disappears right away
+  cityRebuildAccum = CITY_REBUILD_INTERVAL_SEC;
 
   cityShakePage();
   render();
 }
-
-// ----------------------------------------------------------------
-// The detonation sequence. A nailbomb visibly falls in from above the
-// entire page, lands on its target, and the WHOLE page -- not just the
-// skyline panel -- shakes violently. cityApplyImpact() (above) does the
-// actual damage/fever/panic the instant the nailbomb lands.
-// ----------------------------------------------------------------
 
 var cityDropActive = false;
 var cityDropTargetX = null;
@@ -391,8 +357,6 @@ var cityPageShakeRunning = false;
 
 function cityStartDrop(targetWorldX) {
   if (!el.bombDropOverlay || !cityCanvasEl) {
-    // No overlay available (shouldn't happen in the real page) --
-    // fall back to an instant impact so a nailbomb never silently fails.
     cityApplyImpact(targetWorldX);
     return;
   }
@@ -418,7 +382,6 @@ function cityDropStep(nowMs) {
   var dt = cityDropLastMs != null ? Math.min(0.05, (nowMs - cityDropLastMs) / 1000) : 1 / 60;
   cityDropLastMs = nowMs;
 
-  // Accelerates like a falling object, for a bit of weight to the drop.
   var fallSpeed = 900 + (cityDropY + 120) * 4;
   cityDropY += fallSpeed * dt;
   el.bombDropOverlay.style.top = cityDropY + "px";
@@ -475,17 +438,11 @@ function cityTick(dt) {
   cityMaybeRebuild(dt);
 }
 
-// ----------------------------------------------------------------
-// UI
-// ----------------------------------------------------------------
-
 function cityCssColor(name, fallback) {
   var v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
   return v || fallback;
 }
 
-// Makers and breakers share a silhouette; only their colors invert,
-// matching the white/black Foundry Swarm.
 function cityDrawBuilding(slot, groundY, paper, ink) {
   var baseH = 38;
   var growth = Math.log(1 + slot.units) * 10;
@@ -593,7 +550,6 @@ function renderCity() {
   el.cityBuffs.textContent = cityBuffText();
   el.cityBombCount.textContent = state.cityBombs + " made";
   el.cityBombNumber.textContent = state.cityBombs + 1;
-  // "set optimal price" is in the skyline from the moment the skyline appears: no nailbomb needed.
   el.btnOptimalPrice.disabled = currentNailProductionRate() <= 0;
 
   var nailsCost = cityBombCost();
@@ -636,8 +592,6 @@ function cityInit() {
   requestAnimationFrame(cityLoop);
 }
 
-// Drawing runs each frame while cityTick() refreshes the district mix at
-// a slower cadence. The camera keeps generating fresh city ahead of it.
 var cityLastFrameMs = null;
 function cityLoop(nowMs) {
   if (state.unlockedCity) {

@@ -10,13 +10,10 @@
   * { box-sizing: border-box; }
 
   :root {
-    --paper: #ffffff; /* background */
-    --ink: #000000;   /* text, borders -- same value on purpose, this theme never distinguished them */
-    /* every column and every panel is exactly this wide: 320px, shrinking
-       evenly (never below 280px) so all three columns stay side by side
-       on narrower windows instead of wrapping underneath each other */
+    --paper: #ffffff;
+    --ink: #000000;
     --col-w: clamp(280px, calc((100vw - 40px - 2 * var(--gap)) / 3), 320px);
-    --gap: 14px;      /* same gap between columns and between stacked panels */
+    --gap: 14px;
   }
 
   html[data-theme="dark"] {
@@ -38,12 +35,6 @@
     margin: 0 0 12px 0;
   }
 
-  /* One grid for the whole page body: three equal columns. The left stack
-     (business, make nail, machinery) sits in column 1 beside the first two
-     rows; the map, yin & yang and resonance stack in column 2; the skyline
-     and swarm in column 3. #mapSection and
-     .map-layout are only wrappers (JS shows/hides #mapSection), so
-     "contents" lets their panels be grid items of .columns directly. */
   .columns {
     display: grid;
     grid-template-columns: repeat(3, var(--col-w));
@@ -64,10 +55,6 @@
     margin-bottom: 0;
   }
 
-  /* The left stack stretches to the full height of the first two rows, with
-     the machinery panel absorbing the extra, so its bottom edge lines up
-     with the bottom of yin & yang / the swarm and no gap opens up before
-     anything below it. */
   #leftStack        { grid-column: 1; grid-row: 1 / span 2; align-self: stretch; display: flex; flex-direction: column; }
   #machinerySection { flex: 1 1 auto; margin-bottom: 0; }
   #mapPanel         { grid-column: 2; grid-row: 1; }
@@ -216,7 +203,6 @@
     min-width: 120px;
   }
 
-  /* ---- end-of-life screen and past lives log ---- */
   .sheet-overlay {
     display: none;
     position: fixed;
@@ -344,9 +330,6 @@
     display: none;
   }
 
-  /* Balance slider: white = all nail makers, black = all nail breakers,
-     gray in between. The slider's own accent color shifts to match via
-     JS, so its color literally shows you the current balance. */
   .balance-slider-wrap {
     border: 1px solid var(--ink);
     padding: 6px 8px;
@@ -403,10 +386,6 @@
     width: 0%;
   }
 
-  /* Yin-Yang: the one place in the game deliberately allowed to break
-     from plain black-on-white -- a stark inverted header and a
-     black/white balance bar make it feel like a different kind of
-     system than everything else, since it is one. */
   #yinYangSection .panel-header {
     background: var(--paper);
     color: var(--ink);
@@ -432,7 +411,7 @@
 
   #sliderYinYang {
     width: 100%;
-    pointer-events: none; /* readout only, not a control */
+    pointer-events: none;
   }
 
   .yy-status {
@@ -456,11 +435,6 @@
     margin: 0 4px;
   }
 
-  /* Deliberately unlabeled and unobtrusive. */
-  /* Reincarnation grid: a wall of monospace characters. Most of it is
-     meaningless noise that keeps re-randomizing; a handful of 3-character
-     tokens are real stats and never flicker, which is the only thing
-     that gives them away. */
   #reincarnateGrid {
     font-family: "Courier New", Courier, monospace;
     font-size: 15px;
@@ -477,9 +451,6 @@
     width: 1ch;
   }
 
-
-  /* Reincarnation reveal: once the noise resolves, the grid becomes a
-     staged "welcome to your new universe" report. */
   #reincarnateGrid.rc-resolved {
     display: block;
     width: 100%;
@@ -493,7 +464,6 @@
   .rc-block { opacity: 0; animation: rcFadeUp 0.7s ease forwards; }
   @keyframes rcFadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
 
-  /* the cards (cards.js, cardsui.js): the second half of the reincarnation screen */
   .card-hand { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin: 14px 0 6px; }
   .card-hand.fade { animation: rcFadeUp 0.35s ease; }
   .card { width: 150px; min-height: 200px; box-sizing: border-box; border: 2px solid var(--ink); border-radius: 10px; padding: 12px 10px; display: flex; flex-direction: column; justify-content: space-between; align-items: center; text-align: center; cursor: pointer; user-select: none; transition: transform 0.12s; }
@@ -503,7 +473,6 @@
   .card.r1 { border-style: double; border-width: 5px; }
   .card.r2 { box-shadow: 0 0 0 3px var(--paper), 0 0 0 5px var(--ink); border-width: 3px; }
   .card { position: relative; overflow: hidden; }
-  /* legendary: a heavy triple outline, a pulsing glow, a slow sweep of light, and bigger type */
   .card.legendary { width: 168px; min-height: 224px; border-width: 4px; box-shadow: 0 0 0 3px var(--paper), 0 0 0 6px var(--ink), 0 0 0 9px var(--paper), 0 0 0 11px var(--ink), 0 0 26px 12px rgba(128, 128, 128, 0.55); animation: legendPulse 2.6s ease-in-out infinite; }
   .card.legendary .card-text { font-size: 17px; }
   .card.legendary .card-mark { font-size: 26px; letter-spacing: 6px; }
@@ -518,7 +487,6 @@
   .card-rarity { font-size: 10px; letter-spacing: 3px; text-transform: uppercase; opacity: 0.7; }
   .card-note { letter-spacing: 3px; font-size: 13px; margin: 14px 0; }
   .card-deck { margin: 18px auto 0; max-width: 460px; font-size: 13px; line-height: 1.5; }
-  /* the collection and loadout (cardsui.js) */
   .card.mini { width: 112px; min-height: 140px; padding: 8px 6px; border-radius: 8px; }
   .card.mini .card-text { font-size: 12px; }
   .card.mini .card-mark { font-size: 14px; }
@@ -538,10 +506,8 @@
   .card-slots { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin: 10px 0 8px; }
   .card-slot-empty { width: 112px; min-height: 140px; box-sizing: border-box; border: 2px dashed var(--ink); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 11px; letter-spacing: 3px; text-transform: uppercase; opacity: 0.45; }
   .card-warn { margin: 10px auto 0; max-width: 460px; font-size: 13px; line-height: 1.5; border: 1px solid var(--ink); padding: 6px 10px; }
-  /* the bar fixed to the bottom of the reincarnation screen, holding the begin button once the packs are open and the loadout is filled */
   .rc-bar { position: sticky; bottom: 0; z-index: 5; background: var(--paper); border-top: 1px solid var(--ink); padding: 12px 8px 14px; margin-top: 14px; }
 
-  /* leaderboard tabs, clickable names, and the profile screen */
   .lb-tab-active { font-weight: bold; text-decoration: underline; }
   .lb-name-link { cursor: pointer; text-decoration: underline; }
   .lb-name-link:hover { opacity: 0.7; }
@@ -557,7 +523,6 @@
   }
   .profile-result:hover { background: rgba(128, 128, 128, 0.15); }
 
-  /* the "more" dropdown under the top buttons: guide, achievements, players */
   #moreWrap { position: relative; flex: 1; display: flex; }
   #moreMenu {
     display: none;
@@ -575,7 +540,6 @@
   }
   #moreMenu button { white-space: nowrap; flex: none; }
 
-  /* news ticker: a headline strip across the very top of the screen (logged-in players only) */
   #newsTicker {
     position: fixed;
     top: 0;
@@ -587,10 +551,8 @@
     border-bottom: 1px solid var(--ink);
     font-size: 12px;
     line-height: 22px;
-    z-index: 45; /* above the leaderboard and menus, below the overlays */
+    z-index: 45;
   }
-  /* the version number: small grey text at the top middle; it scrolls away with the page, and when scrolled right
-     to the top it sits just under the headlines */
   #versionTag {
     position: absolute;
     top: 4px;
@@ -604,7 +566,6 @@
   }
   html.news-on #versionTag { top: 28px; }
 
-  /* when it is showing, nudge everything down so it covers nothing */
   html.news-on body { padding-top: 24px; }
   html.news-on #leaderboardSection { top: 44px !important; }
   #newsTrack {
@@ -615,7 +576,6 @@
   #newsTicker:hover #newsTrack { animation-play-state: paused; }
   @keyframes newsScroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 
-  /* global chat (a tab in the leaderboard panel) */
   #chatList {
     max-height: 260px;
     min-height: 120px;
@@ -631,7 +591,6 @@
   .chat-name { font-weight: bold; }
   .chat-admin-btn { font-size: 10px; padding: 0 4px; margin-left: 4px; }
 
-  /* green dot beside players who are online */
   .online-dot {
     display: inline-block;
     width: 8px;
@@ -642,7 +601,6 @@
     vertical-align: middle;
   }
 
-  /* gold dot beside players who hold a medallion */
   .medal-dot {
     display: inline-block;
     width: 8px;
@@ -653,7 +611,6 @@
     vertical-align: middle;
   }
 
-  /* factory floor: the module grid */
   :root { --floor-cell: 44px; }
   .floor-grid { display: grid; width: max-content; max-width: 100%; margin: 8px auto; }
   .floor-cell {
@@ -678,7 +635,6 @@
   .floor-cell.floor-ok { background: rgba(46, 204, 64, 0.45); }
   .floor-cell.floor-bad { background: rgba(231, 76, 60, 0.45); }
 
-  /* admin panel */
   .admin-btns { display: flex; flex-wrap: wrap; gap: 4px; margin: 3px 0 8px; }
   .admin-btns button { font-size: 12px; padding: 2px 8px; }
   .admin-input {
@@ -694,7 +650,6 @@
   .admin-status { min-height: 14px; }
   .admin-news-row { padding: 4px 0 0; font-size: 13px; }
 
-  /* ---- User's guide: a full-page manual ---- */
   #guideOverlay {
     position: fixed;
     inset: 0;
@@ -798,7 +753,7 @@
     try {
       var saved = localStorage.getItem("nailMakerTheme");
       if (saved === "dark") document.documentElement.setAttribute("data-theme", "dark");
-    } catch (e) { /* localStorage unavailable -- just default to light, harmless */ }
+    } catch (e) { }
   })();
 </script>
 </head>

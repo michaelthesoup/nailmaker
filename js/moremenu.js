@@ -1,13 +1,5 @@
 "use strict";
 
-// ----------------------------------------------------------------
-// The "more" menu. Keeps the top of the page to the business (save, load,
-// end run) and tucks everything else behind one button. The guide is always
-// in it; achievements only appear once the player has earned one (see
-// achievements.js), and
-// players only appear for logged-in accounts.
-// ----------------------------------------------------------------
-
 function moreMenuOpen() {
   return el.moreMenu.style.display === "flex";
 }
@@ -16,7 +8,6 @@ function setMoreMenuOpen(open) {
   el.moreMenu.style.display = open ? "flex" : "none";
 }
 
-// Shows each item only when it is useful.
 function updateMoreMenu() {
   if (el.btnPlayers) el.btnPlayers.style.display = (typeof currentAuthUser === "function" && currentAuthUser()) ? "" : "none";
   if (el.btnAdmin) el.btnAdmin.style.display = (typeof isCheatAllowed === "function" && isCheatAllowed()) ? "" : "none";
@@ -28,7 +19,6 @@ el.btnMore.addEventListener("click", function () {
   setMoreMenuOpen(!moreMenuOpen());
 });
 
-// Picking an item closes the menu (the item's own button opens its screen).
 el.moreMenu.addEventListener("click", function (e) {
   if (e.target.closest("button")) setMoreMenuOpen(false);
 });
@@ -46,7 +36,6 @@ if (typeof firebase !== "undefined" && firebase.auth) {
 }
 updateMoreMenu();
 
-// The version number, small and grey at the top middle of the page.
 (function () {
   var tag = document.getElementById("versionTag");
   if (tag && typeof GAME_VERSION !== "undefined") tag.textContent = "v" + GAME_VERSION;

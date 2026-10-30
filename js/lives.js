@@ -1,18 +1,5 @@
 "use strict";
 
-// ----------------------------------------------------------------
-// End-of-life screen and the past lives log.
-//
-//  - Every time a life ends (reincarnating OR ending the run) the
-//    player gets an end screen summarizing that life and, across all
-//    lives so far, the whole journey.
-//  - Reincarnating appends the life that just ended to
-//    state.pastLives, which carries into the next life (it's part of
-//    the normal save).
-//  - Ending the run wipes everything -- including this log -- because
-//    defaultState() starts it empty.
-// ----------------------------------------------------------------
-
 var PAST_LIVES_MAX = 200;
 
 function fmtDuration(totalSeconds) {
@@ -25,8 +12,6 @@ function fmtDuration(totalSeconds) {
   return sec + "s";
 }
 
-// Snapshot of the CURRENT state as a log entry. Call it before the
-// state gets reset.
 function buildLifeRecord(extra) {
   var log = state.pastLives || [];
   var rec = {
@@ -99,7 +84,6 @@ function taoText(n) {
   return (n > 0 ? "+" : "") + n;
 }
 
-// opts: { kind: "ended" | "reincarnated", life, allLives, karmaLost?, ritual?, nirvanaJustReached? }
 function showEndScreen(opts) {
   var life = opts.life;
   var body = el.endScreenBody;
@@ -183,8 +167,6 @@ el.btnEndScreenClose.addEventListener("click", function () {
   el.endScreenOverlay.style.display = "none";
 });
 
-// ---------------- past lives log ----------------
-
 function renderPastLives() {
   var log = state.pastLives || [];
   var body = el.pastLivesBody;
@@ -217,7 +199,7 @@ function renderPastLives() {
   }
   table.appendChild(head);
 
-  for (var i = log.length - 1; i >= 0; i--) { // newest first
+  for (var i = log.length - 1; i >= 0; i--) {
     var l = log[i];
     var tr = document.createElement("tr");
     var cells = [

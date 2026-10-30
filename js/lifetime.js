@@ -1,21 +1,5 @@
 "use strict";
 
-// ----------------------------------------------------------------
-// Lifetime stats. These live OUTSIDE the game state on purpose:
-// ending a run wipes the whole game state (karma, past lives log and
-// all), but a player's history shouldn't vanish with it.
-//
-// Terms:
-//  - a LIFE ends by reincarnating or by ending the run.
-//  - a RUN is a chain of lives that finishes when the player ends the
-//    run (reincarnating just continues the same run).
-//
-// Stored locally under LIFETIME_KEY, and -- when logged in -- synced to
-// a "profiles" document in Firestore (also the groundwork for public
-// player profiles). Finished lives are what get counted here; the
-// stats screen adds the life in progress on top (lifetimeWithCurrent).
-// ----------------------------------------------------------------
-
 var LIFETIME_KEY = "nailMakerLifetime";
 var LIFETIME_CLOUD_DEBOUNCE_MS = 4000;
 
@@ -41,13 +25,10 @@ function defaultLifetime() {
     mostBreakers: 0,
     mostFactories: 0,
     deepestMap: 0,
-    achievements: {} // id -> time unlocked (ms)
+    achievements: {}
   };
 }
 
-// Combine two records (e.g. this device's with the account's cloud copy).
-// Everything only ever grows, so taking the larger value of each field is
-// safe against double counting; achievements are unioned.
 function mergeLifetime(a, b) {
   var out = defaultLifetime();
   for (var key in out) {
@@ -73,7 +54,7 @@ function loadLifetime() {
   try {
     var raw = localStorage.getItem(LIFETIME_KEY);
     if (raw) return mergeLifetime(defaultLifetime(), JSON.parse(raw));
-  } catch (e) { /* unreadable -- start fresh */ }
+  } catch (e) {  }
   return defaultLifetime();
 }
 
@@ -82,11 +63,9 @@ var lifetime = loadLifetime();
 function saveLifetime() {
   try {
     localStorage.setItem(LIFETIME_KEY, JSON.stringify(lifetime));
-  } catch (e) { /* storage unavailable -- stats just won't persist */ }
+  } catch (e) {  }
   scheduleLifetimeCloudSave();
 }
-
-// ---------------- cloud sync ----------------
 
 var lifetimeCloudTimer = null;
 
@@ -107,11 +86,11 @@ function cloudSaveLifetime() {
     uid: user.uid,
     name: name,
     nameLower: name.toLowerCase(),
-    createdAt: isNaN(created) ? lifetime.firstPlayedAt : created, // when the ACCOUNT was made (shown as "joined")
+    createdAt: isNaN(created) ? lifetime.firstPlayedAt : created,
     stats: lifetime,
     achievementCount: Object.keys(lifetime.achievements).length,
     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-  }, { merge: true }).catch(function (err) { // merge: other code may write its own fields onto the profile, which this must not erase
+  }, { merge: true }).catch(function (err) {
     console.warn("Profile sync failed -- check the Firestore rules for the 'profiles' collection", err);
   });
 }
@@ -128,18 +107,13 @@ if (typeof firebase !== "undefined" && firebase.auth) {
       cloudSaveLifetime();
     }).catch(function (err) {
       console.warn("Couldn't load profile stats", err);
-      cloudSaveLifetime(); // still try to write it, so the profile exists
+      cloudSaveLifetime();
     });
   });
 }
 
-// ---------------- recording ----------------
-
 function maxOf(a, b) { return a > b ? a : b; }
 
-// Called once whenever a life ends. kind is "reincarnated" or "ended";
-// for "ended" the whole run is over too, so allLives (every life in the run,
-// including this one) is used to record run-level records.
 function recordLifeEnd(life, kind, allLives, karmaAtEnd) {
   lifetime.livesLived += 1;
   lifetime.totalNails += life.nails;
@@ -170,8 +144,6 @@ function recordLifeEnd(life, kind, allLives, karmaAtEnd) {
   if (typeof checkAchievements === "function") checkAchievements();
 }
 
-// The recorded totals plus the life (and run) in progress -- what the
-// stats screen and the achievements check actually look at.
 function lifetimeWithCurrent() {
   var c = JSON.parse(JSON.stringify(lifetime));
   var pastLives = state.pastLives || [];

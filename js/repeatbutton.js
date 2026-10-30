@@ -1,17 +1,10 @@
 "use strict";
 
-// ----------------------------------------------------------------
-// Hold-to-repeat buttons. Press once for a single step. Keep holding
-// and it starts repeating on its own, getting faster the longer you
-// hold it down, so you don't have to click fifty times to move a
-// number a long way.
-// ----------------------------------------------------------------
-
 function setupRepeatButton(btn, action) {
   var repeatTimeout = null;
-  var currentDelay = 90; // brief pause before the first repeat
-  var minDelay = 25; // fastest it will ever repeat
-  var speedUpFactor = 0.7; // get fast quickly while the button is held
+  var currentDelay = 90;
+  var minDelay = 25;
+  var speedUpFactor = 0.7;
   var held = false;
   var heldSince = 0;
   var ACCELERATION_START_MS = 10000;
@@ -33,11 +26,11 @@ function setupRepeatButton(btn, action) {
   }
 
   function start(e) {
-    if (e.button !== undefined && e.button !== 0) return; // left click / primary touch only
+    if (e.button !== undefined && e.button !== 0) return;
     if (btn.disabled) return;
     held = true;
     heldSince = Date.now();
-    action(1); // do the first step right away
+    action(1);
     currentDelay = 90;
     scheduleNext();
   }
@@ -53,8 +46,6 @@ function setupRepeatButton(btn, action) {
   btn.addEventListener("pointerleave", stop);
   btn.addEventListener("pointercancel", stop);
 
-  // Keyboard users (Enter/Space on a focused button) just get a single
-  // step per press, which is the normal expected behavior.
   btn.addEventListener("keydown", function (e) {
     if ((e.key === "Enter" || e.key === " ") && !held) {
       action(1);

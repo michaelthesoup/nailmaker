@@ -1,23 +1,16 @@
 "use strict";
 
-// ----------------------------------------------------------------
-// Render
-// ----------------------------------------------------------------
-
 function render() {
   el.title.textContent = "nails: " + fmtInt(state.totalNailsMade);
   el.funds.textContent = fmtMoney(state.funds);
   el.unsold.textContent = fmtInt(state.unsold);
   el.price.textContent = fmtMoney(state.price);
-  // The price can always be typed straight in (the + and - buttons still step it).
   el.price.style.display = "none";
   el.manualPriceWrap.style.display = "flex";
   if (document.activeElement !== el.manualPrice) el.manualPrice.value = state.price.toFixed(2);
   el.demand.textContent = Math.round(publicDemandPD()) + "%";
-  // Total permanent demand bonus (tao + nailbomb scar), as one number.
   var demandBonusPct = Math.round(permanentDemandBonus() * 100);
   el.demandYYNote.textContent = demandBonusPct > 0 ? "+" + demandBonusPct + "%" : "";
-  // Same idea for machine speed: the tao rate bonus applies to makers and breakers alike.
   var makerBonusPct = Math.round(makerRateBonus() * 100);
   var breakerBonusPct = Math.round(breakerRateBonus() * 100);
   el.nailMakerBonus.textContent = makerBonusPct > 0 ? "+" + makerBonusPct + "%" : "";
@@ -29,28 +22,18 @@ function render() {
   el.factories.textContent = state.factories;
   el.factoryBonus.textContent = "";
   el.breakers.textContent = state.breakers;
-  // What the makers could do with unlimited iron. This is the number shown under the nail makers, because it is
-  // the same one the swarm and yin & yang compare against what the breakers bring in (ironDemandRate):
-  // the two always agree, instantly, and the labels flip exactly where the numbers cross.
   var capacityNailsPerSec = state.nailMakers * nailMakerRateEffective();
   el.nailMakerNailsRate.textContent = fmtRateNum(capacityNailsPerSec);
   el.nailMakerIronRate.textContent = fmtRate(ironDemandRate());
-  // What they REALLY make: with iron on hand they run flat out, but once iron has run dry (under a second's
-  // worth left, and production measurably below capacity) they can only turn out what arrives, so the
-  // measured rate is used instead. This one feeds the business panel's income figures below.
   var ironLow = state.ironAmt < capacityNailsPerSec * IRON_PER_NAIL;
   var ironStarved = capacityNailsPerSec > 0 && ironLow && actualNailsPerSec < capacityNailsPerSec * 0.97;
   var theoreticalNailsPerSec = ironStarved ? Math.min(actualNailsPerSec, capacityNailsPerSec) : capacityNailsPerSec;
   var theoreticalSoldPerSec = avgNailsSoldPerSec();
-  // Demand alone can say "the market would take 62 nails/sec," but if
-  // production can't actually make that many, sustained revenue can't
-  // reach that either -- so revenue is capped at whichever is smaller.
   var sustainableSoldPerSec = Math.min(theoreticalSoldPerSec, theoreticalNailsPerSec);
   el.avgRev.textContent = fmtMoney(sustainableSoldPerSec * state.price * cardMult("saleMult"));
   el.avgNails.textContent = fmtDecimal(theoreticalNailsPerSec);
   el.mapIndexLabel.textContent = state.mapIndex;
 
-  // ---- machinery: factories ----
   var factorySpeedMult = typeof moduleSpeedMult === "function" ? moduleSpeedMult() : 1;
   var factoryCopperRate = state.factories * factorySpeedMult * (1 / FACTORY_PERIOD_SEC) * factoryCopperCostEffective();
   el.factoryMaterialUse.textContent = "consuming " + fmtWeight(factoryCopperRate) + " copper/s";
@@ -59,7 +42,6 @@ function render() {
   el.factoryBreakerRate.textContent = fmtRateNum(factoryOut.breakers);
 
   el.sliderFactoryBalance.value = state.factoryBalance;
-  // Share of factory output going to each machine type (white = makers, black = breakers).
   el.factoryMakerPct.textContent = Math.round(state.factoryBalance) + "%";
   el.factoryBreakerPct.textContent = Math.round(100 - state.factoryBalance) + "%";
   var gray = Math.round(255 * (state.factoryBalance / 100));
@@ -68,10 +50,9 @@ function render() {
   el.btnBuyFactory.textContent = "buy (" + fmtMoney(factoryBuildCostEffective()) + ")";
   el.btnBuyFactory.disabled = state.funds < factoryBuildCostEffective();
 
-  // ---- machinery: nail breakers ----
   var breakerRates = breakerTheoreticalRates();
   el.breakerNailsRate.textContent = fmtRateNum(breakerRates.ammoRate);
-  el.breakerIronRate.textContent = fmtRate(ironSupplyRate()); // the same number the swarm and yin & yang compare (see makersAhead)
+  el.breakerIronRate.textContent = fmtRate(ironSupplyRate());
   el.breakerCopperRate.textContent = fmtRate(breakerRates.copperRate);
 
   var breakerReady = buyButtonLabel(
@@ -105,14 +86,12 @@ function render() {
   el.btnMakeNail.disabled = state.ironAmt < IRON_PER_NAIL;
   el.btnPriceMinus.disabled = state.price <= PRICE_MIN;
 
-  // ---- yin & yang ----
   checkYinYangUnlock();
   checkSwarmUnlock();
   if (state.unlockedYinYang) {
-    var yyMax = yinYangMax(); // each tao held makes the next one dearer
+    var yyMax = yinYangMax();
     el.yin.textContent = fmtInt(state.yin) + " / " + fmtInt(yyMax);
     el.yang.textContent = fmtInt(state.yang) + " / " + fmtInt(yyMax);
-    // The side that is ahead right now (the one whose bar is ticking) is shown in bold.
     var anyIron = ironDemandRate() > 0 || ironSupplyRate() > 0;
     var yangAhead = anyIron && makersAhead();
     var yinAhead = anyIron && !makersAhead();
@@ -128,13 +107,11 @@ function render() {
 
     renderYinYangStatus(yinYangStatusLabel());
 
-    // Negative tao counts against your karma standing: every 3 tao below zero is -1 karma.
     var negativeKarma = state.tao < 0 ? Math.trunc(state.tao / KARMA_TAO_THRESHOLD) : 0;
     el.valKarma.textContent = fmtInt(state.karma + negativeKarma);
     el.btnPastLives.textContent = "past lives (" + (state.pastLives ? state.pastLives.length : 0) + ")";
     var karmaAvailable = Math.floor(state.tao / KARMA_TAO_THRESHOLD);
-    var karmaGain = reincarnationKarmaGainNow(); // karma stops at its cap
-    // No explanatory text: the button just says what you would gain once you can.
+    var karmaGain = reincarnationKarmaGainNow();
     if (state.tao < 0 || karmaAvailable < 1) {
       el.btnReincarnate.disabled = true;
       el.btnReincarnate.textContent = "reincarnate";
@@ -144,7 +121,6 @@ function render() {
     }
   }
 
-  // ---- progressive reveal: unlock once, never re-hide ----
   if (!state.unlockedMap && state.breakers > 0) state.unlockedMap = true;
   if (!state.unlockedMachinery && state.totalNailsMade >= MACHINERY_UNLOCK_NAILS) state.unlockedMachinery = true;
   el.mapSection.style.display = state.unlockedMap ? "" : "none";
