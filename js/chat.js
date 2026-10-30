@@ -96,6 +96,7 @@ function chatRender() {
 }
 
 function chatOpen() {
+  if (typeof featureOn === "function" && !featureOn("chat")) return;
   if (chatUnsub || typeof db === "undefined" || !currentAuthUser()) return;
   chatSeenMessageIds = Object.create(null);
   var initialSnapshot = true;
@@ -136,6 +137,7 @@ function chatClose() {
 function chatSend() {
   var user = currentAuthUser();
   if (!user) return;
+  if (typeof featureOn === "function" && !featureOn("chat")) { chatSetHint(featureOffText("chat"), 4000); return; }
   var text = el.chatInput.value.replace(/\s+/g, " ").trim();
   if (!text) return;
   if (text.length > CHAT_MAX_LEN) text = text.slice(0, CHAT_MAX_LEN);

@@ -258,6 +258,20 @@ function adminWipeEveryone(status) {
 function adminResetEveryone(kind, status) {
   if (!adminAllowed() || typeof RESET_KINDS === "undefined" || !RESET_KINDS[kind]) return;
   var label = RESET_KINDS[kind].label;
+  if (kind === "everything") {
+    if (!window.confirm("WIPE EVERYONE'S PROGRESS?\n\nEvery player goes back to a brand new game: cards, karma, tao, machines, funds, everything, the next time their game checks (within a few minutes if online, or when they next log in). That includes you.\n\nAccounts, leaderboard scores and the chat are not touched.\n\nThis can't be undone.")) return;
+    if (window.prompt("Type WIPE EVERYTHING to confirm.") !== "WIPE EVERYTHING") { status.textContent = "cancelled"; return; }
+    var meAll = currentAuthUser();
+    var entryAll = { everything: { at: Date.now(), by: meAll ? (meAll.displayName || "admin") : "admin" }, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
+    db.collection("config").doc("resets").set(entryAll, { merge: true }).then(function () {
+      status.textContent = "done. Everyone goes back to a brand new game as their game checks in (you too, in a moment).";
+      if (typeof checkResets === "function") checkResets();
+    }).catch(function (err) {
+      console.error(err);
+      status.textContent = "couldn't publish the wipe -- check the Firestore rules for 'config'";
+    });
+    return;
+  }
   if (!window.confirm("Reset EVERYONE's " + label + "?\n\nEvery player's " + label + " is set back to its starting value the next time their game checks: within a few minutes if they are online, or when they next log in. That includes you. Nothing else is touched.\n\nThis can't be undone.")) return;
   if (!window.confirm("Are you sure? This affects every account.")) return;
   var me = currentAuthUser();
@@ -346,6 +360,94 @@ function adminSyncScores(status) {
   }).catch(function (err) {
     console.error(err);
     status.textContent = "couldn't sync -- publish the updated Firestore rules (admin read on 'saves', admin write on 'scores' and 'weeks')";
+  });
+}
+
+var ADMIN_SUS_LIMIT = 25;
+
+function adminMedian(list) {
+  if (!list.length) return 0;
+  var a = list.slice().sort(function (x, y) { return x - y; });
+  var m = a.length >> 1;
+  return a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2;
+}
+
+function adminFindSuspicious(allTime, weekly, profiles) {
+  var uids = Object.keys(allTime);
+  var logs = [], rates = [], weekRates = [];
+  uids.forEach(function (uid) {
+    var sc = Number(allTime[uid].score);
+    if (isFinite(sc) && sc > 0) logs.push(Math.log10(sc));
+    var st = profiles[uid] && profiles[uid].stats;
+    if (st && st.totalTimeSec > 60 && sc > 0) rates.push(sc / st.totalTimeSec);
+    var w = weekly[uid];
+    if (w && w.timeSec > 60 && w.score > 0) weekRates.push(w.score / w.timeSec);
+  });
+  var medLog = adminMedian(logs);
+  var mad = adminMedian(logs.map(function (v) { return Math.abs(v - medLog); }));
+  var spread = Math.max(0.5, mad * 1.4826);
+  var medRate = adminMedian(rates);
+  var medWeekRate = adminMedian(weekRates);
+
+  var out = [];
+  uids.forEach(function (uid) {
+    var d = allTime[uid];
+    var sc = Number(d.score);
+    var why = [];
+    if (!isFinite(sc) || sc < 0 || Math.floor(sc) !== sc) why.push("score is not a whole number");
+    else {
+      if (sc > 0 && logs.length >= 5 && Math.log10(sc) > medLog + 3 * spread) why.push("far above the typical player");
+      var p = profiles[uid];
+      var st = p && p.stats;
+      if (!st) why.push("no lifetime stats to back it up");
+      else {
+        if (sc > (Number(st.bestLifeNails) || 0) * 1.05 + 1000) why.push("score is above their best life (" + fmtInt(Number(st.bestLifeNails) || 0) + ")");
+        if (st.totalTimeSec > 60 && medRate > 0 && sc / st.totalTimeSec > medRate * 25) why.push("nails per second is " + Math.round(sc / st.totalTimeSec / medRate) + "x the median");
+        var age = p.createdAt ? (Date.now() - p.createdAt) / 1000 : 0;
+        if (age > 0 && st.totalTimeSec > age * 1.2 + 3600) why.push("played longer than the account has existed");
+      }
+      var w = weekly[uid];
+      if (w && w.timeSec > 60 && medWeekRate > 0 && w.score / w.timeSec > medWeekRate * 25) why.push("weekly rate is " + Math.round(w.score / w.timeSec / medWeekRate) + "x the median");
+    }
+    if (why.length) out.push({ uid: uid, name: d.name || uid, score: sc, why: why });
+  });
+  out.sort(function (a, b) { return b.why.length - a.why.length || b.score - a.score; });
+  return out;
+}
+
+function adminShowSuspicious(status, box) {
+  if (!adminAllowed()) return;
+  status.textContent = "reading scores...";
+  box.innerHTML = "";
+  var weekId = weekIdFor(currentWeekIndex());
+  Promise.all([
+    db.collection("scores").get(),
+    db.collection("weeks").doc(weekId).collection("scores").get(),
+    db.collection("profiles").limit(1000).get(),
+    db.collection("banned").get()
+  ]).then(function (res) {
+    var allTime = {}, weekly = {}, profiles = {}, banned = {};
+    res[0].forEach(function (doc) { allTime[doc.id] = doc.data(); });
+    res[1].forEach(function (doc) { weekly[doc.id] = doc.data(); });
+    res[2].forEach(function (doc) { profiles[doc.id] = doc.data(); });
+    res[3].forEach(function (doc) { banned[doc.id] = true; });
+    var list = adminFindSuspicious(allTime, weekly, profiles).filter(function (r) { return !banned[r.uid]; });
+    status.textContent = list.length ? list.length + " flagged out of " + res[0].size + " scores" : "nothing looks off (" + res[0].size + " scores checked)";
+    list.slice(0, ADMIN_SUS_LIMIT).forEach(function (r) {
+      var row = adminMake("div", "row");
+      row.appendChild(adminMake("span", "label", r.name));
+      row.appendChild(adminMake("span", "value", fmtInt(r.score)));
+      box.appendChild(row);
+      sheetAddText(box, r.why.join(" \u00b7 "));
+      adminButtons(box, [
+        ["profile", function () { if (typeof openProfile === "function") openProfile(r.uid, { uid: r.uid, name: r.name }); }],
+        ["select", function () { adminSelectTarget(r.uid, r.name); status.textContent = r.name + " selected"; }],
+        ["kick", function () { adminKickPlayer(r.uid, r.name, status, function () { adminShowSuspicious(status, box); }); }]
+      ]);
+    });
+  }).catch(function (err) {
+    console.error(err);
+    status.textContent = "couldn't check -- the admin needs read access to 'scores', 'profiles' and 'banned'";
   });
 }
 
@@ -464,8 +566,11 @@ function buildPlayersPanel(p) {
     ["restore", function () {
       if (!adminTarget) { status.textContent = "select a player first"; return; }
       adminRestorePlayer(adminTarget.uid, adminTarget.name, status);
-    }]
+    }],
+    ["find suspicious scores", function () { adminShowSuspicious(status, susBox); }]
   ]);
+  var susBox = adminMake("div");
+  p.appendChild(susBox);
 
   sheetAddHeading(p, "everyone");
   var wipeStatus = adminStatus(p);
@@ -476,10 +581,27 @@ function buildPlayersPanel(p) {
   if (typeof RESET_KINDS !== "undefined") {
     var resetDefs = [];
     Object.keys(RESET_KINDS).forEach(function (kind) {
+      if (kind === "everything") return;
       resetDefs.push(["reset " + RESET_KINDS[kind].label, function () { adminResetEveryone(kind, resetStatus); }]);
     });
     adminButtons(p, resetDefs);
   }
+
+  sheetAddHeading(p, "wipe everything");
+  var wipeAllStatus = adminStatus(p);
+  adminButtons(p, [["wipe EVERYONE's progress (brand new game)", function () { adminResetEveryone("everything", wipeAllStatus); }]]);
+
+  sheetAddHeading(p, "switch off for a while");
+  var featureStatus = adminStatus(p);
+  function featureButtons(names) {
+    return [["15 min", 15], ["1 hour", 60], ["6 hours", 360], ["24 hours", 1440], ["back on", 0]].map(function (o) {
+      return [o[0], function () { featureSwitchOff(names, o[1], featureStatus); }];
+    });
+  }
+  function featureLine(name) { return function () { return typeof featureOn === "function" && !featureOn(name) ? "off, " + featureMinutesLeft(name) + " min left" : "on"; }; }
+  adminRow(p, "leaderboards", featureLine("leaderboards"), featureButtons(["leaderboards"]));
+  adminRow(p, "chat", featureLine("chat"), featureButtons(["chat"]));
+  adminRow(p, "both", function () { return ""; }, featureButtons(["leaderboards", "chat"]));
 
   adminPanels.players.targetLine = targetLine;
   adminPanels.players.search = search;

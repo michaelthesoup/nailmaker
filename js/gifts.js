@@ -115,7 +115,8 @@ var RESET_KINDS = {
   marketing:  { label: "marketing levels",      apply: function () { state.marketingLevel = 0; } },
   tao:        { label: "tao",                   apply: function () { state.tao = 0; } },
   karma:      { label: "karma",                 apply: function () { state.karma = 0; } },
-  cards:      { label: "cards (deck and collection)", apply: function () { state.deck = []; state.collection = []; } }
+  cards:      { label: "cards (deck and collection)", apply: function () { state.deck = []; state.collection = []; } },
+  everything: { label: "progress (a brand new game)", apply: function () { var wiped = state.wipeApplied; state = defaultState(); if (wiped) state.wipeApplied = wiped; } }
 };
 
 var resetChecking = false;

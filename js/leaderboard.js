@@ -93,6 +93,7 @@ if (el.btnLbAll) el.btnLbAll.addEventListener("click", function () { setLeaderbo
 
 setInterval(function () {
   if (leaderboardTab !== "week") return;
+  if (typeof featureOn === "function" && !featureOn("leaderboards")) return;
   if (leaderboardWeekShown !== null && leaderboardWeekShown !== currentWeekIndex()) {
     renderLeaderboard();
   } else if (el.leaderboardNote) {
@@ -194,6 +195,10 @@ function currentAuthUser() {
 
 function renderLeaderboard() {
   var signedIn = !!currentAuthUser();
+  var lbOn = typeof featureOn !== "function" || featureOn("leaderboards");
+  var chatOnNow = typeof featureOn !== "function" || featureOn("chat");
+  if (!chatOnNow && leaderboardTab === "chat") leaderboardTab = "week";
+  if (el.btnLbChat) el.btnLbChat.style.display = chatOnNow ? "" : "none";
   if (el.leaderboardTabs) el.leaderboardTabs.style.display = signedIn ? "" : "none";
   var chatTab = signedIn && leaderboardTab === "chat";
   if (el.leaderboardNote) el.leaderboardNote.style.display = signedIn && !chatTab ? "" : "none";
@@ -207,12 +212,19 @@ function renderLeaderboard() {
     return;
   }
 
-  if (typeof chatOpen === "function") chatOpen();
+  if (chatOnNow) { if (typeof chatOpen === "function") chatOpen(); } else if (typeof chatClose === "function") chatClose();
   if (typeof presenceRefresh === "function") presenceRefresh(false);
   updateLeaderboardTabs();
   if (chatTab) {
     leaderboardWeekShown = null;
     leaderboardRenderToken++;
+    return;
+  }
+  if (!lbOn) {
+    leaderboardWeekShown = null;
+    leaderboardRenderToken++;
+    if (el.leaderboardNote) el.leaderboardNote.textContent = featureOffText("leaderboards");
+    if (el.leaderboardList) el.leaderboardList.style.display = "none";
     return;
   }
   if (leaderboardTab === "week") {
@@ -271,6 +283,7 @@ function submitScore(name, score, extra) {
   var user = currentAuthUser();
   if (!user) return;
   addLocalLeaderboardEntry(name, score);
+  if (typeof featureOn === "function" && !featureOn("leaderboards")) return;
 
   var karma = Math.max(0, Math.floor(extra.karma || 0));
   var allTimeRef = db.collection("scores").doc(user.uid);
