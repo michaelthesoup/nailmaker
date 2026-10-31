@@ -262,6 +262,7 @@ function defaultState() {
 
     totalEarned: 0,
     slotPity: 0,
+    seasonApplied: null,
     unlockedSlots: false,
     unlockedResonance: false,
     resonanceProgress: 0,

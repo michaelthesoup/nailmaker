@@ -232,7 +232,7 @@ if (el.btnLbChat) el.btnLbChat.addEventListener("click", function () { setLeader
   });
   var hideBtn = document.getElementById("btnToggleLeaderboard");
   if (hideBtn) hideBtn.addEventListener("click", function () { window.chatSetExpanded(false); });
-  ["btnLbWeek", "btnLbAll"].forEach(function (id) {
+  ["btnLbWeek"].forEach(function (id) {
     var b = document.getElementById(id);
     if (b) b.addEventListener("click", function () { window.chatSetExpanded(false); });
   });

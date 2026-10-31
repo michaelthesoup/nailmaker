@@ -3,7 +3,7 @@
 var MEDALLION_NAMES = { 1: "gold", 2: "silver", 3: "bronze" };
 
 function medallionWeekLabel(weekIndex) {
-  return "week of " + new Date(weekStartMs(weekIndex)).toLocaleDateString(undefined, { month: "short", day: "numeric", timeZone: "UTC" });
+  return "round of " + new Date(weekStartMs(weekIndex)).toLocaleDateString(undefined, { month: "short", day: "numeric", timeZone: "UTC" });
 }
 
 function fetchMedallions(uid) {

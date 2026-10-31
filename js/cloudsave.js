@@ -63,6 +63,7 @@ firebase.auth().onAuthStateChanged(function (user) {
       if (data) {
         state = Object.assign(defaultState(), data);
         migrateLoadedState();
+        seasonCheck();
         suppressNextCloudAutosave = true;
         render();
         flashButton(el.btnAuthToggle, "cloud save loaded!");

@@ -124,6 +124,7 @@ el.btnLoad.addEventListener("click", function () {
     var data = JSON.parse(raw);
     state = Object.assign(defaultState(), data);
     migrateLoadedState();
+    seasonCheck();
     render();
     flashButton(el.btnLoad, "loaded!");
   } catch (e) {

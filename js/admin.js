@@ -236,31 +236,25 @@ function adminKickPlayer(uid, name, statusNode, done) {
   });
 }
 
-function adminBanPlayer(uid, name, done) {
+function adminClearChat(status) {
   if (!adminAllowed()) return;
-  var me = currentAuthUser();
-  if (me && me.uid === uid) return;
-  if (!window.confirm("BAN " + name + "?\n\nThis destroys their account: their save, profile and leaderboard entries are deleted, and if they try to log in it will say the account doesn't exist.\n\nThis can't be undone.")) return;
-  var chatQuery = db.collection("chat").where("uid", "==", uid).limit(200).get().catch(function () { return null; });
-  chatQuery.then(function (chatSnap) {
-    var batch = db.batch();
-    batch.delete(db.collection("scores").doc(uid));
-    for (var i = 0; i <= ADMIN_KICK_WEEKS_BACK; i++) {
-      batch.delete(db.collection("weeks").doc(weekIdFor(currentWeekIndex() - i)).collection("scores").doc(uid));
-    }
-    batch.delete(db.collection("saves").doc(uid));
-    batch.delete(db.collection("profiles").doc(uid));
-    batch.delete(db.collection("presence").doc(uid));
-    if (chatSnap) chatSnap.forEach(function (doc) { batch.delete(doc.ref); });
-    batch.set(db.collection("banned").doc(uid), { name: name, destroyed: true, by: me ? me.displayName : "admin", at: firebase.firestore.FieldValue.serverTimestamp() });
-    return batch.commit();
-  }).then(function () {
-    if (typeof everyoneCache !== "undefined") everyoneCache.at = 0;
-    if (done) done();
-    if (typeof renderLeaderboard === "function") renderLeaderboard();
+  if (!window.confirm("Delete EVERY chat message for everyone?\n\nThis can't be undone.")) return;
+  status.textContent = "clearing chat...";
+  var removed = 0;
+  function pass() {
+    return db.collection("chat").limit(400).get().then(function (snap) {
+      if (snap.empty) return;
+      var batch = db.batch();
+      snap.forEach(function (doc) { batch.delete(doc.ref); });
+      removed += snap.size;
+      return batch.commit().then(pass);
+    });
+  }
+  pass().then(function () {
+    status.textContent = "chat cleared (" + removed + " messages removed)";
   }).catch(function (err) {
     console.error(err);
-    window.alert("couldn't ban " + name + " -- check the Firestore rules");
+    status.textContent = "couldn't clear chat -- check the Firestore rules for 'chat' (" + removed + " removed first)";
   });
 }
 
@@ -449,7 +443,7 @@ function adminShowSuspicious(status, box) {
   box.innerHTML = "";
   var weekId = weekIdFor(currentWeekIndex());
   Promise.all([
-    db.collection("scores").get(),
+    db.collection("weeks").doc(weekId).collection("scores").get(),
     db.collection("weeks").doc(weekId).collection("scores").get(),
     db.collection("profiles").limit(1000).get(),
     db.collection("banned").get()
@@ -595,7 +589,8 @@ function buildPlayersPanel(p) {
       if (!adminTarget) { status.textContent = "select a player first"; return; }
       adminRestorePlayer(adminTarget.uid, adminTarget.name, status);
     }],
-    ["find suspicious scores", function () { adminShowSuspicious(status, susBox); }]
+    ["find suspicious scores", function () { adminShowSuspicious(status, susBox); }],
+    ["clear all chat", function () { adminClearChat(status); }]
   ]);
   var susBox = adminMake("div");
   p.appendChild(susBox);

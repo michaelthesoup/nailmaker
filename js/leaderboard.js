@@ -29,12 +29,8 @@ function fetchEveryone() {
 
 function withEveryone(list) {
   return fetchEveryone().then(function (all) {
-    var seen = {};
-    list.forEach(function (e) { if (e.uid) seen[e.uid] = true; });
     var merged = list.filter(function (e) { return !(e.uid && all.banned[e.uid]); });
-    all.players.forEach(function (p) {
-      if (!seen[p.uid] && !all.banned[p.uid]) merged.push({ name: p.name, score: 0, uid: p.uid, karma: 0 });
-    });
+    merged = merged.filter(function (e) { return e.score > 0; });
     merged.sort(function (a, b) {
       return (b.score - a.score) || String(a.name).toLowerCase().localeCompare(String(b.name).toLowerCase());
     });
@@ -42,7 +38,7 @@ function withEveryone(list) {
   }).catch(function () { return list; });
 }
 
-var WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+var WEEK_MS = 14 * 24 * 60 * 60 * 1000;
 var WEEK_EPOCH_OFFSET_MS = 4 * 24 * 60 * 60 * 1000;
 
 function weekIndexAt(ms) { return Math.floor((ms - WEEK_EPOCH_OFFSET_MS) / WEEK_MS); }
@@ -66,9 +62,9 @@ var leaderboardRenderToken = 0;
 var leaderboardWeekShown = null;
 
 function weeklyNoteText() {
-  var start = new Date(weekStartMs(currentWeekIndex()));
-  var text = "this week (from " + start.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" }) +
-    ") \u00b7 resets in " + fmtWeekCountdown(msUntilWeekEnds());
+  var at = new Date(weekStartMs(currentWeekIndex() + 1));
+  var when = at.toLocaleString(undefined, { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+  var text = "scores and game reset in " + fmtWeekCountdown(msUntilWeekEnds()) + " (" + when + ")";
   if (!currentAuthUser()) text += " \u00b7 log in to compete";
   return text;
 }
@@ -81,7 +77,6 @@ function setLeaderboardTab(tab) {
 
 function updateLeaderboardTabs() {
   if (el.btnLbWeek) el.btnLbWeek.classList.toggle("lb-tab-active", leaderboardTab === "week");
-  if (el.btnLbAll) el.btnLbAll.classList.toggle("lb-tab-active", leaderboardTab === "all");
   if (el.btnLbChat) el.btnLbChat.classList.toggle("lb-tab-active", leaderboardTab === "chat");
 }
 
@@ -89,7 +84,6 @@ if (el.btnLeaderboardSignup) el.btnLeaderboardSignup.addEventListener("click", f
   if (typeof showAuthOverlay === "function") showAuthOverlay("signup");
 });
 if (el.btnLbWeek) el.btnLbWeek.addEventListener("click", function () { setLeaderboardTab("week"); });
-if (el.btnLbAll) el.btnLbAll.addEventListener("click", function () { setLeaderboardTab("all"); });
 
 setInterval(function () {
   if (leaderboardTab !== "week") return;
@@ -177,15 +171,6 @@ function renderLeaderboardRows(list) {
     scoreSpan.textContent = fmtInt(list[i].score) + " nails";
     row.appendChild(nameSpan);
     row.appendChild(scoreSpan);
-    if (list[i].uid && typeof isCheatAllowed === "function" && isCheatAllowed() && typeof adminBanPlayer === "function" && list[i].uid !== currentAuthUser().uid) {
-      var banBtn = document.createElement("button");
-      banBtn.textContent = "ban";
-      banBtn.className = "lb-ban";
-      (function (entry) {
-        banBtn.addEventListener("click", function () { adminBanPlayer(entry.uid, entry.name, renderLeaderboard); });
-      })(list[i]);
-      row.appendChild(banBtn);
-    }
     el.leaderboardList.appendChild(row);
   }
 }
@@ -236,30 +221,7 @@ function renderLeaderboard() {
     if (el.leaderboardList) el.leaderboardList.style.display = "none";
     return;
   }
-  if (leaderboardTab === "week") {
-    renderWeeklyBoard();
-    return;
-  }
-  leaderboardWeekShown = null;
-  el.leaderboardNote.textContent = "global -- top players";
-  var allToken = ++leaderboardRenderToken;
-  db.collection("scores").orderBy("score", "desc").limit(LEADERBOARD_ONLINE_MAX).get()
-    .then(function (snapshot) {
-      var list = [];
-      snapshot.forEach(function (doc) {
-        list.push(doc.data());
-      });
-      return withEveryone(list);
-    })
-    .then(function (merged) {
-      if (allToken !== leaderboardRenderToken || leaderboardTab !== "all") return;
-      renderLeaderboardRows(merged);
-    })
-    .catch(function (err) {
-      console.error("Failed to load global leaderboard", err);
-      el.leaderboardNote.textContent = "couldn't reach the global leaderboard -- showing local instead";
-      renderLeaderboardRows(loadLocalLeaderboard());
-    });
+  renderWeeklyBoard();
 }
 
 function renderWeeklyBoard() {
@@ -295,7 +257,6 @@ function submitScore(name, score, extra) {
   if (typeof featureOn === "function" && !featureOn("leaderboards")) return;
 
   var karma = Math.max(0, Math.floor(extra.karma || 0));
-  var allTimeRef = db.collection("scores").doc(user.uid);
   var weekRef = db.collection("weeks").doc(weekIdFor(currentWeekIndex())).collection("scores").doc(user.uid);
 
   function upsertIfBetter(ref, data) {
@@ -305,15 +266,9 @@ function submitScore(name, score, extra) {
     });
   }
 
-  var base = { name: name, score: score, uid: user.uid, karma: karma, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
   var weekData = { name: name, score: score, uid: user.uid, karma: karma, timeSec: Math.floor(extra.timeSec || 0), weekId: weekIdFor(currentWeekIndex()), updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
 
-  Promise.all([
-    upsertIfBetter(allTimeRef, base),
-    upsertIfBetter(weekRef, weekData).catch(function (err) {
-      console.warn("Weekly score not saved -- check the Firestore rules for 'weeks'", err);
-    })
-  ])
+  upsertIfBetter(weekRef, weekData)
     .then(function () { renderLeaderboard(); })
     .catch(function (err) {
       console.error("Failed to submit global score", err);

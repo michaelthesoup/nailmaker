@@ -134,14 +134,3 @@ firebase.auth().onAuthStateChanged(function (user) {
   el.btnAuthToggle.textContent = user ? "log out (" + (user.displayName || "player") + ")" : "log in / sign up";
   if (typeof renderLeaderboard === "function") renderLeaderboard();
 });
-
-firebase.auth().onAuthStateChanged(function (user) {
-  if (!user || typeof db === "undefined") return;
-  db.collection("banned").doc(user.uid).get().then(function (doc) {
-    if (!doc.exists || !doc.data().destroyed) return;
-    return firebase.auth().signOut().then(function () {
-      showAuthOverlay("login");
-      el.authError.textContent = "no account with that username";
-    });
-  }).catch(function () { });
-});

@@ -61,7 +61,6 @@ var el = {
   leaderboardSignup: document.getElementById("leaderboardSignup"),
   btnLeaderboardSignup: document.getElementById("btnLeaderboardSignup"),
   btnLbWeek: document.getElementById("btnLbWeek"),
-  btnLbAll: document.getElementById("btnLbAll"),
   btnLbChat: document.getElementById("btnLbChat"),
   chatView: document.getElementById("chatView"),
   chatList: document.getElementById("chatList"),
