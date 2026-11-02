@@ -10,7 +10,7 @@ var PRICE_DEMAND_SENSITIVITY = 1;
 
 function publicDemandPD() {
   if (state.price <= 0) return 0;
-  return marketingMultiplier() * Math.pow(0.8 / state.price, PRICE_DEMAND_SENSITIVITY) * yinYangPDMultiplier() * cityFeverMult() * cardMult("demandMult");
+  return marketingMultiplier() * Math.pow(0.8 / state.price, PRICE_DEMAND_SENSITIVITY) * yinYangPDMultiplier() * cityFeverMult() * cardMult("demandMult") * viralBuzzMult();
 }
 
 function avgNailsSoldPerSec() {
@@ -35,7 +35,7 @@ function optimalPriceForCurrentProduction() {
   var targetDemand = targetSales <= salesAtDemand100
     ? Math.pow(targetSales / 0.07, 1 / (1 + DEMAND_CURVE_EXPONENT))
     : Math.pow(targetSales / 7, 1 / DEMAND_CURVE_EXPONENT);
-  var demandMultiplier = marketingMultiplier() * yinYangPDMultiplier() * cityFeverMult() * cardMult("demandMult");
+  var demandMultiplier = marketingMultiplier() * yinYangPDMultiplier() * cityFeverMult() * cardMult("demandMult") * viralBuzzMult();
   var price = 0.8 * Math.pow(demandMultiplier / targetDemand, 1 / PRICE_DEMAND_SENSITIVITY);
   if (!isFinite(price) || price >= Number.MAX_VALUE / 100) return Number.MAX_VALUE;
 

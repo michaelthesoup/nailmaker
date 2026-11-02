@@ -9,7 +9,7 @@ var newsShownKey = null;
 var newsVisible = null;
 
 function newsShouldShow() {
-  return !!currentAuthUser() && !!state.unlockedCity && newsHeadlines.length > 0;
+  return !!currentAuthUser() && (!!state.unlockedCity || (!!state.unlockedViral && !state.viralLocked)) && newsHeadlines.length > 0;
 }
 
 function newsRender() {

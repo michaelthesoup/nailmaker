@@ -27,6 +27,8 @@ var CARD_EFFECTS = {
   breakerSpeed:  { side: "black", kind: "mult", dir: "high", pct: [[10, 20], [25, 40], [50, 80], [100, 150]] },
   slotJackpot:   { side: "black", kind: "mult", dir: "high", pct: [[10, 20], [25, 40], [50, 80], [100, 150]] },
   slotSpeed:     { side: "black", kind: "mult", dir: "high", pct: [[10, 20], [25, 40], [50, 70], [80, 120]] },
+  viralBonus:    { side: "black", kind: "mult", dir: "high", pct: [[10, 20], [25, 40], [50, 80], [100, 150]] },
+  viralJackpot:  { side: "black", kind: "add", sign: 1, step: 1, amount: [[1, 1], [2, 2], [3, 4], [5, 8]], int: true, minRarity: 1, noCompanion: true },
   deposits:      { side: "black", kind: "add", sign: 1, step: 1, amount: [[2, 3], [3, 4], [5, 6], [8, 10]], int: true },
   yinYangSpeed:  { side: "white", kind: "mult", dir: "high", pct: [[10, 20], [25, 40], [50, 80], [100, 150]] },
   taoRate:       { side: "white", kind: "mult", dir: "high", pct: [[10, 15], [20, 30], [35, 50], [60, 80]] },
@@ -37,6 +39,9 @@ var CARD_EFFECTS = {
   tunersW:       { side: "white", kind: "add", sign: 1, step: 1, amount: [[1, 1], [1, 1], [2, 2], [3, 3]], int: true },
   windowW:       { side: "white", kind: "mult", dir: "high", pct: [[10, 20], [25, 35], [40, 60], [70, 100]] },
   driftW:        { side: "white", kind: "mult", dir: "low",  pct: [[10, 20], [25, 35], [40, 55], [60, 75]] },
+  viralSeeds:    { side: "white", kind: "add", sign: 1, step: 1, amount: [[1, 1], [1, 1], [1, 2], [2, 3]], int: true, noCompanion: true },
+  viralSpread:   { side: "white", kind: "mult", dir: "high", pct: [[10, 20], [25, 35], [40, 60], [70, 100]] },
+  viralTime:     { side: "white", kind: "mult", dir: "high", pct: [[15, 25], [30, 50], [60, 90], [100, 160]] },
   resonancePer:  { side: "white", kind: "add", sign: 1, step: 1, amount: [[1, 1], [1, 1], [1, 1], [2, 2]], int: true, minRarity: 2, noCompanion: true },
   taoPerCycle:   { side: "white", kind: "add", sign: 1, step: 1, amount: [[1, 1], [1, 1], [1, 1], [2, 2]], int: true, minRarity: 2, noCompanion: true }
 };
@@ -65,6 +70,11 @@ var CARD_EFFECT_TEXT = {
   taoGrowth:     { up: "the tao requirement grows {p}% faster", down: "the tao requirement grows {p}% slower" },
   slotJackpot:   { up: "the slot machine's 777 jackpot pays {p}% more", down: "the slot machine's 777 jackpot pays {p}% less" },
   slotSpeed:     { up: "the slot machine spins {p}% faster", down: "the slot machine spins {p}% slower" },
+  viralBonus:    { up: "the buzz demand bonus {p}% bigger", down: "the buzz demand bonus {p}% smaller" },
+  viralJackpot:  { add: function (n) { return "each risky person the buzz reaches pays you " + n + " minute" + (n === 1 ? "" : "s") + " of sales"; } },
+  viralSeeds:    { add: function (n) { return "+" + n + " free sample" + (n === 1 ? "" : "s") + " to hand out in the buzz"; } },
+  viralSpread:   { up: "the buzz rumour spreads {p}% easier", down: "the buzz rumour spreads {p}% harder" },
+  viralTime:     { up: "the buzz lasts {p}% longer", down: "the buzz lasts {p}% shorter" },
   deposits:      { add: function (n) { return "+" + n + " deposits on every map"; } },
   taoPerCycle:   { add: function (n) { return "+" + n + " extra tao every yin & yang cycle"; } }
 };

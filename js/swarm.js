@@ -26,6 +26,12 @@ var swarmMouseX = null;
 var swarmMouseY = null;
 var swarmLastFrameMs = null;
 
+var SWARM_CORE_RADIUS = 9;
+var SWARM_CORE_REPEL_RADIUS = 70;
+var SWARM_CORE_REPEL_FORCE = 0.6;
+var SWARM_CORE_SPEED = 0.18;
+var swarmCore = null;
+
 var swarmCollapseSustain = 0;
 var swarmGreying = false;
 
@@ -166,12 +172,60 @@ function swarmCollapse() {
     state.breakers = Math.max(0, state.breakers - destroyed);
   }
 
-  state.isotopeStock += SWARM_COLLAPSE_FUEL_GAIN;
   state.swarmCollapses = (state.swarmCollapses || 0) + 1;
-  state.unlockedCity = true;
 
-  swarmFlashHint("unstable core formed -- destroyed " + fmtInt(destroyed) + " " + majority + "s", 2000);
+  if (state.unlockedCity) {
+    state.isotopeStock += SWARM_COLLAPSE_FUEL_GAIN;
+    swarmFlashHint("unstable core formed -- destroyed " + fmtInt(destroyed) + " " + majority + "s", 2000);
+  } else if (state.unlockedViral) {
+    swarmFlashHint("the foundry rebalanced -- destroyed " + fmtInt(destroyed) + " " + majority + "s", 2000);
+  } else {
+    state.coreBall = true;
+    swarmFlashHint("an unstable core formed -- destroyed " + fmtInt(destroyed) + " " + majority + "s", 2000);
+  }
   render();
+}
+
+function swarmSyncCore() {
+  if (!state.coreBall) { swarmCore = null; return; }
+  if (!swarmCore) {
+    var v = swarmRandomVelocity(SWARM_CORE_SPEED);
+    swarmCore = {
+      x: SWARM_CORE_RADIUS + Math.random() * (swarmWidth - SWARM_CORE_RADIUS * 2),
+      y: SWARM_CORE_RADIUS + Math.random() * (swarmHeight - SWARM_CORE_RADIUS * 2),
+      vx: v.vx,
+      vy: v.vy
+    };
+  }
+}
+
+function swarmMoveCore() {
+  var c = swarmCore;
+  c.x += c.vx;
+  c.y += c.vy;
+  if (c.x < SWARM_CORE_RADIUS) { c.x = SWARM_CORE_RADIUS; c.vx = Math.abs(c.vx); }
+  if (c.x > swarmWidth - SWARM_CORE_RADIUS) { c.x = swarmWidth - SWARM_CORE_RADIUS; c.vx = -Math.abs(c.vx); }
+  if (c.y < SWARM_CORE_RADIUS) { c.y = SWARM_CORE_RADIUS; c.vy = Math.abs(c.vy); }
+  if (c.y > swarmHeight - SWARM_CORE_RADIUS) { c.y = swarmHeight - SWARM_CORE_RADIUS; c.vy = -Math.abs(c.vy); }
+}
+
+function swarmDrawCore(nowMs) {
+  var pulse = 0.5 + 0.5 * Math.abs(Math.sin(nowMs / 400));
+  swarmCtx.lineWidth = 1;
+  swarmCtx.strokeStyle = "#000";
+  swarmCtx.globalAlpha = 0.25 + 0.25 * pulse;
+  swarmCtx.beginPath();
+  swarmCtx.arc(swarmCore.x, swarmCore.y, SWARM_CORE_RADIUS + 5 + 4 * pulse, 0, Math.PI * 2);
+  swarmCtx.stroke();
+  swarmCtx.globalAlpha = 1;
+  swarmCtx.beginPath();
+  swarmCtx.arc(swarmCore.x, swarmCore.y, SWARM_CORE_RADIUS, 0, Math.PI * 2);
+  swarmCtx.fillStyle = "#000";
+  swarmCtx.fill();
+  swarmCtx.beginPath();
+  swarmCtx.arc(swarmCore.x, swarmCore.y, SWARM_CORE_RADIUS - 4, 0, Math.PI * 2);
+  swarmCtx.fillStyle = "#fff";
+  swarmCtx.fill();
 }
 
 function swarmStep(nowMs) {
@@ -186,6 +240,7 @@ function swarmStep(nowMs) {
   swarmLastFrameMs = nowMs;
 
   swarmSyncDots();
+  swarmSyncCore();
   swarmUpdateCollapse(dt);
 
   var fleeMult = swarmFleeMultiplier();
@@ -193,7 +248,7 @@ function swarmStep(nowMs) {
   var now = Date.now();
 
   var statusInfo = swarmStatusInfo();
-  if (el.swarmStatus) el.swarmStatus.textContent = statusInfo.label + (swarmGreying ? " \u2014 unstable!" : "");
+  if (el.swarmStatus) el.swarmStatus.textContent = statusInfo.label + (swarmGreying ? " \u2014 unstable!" : "") + (swarmCore ? " \u2014 core!" : "");
   if (el.swarmDotCounts) {
     var whiteDots = swarmCountMakerDots();
     el.swarmDotCounts.textContent = swarmDots.length + " balls: " + whiteDots + " white (makers) \u00b7 " + (swarmDots.length - whiteDots) + " black (breakers)";
@@ -235,6 +290,17 @@ function swarmStep(nowMs) {
       }
     }
 
+    if (swarmCore) {
+      var cx = d.x - swarmCore.x;
+      var cy = d.y - swarmCore.y;
+      var cdist = Math.sqrt(cx * cx + cy * cy);
+      if (cdist > 0 && cdist < SWARM_CORE_REPEL_RADIUS) {
+        var repel = (1 - cdist / SWARM_CORE_REPEL_RADIUS) * SWARM_CORE_REPEL_FORCE;
+        d.vx += (cx / cdist) * repel;
+        d.vy += (cy / cdist) * repel;
+      }
+    }
+
     var dotSpeedMult = (d.speedy ? SWARM_MAJORITY_SPEED_MULT : 1) * imbalanceSpeedMult;
     d.x += d.vx * dotSpeedMult;
     d.y += d.vy * dotSpeedMult;
@@ -260,6 +326,11 @@ function swarmStep(nowMs) {
     swarmCtx.globalAlpha = 1;
     swarmCtx.lineWidth = d.speedy ? 1.6 : 1;
     swarmCtx.stroke();
+  }
+
+  if (swarmCore) {
+    swarmMoveCore();
+    swarmDrawCore(nowMs);
   }
 
   requestAnimationFrame(swarmStep);
@@ -350,6 +421,21 @@ function swarmPlanToBreakers(upperRatio) {
 function swarmHandleClick(mx, my) {
   var now = Date.now();
   if (now - swarmLastClickAt < SWARM_CLICK_COOLDOWN_MS) return;
+
+  if (swarmCore) {
+    var kx = swarmCore.x - mx, ky = swarmCore.y - my;
+    if (kx * kx + ky * ky <= (SWARM_CORE_RADIUS + 6) * (SWARM_CORE_RADIUS + 6)) {
+      swarmLastClickAt = now;
+      state.coreBall = false;
+      state.unlockedCity = true;
+      state.viralLocked = true;
+      state.isotopeStock += SWARM_COLLAPSE_FUEL_GAIN;
+      swarmCore = null;
+      swarmFlashHint("you took the unstable core -- the skyline is open", 2400);
+      render();
+      return;
+    }
+  }
 
   for (var i = 0; i < swarmDots.length; i++) {
     var d = swarmDots[i];

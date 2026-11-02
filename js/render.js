@@ -8,6 +8,9 @@ function render() {
   el.price.style.display = "none";
   el.manualPriceWrap.style.display = "flex";
   if (document.activeElement !== el.manualPrice) el.manualPrice.value = state.price.toFixed(2);
+  var optimalNow = optimalPriceForCurrentProduction();
+  var priceIsOptimal = optimalNow !== null && Math.abs(state.price - optimalNow) < 0.005;
+  el.manualPrice.style.fontWeight = priceIsOptimal ? "bold" : "normal";
   el.demand.textContent = Math.round(publicDemandPD()) + "%";
   var demandBonusPct = Math.round(permanentDemandBonus() * 100);
   el.demandYYNote.textContent = demandBonusPct > 0 ? "+" + demandBonusPct + "%" : "";
@@ -134,6 +137,7 @@ function render() {
   if (typeof renderCity === "function") renderCity();
   if (typeof renderResonance === "function") renderResonance();
   if (typeof renderSlots === "function") renderSlots();
+  if (typeof renderViral === "function") renderViral();
   if (typeof renderFloor === "function") renderFloor();
   if (typeof newsRender === "function") newsRender();
 }

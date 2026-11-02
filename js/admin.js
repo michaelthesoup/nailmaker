@@ -126,6 +126,24 @@ function adminUnlockEverything() {
   render();
 }
 
+function adminSwapToBuzz() {
+  if (!adminAllowed()) return;
+  state.unlockedCity = false;
+  state.unlockedViral = true;
+  state.viralLocked = false;
+  state.coreBall = false;
+  render();
+}
+
+function adminSwapToSkyline() {
+  if (!adminAllowed()) return;
+  state.unlockedCity = true;
+  state.unlockedViral = false;
+  state.viralLocked = true;
+  state.coreBall = false;
+  render();
+}
+
 function adminReincarnate() {
   if (!adminAllowed()) return;
   var gain = reincarnationKarmaGainNow();
@@ -165,6 +183,7 @@ function buildMePanel(p) {
 
   sheetAddHeading(p, "unlocks");
   adminButtons(p, [["unlock everything", adminUnlockEverything], ["reincarnate now", adminReincarnate]]);
+  adminButtons(p, [["swap skyline for buzz", adminSwapToBuzz], ["swap buzz for skyline", adminSwapToSkyline]]);
 }
 
 function adminSelectTarget(uid, name) {
@@ -804,7 +823,7 @@ function adminLoadNews() {
 }
 
 function buildNewsPanel(p) {
-  sheetAddText(p, "These scroll in a small ticker across the top of the page for logged-in players who have unlocked the skyline. Add headlines, then publish.");
+  sheetAddText(p, "These scroll in a small ticker across the top of the page for logged-in players who have unlocked the skyline or buzz. Add headlines, then publish.");
   sheetAddHeading(p, "headlines");
   var list = adminMake("div");
   p.appendChild(list);
@@ -828,7 +847,7 @@ function buildNewsPanel(p) {
       db.collection("config").doc("news").set({
         headlines: adminNewsDraft, updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       }).then(function () {
-        status.textContent = "published. Players see it within a few minutes (you see it too once you have the skyline).";
+        status.textContent = "published. Players see it within a few minutes (you see it too once you have the skyline or buzz).";
         if (typeof newsFetch === "function") newsFetch();
       }).catch(function (err) {
         console.error(err);
