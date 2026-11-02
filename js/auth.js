@@ -134,3 +134,17 @@ firebase.auth().onAuthStateChanged(function (user) {
   el.btnAuthToggle.textContent = user ? "log out (" + (user.displayName || "player") + ")" : "log in / sign up";
   if (typeof renderLeaderboard === "function") renderLeaderboard();
 });
+
+firebase.auth().onAuthStateChanged(function (user) {
+  if (!user || typeof db === "undefined") return;
+  db.collection("renames").doc(user.uid).get().then(function (doc) {
+    if (!doc.exists) return;
+    var name = doc.data().name;
+    if (typeof name !== "string" || !name || name === user.displayName) return;
+    return user.updateProfile({ displayName: name }).then(function () {
+      el.btnAuthToggle.textContent = "log out (" + name + ")";
+      if (typeof cloudSaveLifetime === "function") cloudSaveLifetime();
+      if (typeof renderLeaderboard === "function") renderLeaderboard();
+    });
+  }).catch(function () { });
+});

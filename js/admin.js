@@ -236,6 +236,43 @@ function adminKickPlayer(uid, name, statusNode, done) {
   });
 }
 
+function adminRenamePlayer(uid, oldName, status) {
+  if (!adminAllowed()) return;
+  var me = currentAuthUser();
+  if (me && me.uid === uid) { status.textContent = "you can't rename your own account here"; return; }
+  var entered = window.prompt("New name for " + oldName + " (" + AUTH_NAME_MIN + " to " + AUTH_NAME_MAX + " letters, numbers, _ . -)", oldName);
+  if (entered === null) return;
+  var name = entered.trim();
+  if (name.length < AUTH_NAME_MIN || name.length > AUTH_NAME_MAX || !AUTH_NAME_PATTERN.test(name)) {
+    status.textContent = "name must be " + AUTH_NAME_MIN + " to " + AUTH_NAME_MAX + " characters: letters, numbers, _ . and -";
+    return;
+  }
+  if (name === oldName) return;
+  status.textContent = "renaming...";
+  var weekRef = db.collection("weeks").doc(weekIdFor(currentWeekIndex())).collection("scores").doc(uid);
+  Promise.all([
+    db.collection("profiles").where("nameLower", "==", name.toLowerCase()).limit(2).get(),
+    weekRef.get()
+  ]).then(function (res) {
+    var taken = false;
+    res[0].forEach(function (doc) { if (doc.id !== uid) taken = true; });
+    if (taken) { status.textContent = "someone already has that name"; return; }
+    var batch = db.batch();
+    batch.set(db.collection("renames").doc(uid), { name: name, by: me ? me.displayName : "admin", at: firebase.firestore.FieldValue.serverTimestamp() });
+    batch.set(db.collection("profiles").doc(uid), { name: name, nameLower: name.toLowerCase() }, { merge: true });
+    if (res[1].exists) batch.update(weekRef, { name: name });
+    return batch.commit().then(function () {
+      if (typeof everyoneCache !== "undefined") everyoneCache.at = 0;
+      if (adminTarget && adminTarget.uid === uid) adminTarget.name = name;
+      status.textContent = oldName + " is now " + name + ". Their game picks it up next time it is open.";
+      if (typeof renderLeaderboard === "function") renderLeaderboard();
+    });
+  }).catch(function (err) {
+    console.error(err);
+    status.textContent = "couldn't rename -- check the Firestore rules for 'renames' and 'profiles'";
+  });
+}
+
 function adminClearChat(status) {
   if (!adminAllowed()) return;
   if (!window.confirm("Delete EVERY chat message for everyone?\n\nThis can't be undone.")) return;
@@ -588,6 +625,10 @@ function buildPlayersPanel(p) {
     ["restore", function () {
       if (!adminTarget) { status.textContent = "select a player first"; return; }
       adminRestorePlayer(adminTarget.uid, adminTarget.name, status);
+    }],
+    ["rename", function () {
+      if (!adminTarget) { status.textContent = "select a player first"; return; }
+      adminRenamePlayer(adminTarget.uid, adminTarget.name, status);
     }],
     ["find suspicious scores", function () { adminShowSuspicious(status, susBox); }],
     ["clear all chat", function () { adminClearChat(status); }]
