@@ -123,6 +123,7 @@ function adminUnlockEverything() {
   state.unlockedResonance = true;
   state.unlockedSlots = true;
   state.unlockedFloor = true;
+  state.aiOwned = true;
   render();
 }
 

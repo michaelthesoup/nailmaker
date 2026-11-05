@@ -55,13 +55,23 @@
     margin-bottom: 0;
   }
 
-  #leftStack        { grid-column: 1; grid-row: 1 / span 2; align-self: stretch; display: flex; flex-direction: column; }
-  #machinerySection { flex: 1 1 auto; margin-bottom: 0; }
+  #leftStack        { grid-column: 1; grid-row: 1 / span 3; align-self: start; display: flex; flex-direction: column; }
+  #machinerySection { flex: 0 0 auto; margin-bottom: 0; }
   #mapPanel         { grid-column: 2; grid-row: 1; }
   #citySection      { grid-column: 3; grid-row: 1; }
   #yinYangSection   { grid-column: 2; grid-row: 2; }
   #swarmSection     { grid-column: 3; grid-row: 2; }
   #resonanceSection { grid-column: 2; grid-row: 3; align-self: start; }
+
+  .shop-cols { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 4px; align-items: start; }
+  .shop-col { display: flex; flex-direction: column; gap: 4px; }
+  .shop-col-head { font-size: 11px; text-align: center; padding-bottom: 2px; border-bottom: 1px solid var(--ink); }
+  .shop-cell { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 4px 2px; border: 1px solid var(--ink); background: var(--paper); color: var(--ink); cursor: pointer; }
+  .shop-cell span { font-size: 10px; }
+  .shop-cell:hover:not(:disabled) { background: var(--ink); color: var(--paper); }
+  .shop-cell:disabled { cursor: default; opacity: 0.4; }
+  .floor-spare { display: inline-flex; align-items: center; gap: 4px; padding: 2px 6px; }
+  .floor-hold { display: inline-flex; align-items: center; gap: 6px; margin-right: 8px; font-size: 11px; }
 
   .row {
     display: flex;
@@ -918,8 +928,8 @@
       <p>A breaker is heavy mining equipment and a maker is a light machine, so they cost different amounts of copper. Per cycle, a factory spends <code>1,000 g &times; (breaker share) + 100 g &times; (maker share)</code>. All breakers costs 1,000 g per machine, all makers costs 100 g per machine, and the midpoint of 50/50 costs 550 g per cycle on average. Copper is the only material factories use. They never need iron or funds beyond the purchase price. Copper presses on the factory floor lower what a cycle costs.</p>
       <p>Choosing the slider is therefore both a balance decision (section 9) and a speed decision: building makers is ten times cheaper in copper, but a pile of makers with no iron supply simply stalls.</p>
 
-      <h3>The factory floor</h3>
-      <p>Once you own 10 factories a <strong>factory floor</strong> button appears under the balance slider. The floor is a small grid (5 &times; 5 to begin with) and you fill it with <strong>modules</strong>, each taking up a rectangle of cells. Buy a module, hold it from your stock, tap a cell to place it (its top-left corner lands there), and use <em>rotate</em> to turn it. Tap a placed module to select it: you can <em>move</em> it (free), <em>pick it up</em> back into stock, or <em>sell</em> it for 75% of what you paid.</p>
+      <h3>Artificial intelligence and the motherboard</h3>
+      <p>Once you own 10 factories an <strong>artificial intelligence</strong> panel appears with a <strong>motherboard</strong> button. The floor is a small grid (5 &times; 5 to begin with) and you fill it with <strong>modules</strong>, each taking up a rectangle of cells. Buy a module, hold it from your stock, tap a cell to place it (its top-left corner lands there), and use <em>rotate</em> to turn it. Tap a placed module to select it: you can <em>move</em> it (free), <em>pick it up</em> back into stock, or <em>sell</em> it for 75% of what you paid.</p>
       <p>Each module attacks a different limit on your factories. Time: a <strong>battery</strong> (2 &times; 2) makes factories work 8% faster. Copper: a <strong>copper press</strong> (1 &times; 2) cuts the copper each cycle costs by 6%. Money: a <strong>blueprint table</strong> (2 &times; 1) makes new factories cost 4% less. A <strong>maker die</strong> and a <strong>breaker die</strong> (both 1 &times; 3) each give 10% extra nail makers or nail breakers from the cycles that build them; the extra is carried between cycles, so nothing is lost to rounding. A <strong>cooler</strong> (1 &times; 1) does nothing alone, but each cooler touching a battery or a copper press adds half of that module's bonus again (up to two coolers each).</p>
       <p>Bonuses of the same kind add together, and each kind has a ceiling (speed +300%, copper &minus;60%, factory price &minus;50%, yields +500%). Space is the real limit, so what you fit and where the coolers go is the build. Every module you own makes the next one of its type 1.5&times; dearer. Which module helps depends on what is holding you back: speed does nothing if you are short of copper, and a discount does nothing if you can already afford factories.</p>
       <p>You can <strong>expand the floor</strong>: Mk2 (6 &times; 6) costs $500 million and 10 million unsold nails; Mk3 (7 &times; 7) costs $20 billion, 1 billion unsold nails and 100 tonnes of copper. Modules are lost when a life ends, but the button stays, so you can start rebuilding your floor straight away.</p>
@@ -1161,7 +1171,7 @@
 
 <div id="floorOverlay" class="sheet-overlay">
   <div class="sheet-box">
-    <div class="sheet-title">factory floor</div>
+    <div class="sheet-title">motherboard</div>
     <div id="floorBody"></div>
     <div class="sheet-actions"><button id="btnFloorClose">close</button></div>
   </div>
@@ -1290,24 +1300,30 @@
               </div>
               <input type="range" id="sliderFactoryBalance" min="0" max="100" step="5" value="90">
               <div class="hint" id="valFactoryMaterialUse" style="text-align:center; margin-top:4px;">consuming 0 g copper/s</div>
-              <div id="floorWrap" style="display:none; text-align:center; margin-top:6px;"><button id="btnFloor">factory floor</button></div>
+              <div id="floorWrap" style="display:none; text-align:center; margin-top:6px;"><button id="btnFloor">artificial intelligence</button></div>
             </div>
 
             <div class="hint">
               producing: <span id="valFactoryMakerRate">0</span> makers/s &middot; <span id="valFactoryBreakerRate">0</span> breakers/s
             </div>
+
+            <div id="aiBuyWrap" style="display:none; margin-top:8px;"><button id="btnBuyAI" style="width:100%;">buy artificial intelligence</button></div>
           </div>
         </div>
 
       </div>
     </div>
 
-
+  <div class="panel" id="aiSection" style="margin-top:var(--gap); display:none;">
+    <div class="panel-header">artificial intelligence</div>
+    <div class="panel-body"></div>
   </div>
 
-  <div class="panel" id="slotSection" style="display:none;">
+  <div class="panel" id="slotSection" style="margin-top:var(--gap); display:none;">
     <div class="panel-header">slots</div>
     <div class="panel-body"></div>
+  </div>
+
   </div>
 
   <div id="mapSection" style="display:none;">
@@ -1451,8 +1467,10 @@
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
+<script src="js/game.js"></script>
+
+
 </div>
 
-<script src="js/game.js"></script>
 </body>
 </html>

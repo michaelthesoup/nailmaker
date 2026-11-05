@@ -59,6 +59,7 @@ function slotSpin() {
     for (var i = 0; i < 3; i++) {
       var stopAt = SLOT_STOP_MS[i] / speed;
       if (done[i]) { finished++; continue; }
+      var before = Math.floor(pos[i]);
       if (t < stopAt - brake) {
         pos[i] = pos[i] + v * dt;
         slotPlace(i, pos[i]);
@@ -75,8 +76,9 @@ function slotSpin() {
         var e = 1 - Math.pow(1 - u, 3);
         pos[i] = from[i] + (target[i] - from[i]) * e;
         slotPlace(i, pos[i]);
-        if (u >= 1) { done[i] = true; pos[i] = digits[i] - 1; slotPlace(i, pos[i]); finished++; }
+        if (u >= 1) { done[i] = true; pos[i] = digits[i] - 1; slotPlace(i, pos[i]); finished++; playSlotStopSound(); continue; }
       }
+      if (Math.floor(pos[i]) !== before) playSlotTickSound(1 + i * 0.12 - (braking[i] ? 0.25 * u : 0));
     }
     if (finished < 3) { requestAnimationFrame(frame); return; }
     slotUI.pos = pos;
@@ -99,7 +101,6 @@ function slotBuildUI() {
   if (!section) return;
   var st = document.createElement("style");
   st.textContent =
-    "#slotSection { grid-column: 1; grid-row: 3; align-self: start; }" +
     ".slot-reels { position: relative; display: flex; gap: 6px; justify-content: center; border: 1px solid var(--ink); padding: 6px; }" +
     ".slot-box { width: 44px; height: 54px; border: 1px solid var(--ink); overflow: hidden; user-select: none; }" +
     ".slot-strip { will-change: transform; }" +

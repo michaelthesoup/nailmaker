@@ -32,9 +32,9 @@ function cardElement(card, onPick, opts) {
   div.appendChild(rarity);
 
   if (onPick) {
-    div.addEventListener("click", onPick);
+    div.addEventListener("click", function (e) { playCardPickSound(); onPick(e); });
     div.addEventListener("keydown", function (e) {
-      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onPick(); }
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); playCardPickSound(); onPick(); }
     });
   } else {
     div.style.cursor = "default";
@@ -116,6 +116,7 @@ function loadoutOpenPack() {
   var d = loadout;
   if (d.busy || d.packsOpened >= d.packsTotal) return;
   d.packsOpened += 1;
+  playPackOpenSound();
   d.current = cardPack(d.seed, d.packsOpened, d.path, d.karma, d.pity);
   d.opened += d.current.length;
   d.message = "";
@@ -188,6 +189,7 @@ function loadoutOpenAll() {
     if (loadout !== run) return;
     if (d.packsOpened >= d.packsTotal) { finish(); return; }
     d.packsOpened += 1;
+    if (delay >= 90 || d.packsOpened % 3 === 0) playPackOpenSound();
     var pack = cardPack(d.seed, d.packsOpened, d.path, d.karma, d.pity);
     d.opened += pack.length;
     var stats = cardAutoPack(pack, { kept: d.kept });

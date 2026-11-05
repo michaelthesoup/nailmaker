@@ -138,6 +138,7 @@ function render() {
   if (typeof renderResonance === "function") renderResonance();
   if (typeof renderSlots === "function") renderSlots();
   if (typeof renderViral === "function") renderViral();
+  if (typeof renderAI === "function") renderAI();
   if (typeof renderFloor === "function") renderFloor();
   if (typeof newsRender === "function") newsRender();
 }

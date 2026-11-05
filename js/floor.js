@@ -14,14 +14,14 @@ var MODULE_COOLER_MAX = 2;
 var MODULE_CAPS = { speed: 3, copper: 0.6, price: 0.5, makerYield: 5, breakerYield: 5 };
 
 var MODULES = {
-  battery: { name: "battery",         code: "B", w: 2, h: 2, price: 8e5, effect: "speed",        amount: 0.08, boosted: true, what: "factories work {n}% faster" },
-  press:   { name: "copper press",    code: "P", w: 1, h: 2, price: 2e6, effect: "copper",       amount: 0.06, boosted: true, what: "each cycle costs {n}% less copper" },
-  table:   { name: "blueprint table", code: "T", w: 2, h: 1, price: 5e6, effect: "price",        amount: 0.04,                what: "new factories cost {n}% less" },
-  maker:   { name: "maker die",       code: "M", w: 1, h: 3, price: 1e7, effect: "makerYield",   amount: 0.10,                what: "{n}% more nail makers from each maker cycle" },
-  breaker: { name: "breaker die",     code: "K", w: 1, h: 3, price: 1e7, effect: "breakerYield", amount: 0.10,                what: "{n}% more nail breakers from each breaker cycle" },
-  cooler:  { name: "cooler",          code: "C", w: 1, h: 1, price: 1.5e6, effect: null,                                     what: "boosts the batteries and copper presses beside it by 50% (up to two coolers each)" }
+  battery: { name: "battery",         code: "B", w: 2, h: 2, price: 1.6e5, effect: "speed",        amount: 0.08, boosted: true, what: "factories work {n} faster" },
+  press:   { name: "copper press",    code: "P", w: 1, h: 2, price: 4e5, effect: "copper",       amount: 0.06, boosted: true, what: "each cycle costs {n} less copper" },
+  table:   { name: "blueprint table", code: "T", w: 2, h: 1, price: 1e6, effect: "price",        amount: 0.04,                what: "new factories cost {n} less" },
+  processor: { name: "processor",     code: "PRO", w: 1, h: 1, price: 60, copper: true, tiered: true, effect: null, what: "burns data to buff the factories. it heats up while it works and shuts down if it overheats. merge two of the same tier to upgrade" },
+  memory:  { name: "memory",          code: "MEM", w: 1, h: 1, price: 40, copper: true, tiered: true, effect: null, what: "collects and stores data. merge two of the same tier to upgrade" },
+  cooler:  { name: "cooler",          code: "C", w: 1, h: 1, price: 3e5, effect: null,                                     what: "cools the processors beside it so they can keep running (up to two coolers each)" }
 };
-var MODULE_ORDER = ["battery", "press", "table", "maker", "breaker", "cooler"];
+var MODULE_ORDER = ["battery", "press", "table", "cooler", "processor", "memory"];
 
 function floorSize() {
   var tier = Math.max(1, Math.min(FLOOR_SIZES.length, Math.floor(state.floorTier || 1)));
@@ -96,7 +96,7 @@ function moduleBonuses() {
   return out;
 }
 
-function moduleSpeedMult() { return 1 + moduleBonuses().speed; }
+function moduleSpeedMult() { return (1 + moduleBonuses().speed) * (1 + (typeof aiBuff === "function" ? aiBuff() : 0)); }
 function moduleCopperSave() { return moduleBonuses().copper; }
 function moduleFactoryDiscount() { return moduleBonuses().price; }
 
@@ -107,16 +107,69 @@ function moduleOwnedCount(type) {
   return n;
 }
 
-function modulePrice(type) {
+function modulePrice(type, tier) {
+  if (MODULES[type].tiered) {
+    tier = tier || 1;
+    return MODULES[type].price * Math.pow(AI_TILE_TIER_PRICE, tier - 1) * Math.pow(AI_TILE_PRICE_GROWTH, (state.aiBought && state.aiBought[type + ":" + tier]) || 0);
+  }
   return MODULES[type].price * Math.pow(MODULE_PRICE_GROWTH, moduleOwnedCount(type));
+}
+
+var floorTip = null;
+
+function floorPartTip(type, tier) {
+  var def = MODULES[type];
+  if (type === "memory") return [def.name + " · tier " + tier, "holds " + aiFmtBytes(aiTierValue(type, tier)) + " · collects " + aiFmtBytes(aiTierValue(type, tier) * AI_FILL_RATE) + "/s"];
+  if (type === "processor") return [def.name + " · tier " + tier, "burns " + aiFmtBytes(aiTierValue(type, tier)) + " data/s · overheats in " + AI_HEAT_RUN + "s uncooled"];
+  return [def.name, "cools processors beside it (heat gain \u2212" + Math.round(AI_COOLER_POWER * 100) + "% each)"];
+}
+
+function floorTipShow(ev, lines) {
+  if (!floorTip) {
+    floorTip = document.createElement("div");
+    floorTip.style.cssText = "position:fixed;z-index:100000;pointer-events:none;font-size:10px;line-height:1.3;padding:2px 6px;border:1px solid var(--ink);background:var(--paper);color:var(--ink);white-space:nowrap;";
+    document.body.appendChild(floorTip);
+  }
+  floorTip.textContent = "";
+  var a = document.createElement("div");
+  a.textContent = lines[0];
+  a.style.opacity = "0.6";
+  var b = document.createElement("div");
+  b.textContent = lines[1];
+  floorTip.appendChild(a);
+  floorTip.appendChild(b);
+  floorTip.style.display = "block";
+  floorTipMove(ev);
+}
+
+function floorTipMove(ev) {
+  if (!floorTip) return;
+  floorTip.style.left = (ev.clientX + 12) + "px";
+  floorTip.style.top = (ev.clientY + 14) + "px";
+}
+
+function floorTipHide() {
+  if (floorTip) floorTip.style.display = "none";
+}
+
+function floorTierOf(o) {
+  if (!MODULES[o.type] || !MODULES[o.type].tiered) return 1;
+  return Math.max(1, Math.min(AI_MAX_TIER, Math.floor(o.tier) || 1));
 }
 
 function floorNormalize() {
   if (!Array.isArray(state.modules)) state.modules = [];
   if (!Array.isArray(state.moduleStock)) state.moduleStock = [];
+  [state.modules, state.moduleStock].forEach(function (list) {
+    list.forEach(function (o) {
+      if (o && !MODULES[o.type] && (o.type === "maker" || o.type === "breaker")) state.funds += Number(o.paid) || 0;
+    });
+  });
+  if (!state.aiSeen || typeof state.aiSeen !== "object") state.aiSeen = {};
   state.floorTier = Math.max(1, Math.min(FLOOR_SIZES.length, Math.floor(state.floorTier || 1)));
   state.moduleStock = state.moduleStock.filter(function (s) { return s && MODULES[s.type]; })
-    .map(function (s) { return { type: s.type, paid: Number(s.paid) || 0 }; });
+    .map(function (s) { return { type: s.type, tier: floorTierOf(s), paid: Number(s.paid) || 0 }; });
+  if (!state.aiBought || typeof state.aiBought !== "object") state.aiBought = {};
 
   var kept = [];
   var maxId = 0;
@@ -127,7 +180,7 @@ function floorNormalize() {
     if (!m || !MODULES[m.type]) continue;
     var rot = m.rot ? 1 : 0;
     if (!canPlaceModule(m.type, rot, Math.floor(m.x), Math.floor(m.y))) continue;
-    var clean = { id: Math.floor(m.id) || 0, type: m.type, x: Math.floor(m.x), y: Math.floor(m.y), rot: rot, paid: Number(m.paid) || 0 };
+    var clean = { id: Math.floor(m.id) || 0, type: m.type, x: Math.floor(m.x), y: Math.floor(m.y), rot: rot, tier: floorTierOf(m), paid: Number(m.paid) || 0 };
     if (!clean.id || kept.some(function (k) { return k.id === clean.id; })) clean.id = maxId + 1;
     maxId = Math.max(maxId, clean.id);
     kept.push(clean);
@@ -138,29 +191,38 @@ function floorNormalize() {
 
 function floorHeldType() { return floorHold ? floorHold.type : null; }
 
-function buyModule(type) {
-  var price = modulePrice(type);
-  if (state.funds < price) return;
-  state.funds -= price;
-  state.moduleStock.push({ type: type, paid: price });
+function buyModule(type, tier) {
+  tier = tier || 1;
+  var price = modulePrice(type, tier);
+  var def = MODULES[type];
+  if ((def.copper ? state.copperAmt : state.funds) < price) return;
+  if (def.copper) {
+    state.copperAmt -= price;
+    state.aiBought[type + ":" + tier] = ((state.aiBought && state.aiBought[type + ":" + tier]) || 0) + 1;
+  } else {
+    state.funds -= price;
+  }
+  state.moduleStock.push({ type: type, tier: tier, paid: price });
+  floorHold = { type: type, tier: tier, rot: 0 };
+  floorSelected = null;
   floorRender();
   render();
 }
 
-function floorFindStock(type) {
-  for (var i = 0; i < state.moduleStock.length; i++) if (state.moduleStock[i].type === type) return i;
+function floorFindStock(type, tier) {
+  for (var i = 0; i < state.moduleStock.length; i++) if (state.moduleStock[i].type === type && (state.moduleStock[i].tier || 1) === (tier || 1)) return i;
   return -1;
 }
 
 function floorPlaceHeld(x, y) {
   if (!floorHold) return;
-  var idx = floorFindStock(floorHold.type);
+  var idx = floorFindStock(floorHold.type, floorHold.tier);
   if (idx < 0) { floorHold = null; floorRender(); return; }
   if (!canPlaceModule(floorHold.type, floorHold.rot, x, y)) { floorSetHint("it doesn't fit there"); return; }
   var item = state.moduleStock.splice(idx, 1)[0];
-  var m = { id: state.moduleNextId++, type: item.type, x: x, y: y, rot: floorHold.rot, paid: item.paid };
+  var m = { id: state.moduleNextId++, type: item.type, x: x, y: y, rot: floorHold.rot, tier: item.tier || 1, paid: item.paid };
   state.modules.push(m);
-  if (floorFindStock(floorHold.type) < 0) floorHold = null;
+  if (floorFindStock(floorHold.type, floorHold.tier) < 0) floorHold = null;
   floorSelected = null;
   floorRender();
   render();
@@ -191,21 +253,9 @@ function floorPickUp(thenHold) {
   var m = floorSelectedModule();
   if (!m) return;
   state.modules = state.modules.filter(function (x) { return x.id !== m.id; });
-  state.moduleStock.push({ type: m.type, paid: m.paid });
+  state.moduleStock.push({ type: m.type, tier: m.tier || 1, paid: m.paid });
   floorSelected = null;
-  floorHold = thenHold ? { type: m.type, rot: m.rot } : null;
-  floorRender();
-  render();
-}
-
-function floorSell() {
-  var m = floorSelectedModule();
-  if (!m) return;
-  var refund = m.paid * MODULE_SELL_REFUND;
-  if (!window.confirm("Sell this " + MODULES[m.type].name + " for " + fmtMoney(refund) + "? (" + Math.round(MODULE_SELL_REFUND * 100) + "% of what you paid)")) return;
-  state.modules = state.modules.filter(function (x) { return x.id !== m.id; });
-  state.funds += refund;
-  floorSelected = null;
+  floorHold = thenHold ? { type: m.type, tier: m.tier || 1, rot: m.rot } : null;
   floorRender();
   render();
 }
@@ -233,7 +283,7 @@ function floorExpand() {
 var floorHold = null;
 var floorSelected = null;
 var floorOpen = false;
-var floorUi = { buy: {}, sellBtn: null, expandBtn: null };
+var floorUi = { buy: {}, sellBtn: null, expandBtn: null, mergeBtn: null, ai: {}, heat: {} };
 var floorCellEls = [];
 var floorHintNode = null;
 var floorHintTimer = null;
@@ -254,13 +304,35 @@ function floorSetHint(text) {
 
 function floorDefaultHint() {
   var m = floorSelectedModule();
-  return m ? moduleInfoText(m) : "";
+  if (m) return moduleInfoText(m);
+  return floorHold ? "tap a cell to put it down" : "double-click a tile to pick it up, then tap a cell to put it down";
+}
+
+function floorMoneyText(type, amount) {
+  return MODULES[type].copper ? fmtWeight(amount) + " of copper" : fmtMoney(amount);
+}
+
+function floorMerge() {
+  var m = floorSelectedModule();
+  if (!m) return;
+  var partner = aiMergePartner(m);
+  if (!partner) return;
+  var cost = aiMergeCost(m.type, m.tier || 1);
+  if (state.copperAmt < cost) return;
+  state.copperAmt -= cost;
+  m.tier = (m.tier || 1) + 1;
+  if (typeof playMergeSound === "function") playMergeSound(m.tier);
+  m.paid = (m.paid || 0) + (partner.paid || 0) + cost;
+  state.modules = state.modules.filter(function (x) { return x.id !== partner.id; });
+  floorRender();
+  render();
 }
 
 function fmtPct(x) { return Math.round(x * 1000) / 10 + "%"; }
 
 function moduleInfoText(m) {
   var def = MODULES[m.type];
+  if (def.tiered) return aiTileInfoText(m);
   var line = def.name + ": ";
   if (!def.effect) return line + def.what + ".";
   var coolers = state.modules.filter(function (x) { return x.type === "cooler"; });
@@ -286,8 +358,18 @@ function floorPreview(x, y) {
   }
 }
 
+var floorLastClick = { id: 0, at: 0 };
+
 function floorCellClick(x, y, occupant) {
   if (floorHold) { floorPlaceHeld(x, y); return; }
+  var now = Date.now();
+  if (occupant && floorLastClick.id === occupant && now - floorLastClick.at < 400) {
+    floorLastClick = { id: 0, at: 0 };
+    floorSelected = occupant;
+    floorPickUp(true);
+    return;
+  }
+  floorLastClick = { id: occupant || 0, at: now };
   floorSelected = occupant || null;
   floorRender();
 }
@@ -309,8 +391,19 @@ function floorBuildGrid(parent) {
       if (id) {
         var m = byId[id];
         cell.classList.add("occ");
-        cell.textContent = MODULES[m.type].code;
-        cell.title = MODULES[m.type].name;
+        if (m.x === x && m.y === y) {
+          cell.style.display = "flex";
+          cell.style.alignItems = "center";
+          cell.style.justifyContent = "center";
+          cell.appendChild(aiGlyph(aiGlyphKey(m.type, m.tier), 36));
+        }
+        if (m.type === "processor" && m.x === x && m.y === y) {
+          cell.style.position = "relative";
+          var heatBar = document.createElement("div");
+          heatBar.style.cssText = "position:absolute;left:0;bottom:0;height:3px;width:0;pointer-events:none;";
+          cell.appendChild(heatBar);
+          floorUi.heat[m.id] = heatBar;
+        }
         if (floorSelected === id) cell.classList.add("sel");
         if (y > 0 && occ[y - 1][x] === id) cell.classList.add("no-top");
         if (y < n - 1 && occ[y + 1][x] === id) cell.classList.add("no-bottom");
@@ -337,36 +430,53 @@ function floorBtn(parent, label, fn) {
 }
 
 function floorRender() {
+  floorTipHide();
   var body = el.floorBody;
   body.innerHTML = "";
-  floorUi = { buy: {}, sellBtn: null, expandBtn: null };
+  floorUi = { buy: {}, sellBtn: null, expandBtn: null, mergeBtn: null, ai: {}, heat: {} };
   floorNormalize();
   var n = floorSize();
 
   var b = moduleBonuses();
+  sheetAddHeading(body, aiDisplayName());
+  [["data", "raw"], ["collecting", "inflow"], ["burning", "proc"], ["factory buff", "buff"], ["overheated", "hot"]].forEach(function (r) {
+    var row = fl("div", "row");
+    row.appendChild(fl("span", "label", r[0]));
+    var v = fl("span", "value", "");
+    row.appendChild(v);
+    body.appendChild(row);
+    floorUi.ai[r[1]] = v;
+  });
+  body.appendChild(fl("div", "hint", "memory collects data. processors burn it to buff your factories, and each step up in tier adds a lot more. burning makes heat, and a processor that overheats shuts down until it cools, so put coolers beside them."));
+
   sheetAddHeading(body, "what your modules do");
   sheetAddRows(body, [
     ["factory speed", b.speed > 0 ? "+" + fmtPct(b.speed) : "\u2014"],
     ["copper per cycle", b.copper > 0 ? "\u2212" + fmtPct(b.copper) : "\u2014"],
-    ["new factory price", b.price > 0 ? "\u2212" + fmtPct(b.price) : "\u2014"],
-    ["maker yield", b.makerYield > 0 ? "+" + fmtPct(b.makerYield) : "\u2014"],
-    ["breaker yield", b.breakerYield > 0 ? "+" + fmtPct(b.breakerYield) : "\u2014"]
+    ["new factory price", b.price > 0 ? "\u2212" + fmtPct(b.price) : "\u2014"]
   ]);
 
-  sheetAddHeading(body, "floor (" + n + " \u00d7 " + n + ", Mk" + state.floorTier + ")");
+  sheetAddHeading(body, "motherboard (" + n + " \u00d7 " + n + ", Mk" + state.floorTier + ")");
   floorBuildGrid(body);
 
   var controls = fl("div", "admin-btns");
   controls.style.justifyContent = "center";
   if (floorHold) {
+    var holdTag = fl("span", "floor-hold");
+    holdTag.appendChild(aiGlyph(aiGlyphKey(floorHold.type, floorHold.tier), 26));
+    holdTag.appendChild(fl("span", "", "in hand: tap a cell"));
+    controls.appendChild(holdTag);
     floorBtn(controls, "rotate", floorRotate);
     floorBtn(controls, "cancel", function () { floorHold = null; floorRender(); });
   } else if (floorSelectedModule()) {
     var m = floorSelectedModule();
     if (MODULES[m.type].w !== MODULES[m.type].h) floorBtn(controls, "rotate", floorRotate);
-    floorBtn(controls, "move", function () { floorPickUp(true); });
-    floorBtn(controls, "pick up", function () { floorPickUp(false); });
-    floorUi.sellBtn = floorBtn(controls, "sell for " + fmtMoney(m.paid * MODULE_SELL_REFUND), floorSell);
+    if (MODULES[m.type].tiered) {
+      var partner = aiMergePartner(m);
+      floorUi.mergeBtn = floorBtn(controls, "merge", floorMerge);
+      floorUi.mergeBtn.dataset.ok = partner ? "1" : "";
+      if (!partner) floorUi.mergeBtn.title = (m.tier || 1) >= AI_MAX_TIER ? "already the top tier" : "needs a tier " + (m.tier || 1) + " " + MODULES[m.type].name + " touching it";
+    }
     floorBtn(controls, "cancel", function () { floorSelected = null; floorRender(); });
   }
   body.appendChild(controls);
@@ -375,41 +485,58 @@ function floorRender() {
   body.appendChild(floorHintNode);
 
   var counts = {};
-  state.moduleStock.forEach(function (s) { counts[s.type] = (counts[s.type] || 0) + 1; });
-  var stockTypes = MODULE_ORDER.filter(function (t) { return counts[t]; });
-  if (stockTypes.length > 0) {
-    sheetAddHeading(body, "in stock");
+  state.moduleStock.forEach(function (s) { var k = s.type + ":" + (s.tier || 1); counts[k] = (counts[k] || 0) + 1; });
+  var stockKeys = [];
+  MODULE_ORDER.forEach(function (tp) {
+    for (var tr = 1; tr <= AI_MAX_TIER; tr++) if (counts[tp + ":" + tr]) stockKeys.push([tp, tr]);
+  });
+  if (stockKeys.length > 0) {
+    sheetAddHeading(body, "spares");
     var chips = fl("div", "admin-btns");
-    stockTypes.forEach(function (t) {
-      var chip = floorBtn(chips, MODULES[t].name + " " + MODULES[t].w + "\u00d7" + MODULES[t].h + " \u00d7" + counts[t], function () {
-        floorHold = { type: t, rot: 0 };
+    stockKeys.forEach(function (pair) {
+      var t = pair[0], tr = pair[1];
+      var chip = fl("button", "floor-spare");
+      chip.appendChild(aiGlyph(aiGlyphKey(t, tr), 26));
+      chip.appendChild(fl("span", "", "\u00d7" + counts[t + ":" + tr]));
+      chip.addEventListener("click", function () {
+        floorHold = { type: t, tier: tr, rot: 0 };
         floorSelected = null;
         floorRender();
       });
-      if (floorHold && floorHold.type === t) chip.classList.add("lb-tab-active");
+      chips.appendChild(chip);
+      if (floorHold && floorHold.type === t && (floorHold.tier || 1) === tr) chip.classList.add("lb-tab-active");
     });
     body.appendChild(chips);
   }
 
-  sheetAddHeading(body, "shop");
-  MODULE_ORDER.forEach(function (t) {
-    var def = MODULES[t];
-    var row = fl("div", "row");
-    row.appendChild(fl("span", "label", def.code + " \u00b7 " + def.name + " (" + def.w + "\u00d7" + def.h + ")"));
-    var price = fl("span", "value", "");
-    row.appendChild(price);
-    body.appendChild(row);
-    body.appendChild(fl("div", "hint", def.what.replace("{n}", fmtPct(def.amount || 0))));
-    var wrap = fl("div", "admin-btns");
-    var buy = floorBtn(wrap, "buy", function () { buyModule(t); });
-    body.appendChild(wrap);
-    floorUi.buy[t] = { btn: buy, price: price };
+  sheetAddHeading(body, "parts");
+  var cols = fl("div", "shop-cols");
+  [["memory", ["memory"]], ["processors", ["processor"]], ["cooler", ["cooler"]]].forEach(function (colDef) {
+    var col = fl("div", "shop-col");
+    col.appendChild(fl("div", "shop-col-head", colDef[0]));
+    colDef[1].forEach(function (tp) {
+      var tiers = MODULES[tp].tiered ? AI_MAX_TIER : 1;
+      for (var tr = 1; tr <= tiers; tr++) (function (type, tier) {
+        var cell = fl("button", "shop-cell");
+        cell.appendChild(aiGlyph(aiGlyphKey(type, tier), 38));
+        var price = fl("span", "", "");
+        cell.appendChild(price);
+        cell.addEventListener("click", function () { buyModule(type, tier); });
+        cell.addEventListener("mouseenter", function (ev) { floorTipShow(ev, floorPartTip(type, tier)); });
+        cell.addEventListener("mousemove", function (ev) { floorTipMove(ev); });
+        cell.addEventListener("mouseleave", floorTipHide);
+        col.appendChild(cell);
+        floorUi.buy[type + ":" + tier] = { box: cell, btn: cell, price: price, type: type, tier: tier };
+      })(tp, tr);
+    });
+    cols.appendChild(col);
   });
+  body.appendChild(cols);
 
   var cost = floorExpandCost();
-  sheetAddHeading(body, "expand the floor");
+  sheetAddHeading(body, "expand the motherboard");
   if ((state.floorTier || 1) >= FLOOR_SIZES.length || !cost) {
-    sheetAddText(body, "the floor is at its largest");
+    sheetAddText(body, "the motherboard is at its largest");
   } else {
     var nextN = FLOOR_SIZES[state.floorTier];
     sheetAddText(body, "Mk" + (state.floorTier + 1) + ": " + nextN + " \u00d7 " + nextN + " cells. Costs " + fmtMoney(cost.funds) + ", " + fmtInt(cost.nails) + " unsold nails" + (cost.copper > 0 ? " and " + fmtWeight(cost.copper) + " of copper" : "") + ".");
@@ -422,10 +549,32 @@ function floorRender() {
 }
 
 function floorUpdate() {
-  for (var t in floorUi.buy) {
-    var price = modulePrice(t);
-    floorUi.buy[t].price.textContent = fmtMoney(price);
-    floorUi.buy[t].btn.disabled = state.funds < price;
+  for (var key in floorUi.buy) {
+    var e = floorUi.buy[key];
+    var price = modulePrice(e.type, e.tier);
+    var have = MODULES[e.type].copper ? state.copperAmt : state.funds;
+    var gate = !MODULES[e.type].tiered || e.tier === 1 || ((state.aiBought && state.aiBought[e.type + ":" + (e.tier - 1)]) || 0) > 0;
+    if (gate && !state.aiSeen[key] && (e.tier === 1 && MODULES[e.type].tiered || have >= price * 0.5)) state.aiSeen[key] = true;
+    e.box.style.display = gate && state.aiSeen[key] ? "" : "none";
+    e.price.textContent = MODULES[e.type].copper ? fmtWeight(price) : fmtMoney(price);
+    e.btn.disabled = have < price;
+  }
+  if (floorUi.mergeBtn) {
+    var sm = floorSelectedModule();
+    floorUi.mergeBtn.disabled = !floorUi.mergeBtn.dataset.ok || !sm || state.copperAmt < aiMergeCost(sm.type, sm.tier || 1);
+  }
+  if (floorUi.ai.raw) {
+    floorUi.ai.raw.textContent = aiFmtBytes(aiData()) + " / " + aiFmtBytes(aiCapacity());
+    floorUi.ai.inflow.textContent = "+" + aiFmtBytes(aiInflow()) + "/s";
+    floorUi.ai.proc.textContent = aiFmtBytes(aiBurn()) + "/s";
+    floorUi.ai.hot.textContent = aiHotCount + " / " + aiProcessors().length;
+    for (var hid in floorUi.heat) {
+      var hb = floorUi.heat[hid];
+      var hv = aiHeat[hid] || 0;
+      hb.style.width = Math.round(hv * 100) + "%";
+      hb.style.background = aiHot[hid] ? "repeating-linear-gradient(90deg, var(--ink) 0 2px, transparent 2px 4px)" : "var(--ink)";
+    }
+    floorUi.ai.buff.textContent = aiBuffText();
   }
   if (floorUi.expandBtn) floorUi.expandBtn.disabled = !floorCanAfford(floorExpandCost());
 }
@@ -433,11 +582,7 @@ function floorUpdate() {
 function renderFloor() {
   if (!el.floorWrap) return;
   if (!state.unlockedFloor && state.factories >= FLOOR_UNLOCK_FACTORIES) state.unlockedFloor = true;
-  el.floorWrap.style.display = state.unlockedFloor ? "" : "none";
-  if (!state.unlockedFloor) return;
-  var count = (state.modules || []).length;
-  var label = "factory floor (" + count + " module" + (count === 1 ? "" : "s") + ")";
-  if (el.btnFloor.textContent !== label) el.btnFloor.textContent = label;
+  el.floorWrap.style.display = "none";
   if (floorOpen) floorUpdate();
 }
 
