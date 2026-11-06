@@ -17,11 +17,11 @@ var MODULES = {
   battery: { name: "battery",         code: "B", w: 2, h: 2, price: 1.6e5, effect: "speed",        amount: 0.08, boosted: true, what: "factories work {n} faster" },
   press:   { name: "copper press",    code: "P", w: 1, h: 2, price: 4e5, effect: "copper",       amount: 0.06, boosted: true, what: "each cycle costs {n} less copper" },
   table:   { name: "blueprint table", code: "T", w: 2, h: 1, price: 1e6, effect: "price",        amount: 0.04,                what: "new factories cost {n} less" },
-  processor: { name: "processor",     code: "PRO", w: 1, h: 1, price: 60, copper: true, tiered: true, effect: null, what: "burns data to buff the factories. it heats up while it works and shuts down if it overheats. merge two of the same tier to upgrade" },
-  memory:  { name: "memory",          code: "MEM", w: 1, h: 1, price: 40, copper: true, tiered: true, effect: null, what: "collects and stores data. merge two of the same tier to upgrade" },
-  cooler:  { name: "cooler",          code: "C", w: 1, h: 1, price: 3e5, effect: null,                                     what: "cools the processors beside it so they can keep running (up to two coolers each)" }
+  processor: { name: "processor",     code: "PRO", w: 1, h: 1, price: 60, copper: true, tiered: true, effect: null, what: "turns data into buff and analyses your machines. merge two of the same tier to upgrade" },
+  controller: { name: "controller", code: "CTL", w: 1, h: 1, price: 80, copper: true, tiered: true, effect: null, what: "turns what the processors work out into buff for your machines. wire processors to it. merge two of the same tier to upgrade" },
+  memory:  { name: "memory",          code: "MEM", w: 1, h: 1, price: 40, copper: true, tiered: true, effect: null, what: "arrives full of data. processors wired to it read it, and your machines slowly refill it. merge two of the same tier to upgrade" }
 };
-var MODULE_ORDER = ["battery", "press", "table", "cooler", "processor", "memory"];
+var MODULE_ORDER = ["battery", "press", "table", "processor", "memory", "controller"];
 
 function floorSize() {
   var tier = Math.max(1, Math.min(FLOOR_SIZES.length, Math.floor(state.floorTier || 1)));
@@ -96,7 +96,7 @@ function moduleBonuses() {
   return out;
 }
 
-function moduleSpeedMult() { return (1 + moduleBonuses().speed) * (1 + (typeof aiBuff === "function" ? aiBuff() : 0)); }
+function moduleSpeedMult() { return (1 + moduleBonuses().speed) * (1 + (typeof aiFactoryBuff === "function" ? aiFactoryBuff() : 0)); }
 function moduleCopperSave() { return moduleBonuses().copper; }
 function moduleFactoryDiscount() { return moduleBonuses().price; }
 
@@ -119,9 +119,9 @@ var floorTip = null;
 
 function floorPartTip(type, tier) {
   var def = MODULES[type];
-  if (type === "memory") return [def.name + " · tier " + tier, "holds " + aiFmtBytes(aiTierValue(type, tier)) + " · collects " + aiFmtBytes(aiTierValue(type, tier) * AI_FILL_RATE) + "/s"];
-  if (type === "processor") return [def.name + " · tier " + tier, "burns " + aiFmtBytes(aiTierValue(type, tier)) + " data/s · overheats in " + AI_HEAT_RUN + "s uncooled"];
-  return [def.name, "cools processors beside it (heat gain \u2212" + Math.round(AI_COOLER_POWER * 100) + "% each)"];
+  if (type === "memory") return [def.name + " · tier " + tier, "arrives full with " + aiFmtBytes(aiTierValue(type, tier))];
+  if (type === "controller") return [def.name + " · tier " + tier, "turns up to " + aiFmtBytes(aiTierValue(type, tier)) + "/s into buff"];
+  return [def.name + " · tier " + tier, "reads " + aiFmtBytes(aiTierValue(type, tier)) + " data/s"];
 }
 
 function floorTipShow(ev, lines) {
@@ -162,13 +162,13 @@ function floorNormalize() {
   if (!Array.isArray(state.moduleStock)) state.moduleStock = [];
   [state.modules, state.moduleStock].forEach(function (list) {
     list.forEach(function (o) {
-      if (o && !MODULES[o.type] && (o.type === "maker" || o.type === "breaker")) state.funds += Number(o.paid) || 0;
+      if (o && !MODULES[o.type] && (o.type === "maker" || o.type === "breaker" || o.type === "cooler")) state.funds += Number(o.paid) || 0;
     });
   });
   if (!state.aiSeen || typeof state.aiSeen !== "object") state.aiSeen = {};
   state.floorTier = Math.max(1, Math.min(FLOOR_SIZES.length, Math.floor(state.floorTier || 1)));
   state.moduleStock = state.moduleStock.filter(function (s) { return s && MODULES[s.type]; })
-    .map(function (s) { return { type: s.type, tier: floorTierOf(s), paid: Number(s.paid) || 0 }; });
+    .map(function (s) { var o = { type: s.type, tier: floorTierOf(s), paid: Number(s.paid) || 0 }; if (typeof s.data === "number" && isFinite(s.data)) o.data = Math.max(0, s.data); return o; });
   if (!state.aiBought || typeof state.aiBought !== "object") state.aiBought = {};
 
   var kept = [];
@@ -181,12 +181,132 @@ function floorNormalize() {
     var rot = m.rot ? 1 : 0;
     if (!canPlaceModule(m.type, rot, Math.floor(m.x), Math.floor(m.y))) continue;
     var clean = { id: Math.floor(m.id) || 0, type: m.type, x: Math.floor(m.x), y: Math.floor(m.y), rot: rot, tier: floorTierOf(m), paid: Number(m.paid) || 0 };
+    if (m.type === "memory" && typeof m.data === "number" && isFinite(m.data)) clean.data = Math.max(0, m.data);
     if (!clean.id || kept.some(function (k) { return k.id === clean.id; })) clean.id = maxId + 1;
     maxId = Math.max(maxId, clean.id);
     kept.push(clean);
     state.modules.push(clean);
   }
   state.moduleNextId = Math.max(Math.floor(state.moduleNextId || 1), maxId + 1);
+  floorCleanWires();
+}
+
+function floorCleanWires() {
+  var ids = {};
+  state.modules.forEach(function (m) { ids[m.id] = m; });
+  var seen = {}, count = {}, out = [];
+  (Array.isArray(state.wires) ? state.wires : []).forEach(function (w) {
+    if (!Array.isArray(w) || w.length < 2) return;
+    var a = ids[w[0]], b = ids[w[1]];
+    if (!a || !b || !floorCanWire(a, b)) return;
+    var key = Math.min(a.id, b.id) + "-" + Math.max(a.id, b.id);
+    if (seen[key]) return;
+    if ((count[a.id] || 0) >= AI_PORTS || (count[b.id] || 0) >= AI_PORTS) return;
+    seen[key] = true;
+    count[a.id] = (count[a.id] || 0) + 1;
+    count[b.id] = (count[b.id] || 0) + 1;
+    out.push([a.id, b.id]);
+  });
+  state.wires = out;
+}
+
+function floorCanWire(a, b) {
+  if (!a || !b || a.id === b.id) return false;
+  var t = [a.type, b.type].sort().join("+");
+  return t === "memory+processor" || t === "controller+processor";
+}
+
+function floorWireCount(id) {
+  var n = 0;
+  (state.wires || []).forEach(function (w) { if (w[0] === id || w[1] === id) n++; });
+  return n;
+}
+
+function floorIsWired(a, b) {
+  return (state.wires || []).some(function (w) { return (w[0] === a && w[1] === b) || (w[0] === b && w[1] === a); });
+}
+
+function floorUnwire(id) {
+  state.wires = (state.wires || []).filter(function (w) { return w[0] !== id && w[1] !== id; });
+}
+
+function floorFindModule(id) {
+  for (var i = 0; i < state.modules.length; i++) if (state.modules[i].id === id) return state.modules[i];
+  return null;
+}
+
+function floorToggleWire(aId, bId) {
+  var a = floorFindModule(aId), b = floorFindModule(bId);
+  if (!floorCanWire(a, b)) { floorSetHint("memory connects to processors, and processors connect to controllers"); return false; }
+  if (floorIsWired(aId, bId)) {
+    state.wires = state.wires.filter(function (w) { return !((w[0] === aId && w[1] === bId) || (w[0] === bId && w[1] === aId)); });
+    return true;
+  }
+  if (floorWireCount(aId) >= AI_PORTS || floorWireCount(bId) >= AI_PORTS) { floorSetHint("a chip has " + AI_PORTS + " ports and they are all used"); return false; }
+  state.wires.push([aId, bId]);
+  return true;
+}
+
+function floorDist(a, b) { return Math.abs(a.x - b.x) + Math.abs(a.y - b.y); }
+
+function floorNearest(m, type, avoidWired) {
+  var best = null, bd = 1e9;
+  state.modules.forEach(function (o) {
+    if (o.type !== type || !floorCanWire(m, o)) return;
+    if (floorWireCount(o.id) >= AI_PORTS || floorIsWired(m.id, o.id)) return;
+    var d = floorDist(m, o) + (avoidWired ? floorWireCount(o.id) * 0.5 : 0);
+    if (d < bd) { bd = d; best = o; }
+  });
+  return best;
+}
+
+function floorWireChip(m) {
+  if (!Array.isArray(state.wires)) state.wires = [];
+  var hasType = function (t) { return state.wires.some(function (w) { var o = floorFindModule(w[0] === m.id ? w[1] : (w[1] === m.id ? w[0] : -1)); return o && o.type === t; }); };
+  var link = function (o) { if (o && floorWireCount(m.id) < AI_PORTS) state.wires.push([m.id, o.id]); };
+  if (m.type === "processor") {
+    if (!hasType("memory")) link(floorNearest(m, "memory", true));
+    if (!hasType("controller")) link(floorNearest(m, "controller", true));
+  } else if (m.type === "memory" || m.type === "controller") {
+    var other = state.modules.filter(function (o) { return o.type === "processor" && floorCanWire(m, o) && floorWireCount(o.id) < AI_PORTS && !floorIsWired(m.id, o.id); });
+    var need = m.type === "memory" ? "memory" : "controller";
+    other.sort(function (p, q) {
+      var pn = floorWiredType(p.id, need) ? 1 : 0, qn = floorWiredType(q.id, need) ? 1 : 0;
+      return pn - qn || floorDist(m, p) - floorDist(m, q);
+    });
+    if (other.length && floorWireCount(m.id) < AI_PORTS) state.wires.push([m.id, other[0].id]);
+  }
+}
+
+function floorWiredType(id, type) {
+  return state.wires.some(function (w) { var o = floorFindModule(w[0] === id ? w[1] : (w[1] === id ? w[0] : -1)); return o && o.type === type; });
+}
+
+function floorAutoWire() {
+  state.wires = [];
+  ["processor", "memory", "controller"].forEach(function (t) {
+    state.modules.filter(function (m) { return m.type === t; }).forEach(function (m) { floorWireChip(m); });
+  });
+}
+
+function floorFreeSpot(type) {
+  var n = floorSize();
+  for (var y = 0; y < n; y++) for (var x = 0; x < n; x++) if (canPlaceModule(type, 0, x, y)) return { x: x, y: y };
+  return null;
+}
+
+function floorMigratePipeline() {
+  if (state.aiPipeline) return;
+  state.aiPipeline = true;
+  floorNormalize();
+  var hasProc = state.modules.some(function (m) { return m.type === "processor"; }) || state.moduleStock.some(function (s) { return s.type === "processor"; });
+  var hasCtl = state.modules.some(function (m) { return m.type === "controller"; }) || state.moduleStock.some(function (s) { return s.type === "controller"; });
+  if (hasProc && !hasCtl) {
+    var spot = floorFreeSpot("controller");
+    if (spot) state.modules.push({ id: state.moduleNextId++, type: "controller", x: spot.x, y: spot.y, rot: 0, tier: 1, paid: 0 });
+    else state.moduleStock.push({ type: "controller", tier: 1, paid: 0 });
+  }
+  floorAutoWire();
 }
 
 function floorHeldType() { return floorHold ? floorHold.type : null; }
@@ -221,7 +341,9 @@ function floorPlaceHeld(x, y) {
   if (!canPlaceModule(floorHold.type, floorHold.rot, x, y)) { floorSetHint("it doesn't fit there"); return; }
   var item = state.moduleStock.splice(idx, 1)[0];
   var m = { id: state.moduleNextId++, type: item.type, x: x, y: y, rot: floorHold.rot, tier: item.tier || 1, paid: item.paid };
+  if (item.type === "memory" && typeof item.data === "number") m.data = item.data;
   state.modules.push(m);
+  floorWireChip(m);
   if (floorFindStock(floorHold.type, floorHold.tier) < 0) floorHold = null;
   floorSelected = null;
   floorRender();
@@ -253,7 +375,10 @@ function floorPickUp(thenHold) {
   var m = floorSelectedModule();
   if (!m) return;
   state.modules = state.modules.filter(function (x) { return x.id !== m.id; });
-  state.moduleStock.push({ type: m.type, tier: m.tier || 1, paid: m.paid });
+  floorUnwire(m.id);
+  var stock = { type: m.type, tier: m.tier || 1, paid: m.paid };
+  if (m.type === "memory" && typeof m.data === "number") stock.data = m.data;
+  state.moduleStock.push(stock);
   floorSelected = null;
   floorHold = thenHold ? { type: m.type, tier: m.tier || 1, rot: m.rot } : null;
   floorRender();
@@ -282,6 +407,7 @@ function floorExpand() {
 
 var floorHold = null;
 var floorSelected = null;
+var floorWiring = null;
 var floorOpen = false;
 var floorUi = { buy: {}, sellBtn: null, expandBtn: null, mergeBtn: null, ai: {}, heat: {} };
 var floorCellEls = [];
@@ -303,6 +429,7 @@ function floorSetHint(text) {
 }
 
 function floorDefaultHint() {
+  if (floorWiring) return "tap a chip to connect it or disconnect it. press done when finished";
   var m = floorSelectedModule();
   if (m) return moduleInfoText(m);
   return floorHold ? "tap a cell to put it down" : "double-click a tile to pick it up, then tap a cell to put it down";
@@ -323,6 +450,12 @@ function floorMerge() {
   m.tier = (m.tier || 1) + 1;
   if (typeof playMergeSound === "function") playMergeSound(m.tier);
   m.paid = (m.paid || 0) + (partner.paid || 0) + cost;
+  if (m.type === "memory") m.data = (typeof m.data === "number" ? m.data : aiTierValue("memory", m.tier - 1)) + (typeof partner.data === "number" ? partner.data : aiTierValue("memory", m.tier - 1));
+  (state.wires || []).forEach(function (w) {
+    var other = w[0] === partner.id ? w[1] : (w[1] === partner.id ? w[0] : 0);
+    if (other && other !== m.id && !floorIsWired(m.id, other) && floorWireCount(m.id) < AI_PORTS) state.wires.push([m.id, other]);
+  });
+  floorUnwire(partner.id);
   state.modules = state.modules.filter(function (x) { return x.id !== partner.id; });
   floorRender();
   render();
@@ -362,6 +495,11 @@ var floorLastClick = { id: 0, at: 0 };
 
 function floorCellClick(x, y, occupant) {
   if (floorHold) { floorPlaceHeld(x, y); return; }
+  if (floorWiring) {
+    if (occupant && occupant !== floorWiring) { floorToggleWire(floorWiring, occupant); floorRender(); render(); }
+    else if (!occupant) { floorWiring = null; floorRender(); }
+    return;
+  }
   var now = Date.now();
   if (occupant && floorLastClick.id === occupant && now - floorLastClick.at < 400) {
     floorLastClick = { id: 0, at: 0 };
@@ -381,6 +519,8 @@ function floorBuildGrid(parent) {
   state.modules.forEach(function (m) { byId[m.id] = m; });
 
   var grid = fl("div", "floor-grid");
+  grid.style.position = "relative";
+  var wiringMod = floorWiring ? floorFindModule(floorWiring) : null;
   grid.style.gridTemplateColumns = "repeat(" + n + ", var(--floor-cell))";
   floorCellEls = [];
   for (var y = 0; y < n; y++) {
@@ -397,14 +537,8 @@ function floorBuildGrid(parent) {
           cell.style.justifyContent = "center";
           cell.appendChild(aiGlyph(aiGlyphKey(m.type, m.tier), 36));
         }
-        if (m.type === "processor" && m.x === x && m.y === y) {
-          cell.style.position = "relative";
-          var heatBar = document.createElement("div");
-          heatBar.style.cssText = "position:absolute;left:0;bottom:0;height:3px;width:0;pointer-events:none;";
-          cell.appendChild(heatBar);
-          floorUi.heat[m.id] = heatBar;
-        }
-        if (floorSelected === id) cell.classList.add("sel");
+        if (floorSelected === id || floorWiring === id) cell.classList.add("sel");
+        if (wiringMod && floorCanWire(wiringMod, m)) cell.classList.add("floor-wirable");
         if (y > 0 && occ[y - 1][x] === id) cell.classList.add("no-top");
         if (y < n - 1 && occ[y + 1][x] === id) cell.classList.add("no-bottom");
         if (x > 0 && occ[y][x - 1] === id) cell.classList.add("no-left");
@@ -420,6 +554,60 @@ function floorBuildGrid(parent) {
   }
   grid.addEventListener("mouseleave", function () { floorPreview(null, null); });
   parent.appendChild(grid);
+}
+
+function floorDrawWires() {
+  var grid = document.querySelector("#floorOverlay .floor-grid");
+  if (!grid) return;
+  var old = grid.querySelector("svg.floor-wires");
+  if (old) old.parentNode.removeChild(old);
+  var gw = grid.offsetWidth, gh = grid.offsetHeight;
+  if (!gw || !gh || !state.wires || !state.wires.length) return;
+  var ns = "http://www.w3.org/2000/svg";
+  var svg = document.createElementNS(ns, "svg");
+  svg.setAttribute("class", "floor-wires");
+  svg.setAttribute("width", gw);
+  svg.setAttribute("height", gh);
+  svg.style.cssText = "position:absolute;left:0;top:0;pointer-events:none;overflow:visible;";
+  var center = function (m) {
+    var c = floorCellEls[m.y] && floorCellEls[m.y][m.x];
+    return c ? { x: c.offsetLeft + c.offsetWidth / 2, y: c.offsetTop + c.offsetHeight / 2 } : null;
+  };
+  var focus = floorWiring || floorSelected;
+  var used = {};
+  var port = function (m, toward) {
+    var c = center(m);
+    var pts = aiGlyphPoints(aiGlyphKey(m.type, m.tier)).pts;
+    var cell = floorCellEls[m.y][m.x];
+    var k = 36 / 40, best = null, bd = 1e9;
+    pts.forEach(function (n, i) {
+      var key = m.id + ":" + i;
+      var x = c.x + (n[0] - 20) * k, y = c.y + (n[1] - 20) * k;
+      var d = Math.pow(x - toward.x, 2) + Math.pow(y - toward.y, 2) + (used[key] || 0) * 400;
+      if (d < bd) { bd = d; best = { x: x, y: y, key: key }; }
+    });
+    if (!best) return c;
+    used[best.key] = (used[best.key] || 0) + 1;
+    return best;
+  };
+  state.wires.forEach(function (w, wi) {
+    var a = floorFindModule(w[0]), b = floorFindModule(w[1]);
+    if (!a || !b) return;
+    var ca = center(a), cb = center(b);
+    if (!ca || !cb) return;
+    var p = port(a, cb), q = port(b, ca);
+    var path = document.createElementNS(ns, "line");
+    path.setAttribute("x1", p.x); path.setAttribute("y1", p.y);
+    path.setAttribute("x2", q.x); path.setAttribute("y2", q.y);
+    path.setAttribute("stroke", "currentColor");
+    path.setAttribute("stroke-width", focus && (w[0] === focus || w[1] === focus) ? "1.4" : "1");
+    path.setAttribute("stroke-linecap", "butt");
+    if (a.type === "controller" || b.type === "controller") path.setAttribute("stroke-dasharray", "4 3");
+    path.style.opacity = focus && w[0] !== focus && w[1] !== focus ? "0.45" : "0.9";
+    svg.appendChild(path);
+  });
+  svg.style.color = "var(--ink)";
+  grid.appendChild(svg);
 }
 
 function floorBtn(parent, label, fn) {
@@ -439,7 +627,7 @@ function floorRender() {
 
   var b = moduleBonuses();
   sheetAddHeading(body, aiDisplayName());
-  [["data", "raw"], ["collecting", "inflow"], ["burning", "proc"], ["factory buff", "buff"], ["overheated", "hot"]].forEach(function (r) {
+  [["data", "raw"], ["collecting", "inflow"], ["burning", "proc"], ["factory buff", "buff"]].forEach(function (r) {
     var row = fl("div", "row");
     row.appendChild(fl("span", "label", r[0]));
     var v = fl("span", "value", "");
@@ -447,7 +635,7 @@ function floorRender() {
     body.appendChild(row);
     floorUi.ai[r[1]] = v;
   });
-  body.appendChild(fl("div", "hint", "memory collects data. processors burn it to buff your factories, and each step up in tier adds a lot more. burning makes heat, and a processor that overheats shuts down until it cools, so put coolers beside them."));
+  body.appendChild(fl("div", "hint", "memory holds data and sets how far the ai can be trained. processors read it, and a controller turns that into buff. connect them with wires: pick a chip and press wire, or press auto-wire."));
 
   sheetAddHeading(body, "what your modules do");
   sheetAddRows(body, [
@@ -468,9 +656,13 @@ function floorRender() {
     controls.appendChild(holdTag);
     floorBtn(controls, "rotate", floorRotate);
     floorBtn(controls, "cancel", function () { floorHold = null; floorRender(); });
+  } else if (floorWiring) {
+    controls.appendChild(fl("span", "floor-hold", "wiring: tap a chip"));
+    floorBtn(controls, "done", function () { floorWiring = null; floorRender(); });
   } else if (floorSelectedModule()) {
     var m = floorSelectedModule();
     if (MODULES[m.type].w !== MODULES[m.type].h) floorBtn(controls, "rotate", floorRotate);
+    if (m.type === "memory" || m.type === "processor" || m.type === "controller") floorBtn(controls, "wire", function () { floorWiring = m.id; floorSelected = null; floorRender(); });
     if (MODULES[m.type].tiered) {
       var partner = aiMergePartner(m);
       floorUi.mergeBtn = floorBtn(controls, "merge", floorMerge);
@@ -479,6 +671,7 @@ function floorRender() {
     }
     floorBtn(controls, "cancel", function () { floorSelected = null; floorRender(); });
   }
+  if (!floorHold && !floorWiring) floorBtn(controls, "auto-wire", function () { floorAutoWire(); floorRender(); render(); });
   body.appendChild(controls);
   floorHintNode = fl("div", "hint", floorDefaultHint());
   floorHintNode.style.textAlign = "center";
@@ -511,7 +704,7 @@ function floorRender() {
 
   sheetAddHeading(body, "parts");
   var cols = fl("div", "shop-cols");
-  [["memory", ["memory"]], ["processors", ["processor"]], ["cooler", ["cooler"]]].forEach(function (colDef) {
+  [["memory", ["memory"]], ["processors", ["processor"]], ["controller", ["controller"]]].forEach(function (colDef) {
     var col = fl("div", "shop-col");
     col.appendChild(fl("div", "shop-col-head", colDef[0]));
     colDef[1].forEach(function (tp) {
@@ -546,6 +739,7 @@ function floorRender() {
   }
 
   floorUpdate();
+  floorDrawWires();
 }
 
 function floorUpdate() {
@@ -564,16 +758,9 @@ function floorUpdate() {
     floorUi.mergeBtn.disabled = !floorUi.mergeBtn.dataset.ok || !sm || state.copperAmt < aiMergeCost(sm.type, sm.tier || 1);
   }
   if (floorUi.ai.raw) {
-    floorUi.ai.raw.textContent = aiFmtBytes(aiData()) + " / " + aiFmtBytes(aiCapacity());
+    floorUi.ai.raw.textContent = aiFmtBytes(aiData()) + " / " + aiFmtBytes(aiDataCap());
     floorUi.ai.inflow.textContent = "+" + aiFmtBytes(aiInflow()) + "/s";
     floorUi.ai.proc.textContent = aiFmtBytes(aiBurn()) + "/s";
-    floorUi.ai.hot.textContent = aiHotCount + " / " + aiProcessors().length;
-    for (var hid in floorUi.heat) {
-      var hb = floorUi.heat[hid];
-      var hv = aiHeat[hid] || 0;
-      hb.style.width = Math.round(hv * 100) + "%";
-      hb.style.background = aiHot[hid] ? "repeating-linear-gradient(90deg, var(--ink) 0 2px, transparent 2px 4px)" : "var(--ink)";
-    }
     floorUi.ai.buff.textContent = aiBuffText();
   }
   if (floorUi.expandBtn) floorUi.expandBtn.disabled = !floorCanAfford(floorExpandCost());
@@ -594,16 +781,19 @@ function floorOpenScreen() {
   floorRender();
   el.floorOverlay.style.display = "flex";
   el.floorOverlay.firstElementChild.scrollTop = 0;
+  floorDrawWires();
 }
 
 function floorCloseScreen() {
   floorOpen = false;
+  floorWiring = null;
   floorHold = null;
   floorSelected = null;
   el.floorOverlay.style.display = "none";
 }
 
 el.btnFloor.addEventListener("click", floorOpenScreen);
+window.addEventListener("resize", function () { if (floorOpen) floorDrawWires(); });
 el.btnFloorClose.addEventListener("click", floorCloseScreen);
 el.floorOverlay.addEventListener("click", function (e) { if (e.target === el.floorOverlay) floorCloseScreen(); });
 document.addEventListener("keydown", function (e) {

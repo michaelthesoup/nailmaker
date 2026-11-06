@@ -90,12 +90,12 @@ function breakerBuildCostEffective() {
 
 function nailMakerRateEffective() {
   if (!state.nailMakersOn) return 0;
-  return NAILMAKER_RATE * (1 + makerRateBonus()) * cardMult("makerSpeed");
+  return NAILMAKER_RATE * (1 + makerRateBonus()) * cardMult("makerSpeed") * (1 + (typeof aiMakerBuff === "function" ? aiMakerBuff() : 0));
 }
 
 function breakerIntakeEffective() {
   if (!state.breakersOn) return 0;
-  return BREAKER_INTAKE_RATE * (1 + breakerRateBonus()) * cardMult("breakerSpeed");
+  return BREAKER_INTAKE_RATE * (1 + breakerRateBonus()) * cardMult("breakerSpeed") * (1 + (typeof aiBreakerBuff === "function" ? aiBreakerBuff() : 0));
 }
 
 function factoryOutputRates() {
