@@ -415,14 +415,7 @@ function trainBuildUI() {
   var st = document.createElement("style");
   st.textContent =
     "#trainScreen { position: fixed; inset: 0; z-index: 900; background: var(--paper); color: var(--ink); display: none; overflow: auto; }" +
-    "#trainScreen { font-family: ui-monospace, Menlo, Consolas, monospace; }" +
-    "#trainScreen .train-box { max-width: 560px; margin: 16px auto; padding: 12px 14px 16px; border: 2px solid var(--ink); box-sizing: border-box; }" +
-    "#trainScreen .train-status { margin-top: 10px; padding: 5px 0; border-top: 1px solid var(--ink); border-bottom: 1px solid var(--ink); font-size: 12px; display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }" +
-    "#trainScreen .train-meter { height: 8px; border: 1px solid var(--ink); position: relative; margin-top: 8px; }" +
-    "#trainScreen .train-meter i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--ink); }" +
-    "#trainScreen .train-meter u { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--ink); }" +
-    "#trainScreen .train-more { display: none; }" +
-    "#trainScreen .train-more.open { display: block; }" +
+    "#trainScreen .train-box { max-width: 580px; margin: 0 auto; padding: 18px 16px 28px; }" +
     "#trainScreen .train-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }" +
     "#trainScreen .train-title { font-size: 18px; }" +
     "#trainScreen .train-cap { font-size: 11px; opacity: 0.65; }" +
@@ -458,12 +451,14 @@ function trainBuildUI() {
   screen.appendChild(box);
 
   var head = trainMk("div", "train-head");
-  head.appendChild(trainMk("div", "train-title", "> training"));
+  head.appendChild(trainMk("div", "train-title", "training program"));
   var close = trainMk("button", "", "close");
   close.addEventListener("click", trainClose);
   head.appendChild(close);
   box.appendChild(head);
-  
+  var sub = trainMk("div", "train-cap", "your ai knows nothing. teach it what you know: it learns exactly what you tell it, right or wrong. each answer costs data. more memory unlocks harder trials.");
+  box.appendChild(sub);
+
   var tabs = trainMk("div", "train-tabs");
   var tabBtns = TRAIN_TRIALS.map(function (t, i) {
     var b = trainMk("button", "", (i + 1) + " " + t.name);
@@ -486,26 +481,13 @@ function trainBuildUI() {
   warn.style.fontWeight = "bold";
   box.appendChild(warn);
 
-  var meter = trainMk("div", "train-meter");
-  var meterFill = trainMk("i"), meterNeed = trainMk("u");
-  meter.appendChild(meterFill); meter.appendChild(meterNeed);
-  box.appendChild(meter);
-  var status = trainMk("div", "train-status");
-  box.appendChild(status);
-
   var buttons = trainMk("div", "train-buttons");
   var next = trainMk("button", "", "skip");
   buttons.appendChild(next);
-  var moreBtn = trainMk("button", "", "details");
-  buttons.appendChild(moreBtn);
   box.appendChild(buttons);
 
   var msg = trainMk("div", "train-msg");
   box.appendChild(msg);
-
-  var more = trainMk("div", "train-more");
-  box.appendChild(more);
-  moreBtn.addEventListener("click", function () { more.classList.toggle("open"); moreBtn.textContent = more.classList.contains("open") ? "hide details" : "details"; });
 
   var stats = trainMk("div", "train-stats");
   var statNodes = {};
@@ -516,17 +498,17 @@ function trainBuildUI() {
     d.appendChild(v); stats.appendChild(d);
     statNodes[p[0]] = v;
   });
-  more.appendChild(stats);
+  box.appendChild(stats);
 
   var graph = trainMk("canvas", "train-graph");
   graph.width = 560; graph.height = 90;
-  more.appendChild(graph);
-  more.appendChild(trainMk("div", "train-cap", "accuracy on a fixed test it is never taught from"));
+  box.appendChild(graph);
+  box.appendChild(trainMk("div", "train-cap", "accuracy on a fixed test it is never taught from"));
 
   document.body.appendChild(screen);
 
   next.addEventListener("click", function () { trainRun(trainCur).sample = TRAIN_TRIALS[trainCur].gen(trainTarget(trainCur)); trainDraw(); });
-  trainUI = { warn: warn, screen: screen, tabs: tabBtns, lesson: lesson, prompt: prompt, optWrap: optWrap, opts: [], optFor: -1, msg: msg, stats: statNodes, graph: graph, meterFill: meterFill, meterNeed: meterNeed, status: status };
+  trainUI = { warn: warn, screen: screen, tabs: tabBtns, lesson: lesson, prompt: prompt, optWrap: optWrap, opts: [], optFor: -1, msg: msg, stats: statNodes, graph: graph };
 }
 
 function trainSelect(i) {
@@ -604,10 +586,6 @@ function trainDraw() {
   });
   u.warn.textContent = st.unaffordable ? "one lesson costs " + aiFmtBytesSafe(st.cost) + " but the data pool only holds " + aiFmtBytesSafe(trainDataCap()) + ". buy more memory." : st.stalled ? "learning has stalled: " + st.block + "." : (!st.ready && st.block && run.acc >= st.need * 0.97 ? "almost there. note: " + st.block + "." : "");
   var lv = trainLevel(t.id);
-  u.meterFill.style.width = Math.round(run.acc * 100) + "%";
-  u.meterNeed.style.left = Math.round(st.need * 100) + "%";
-  u.status.innerHTML = "";
-  [["level " + lv, ""], ["taught " + run.seen + "/" + trainTaughtMin(st.target), ""], ["acc " + Math.round(run.acc * 100) + "/" + Math.round(st.need * 100) + "%", ""], [aiFmtBytesSafe(trainPool()) + " data, " + aiFmtBytesSafe(trainCost()) + "/answer", ""]].forEach(function (p) { u.status.appendChild(trainMk("span", "", p[0])); });
 
   var fmt = aiFmtBytesSafe;
   u.stats.accuracy.textContent = Math.round(run.acc * 1000) / 10 + "%";
