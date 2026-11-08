@@ -30,6 +30,7 @@ function tick(dt, skipRender) {
   state.simTime += dt;
   cityTick(dt);
   if (typeof aiTick === "function") aiTick(dt);
+  if (typeof floorTick === "function") floorTick(dt);
   if (typeof resonanceTick === "function") resonanceTick(dt);
 
   var wantToMake = state.nailMakers * nailMakerRateEffective() * dt;
