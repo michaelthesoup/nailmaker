@@ -280,6 +280,7 @@ function defaultState() {
     aiBuffNow: 0,
     aiBought: {},
     aiSeen: {},
+    aiReached: {},
     aiName: "",
     aiOwned: false,
     aiGlyphSeed: 0,
